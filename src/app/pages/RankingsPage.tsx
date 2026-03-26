@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import RankingCard from "../components/RankingCard";
@@ -24,8 +24,8 @@ export default function RankingsPage() {
   const [activeTab, setActiveTab] = useState("hot");
   const [activeFilter, setActiveFilter] = useState("all");
 
-  // 根据当前标签筛选工具
-  const getFilteredTools = () => {
+  // 根据当前标签筛选工具，并使用 useMemo 缓存结果避免每次渲染重复计算
+  const filteredTools = useMemo(() => {
     const currentTab = tabs.find((tab) => tab.id === activeTab);
     if (!currentTab) return [];
 
@@ -37,9 +37,7 @@ export default function RankingsPage() {
 
     // 热门榜按评分排序
     return [...toolsData].sort((a, b) => b.score - a.score);
-  };
-
-  const filteredTools = getFilteredTools();
+  }, [activeTab]);
 
   // 生成推荐理由
   const generateReason = (tool: any, rank: number) => {

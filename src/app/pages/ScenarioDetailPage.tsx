@@ -2,19 +2,20 @@ import { useParams, Link } from "react-router";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ToolCard from "../components/ToolCard";
+import Breadcrumbs from "../components/Breadcrumbs";
 import { FileText, Target, BarChart, Briefcase, Video, Mail, MessageSquare, Code } from "lucide-react";
 import toolsData from "../../data/tools.json";
 import scenariosData from "../../data/scenarios.json";
 
 const iconMap: Record<string, React.ReactNode> = {
-  ppt: <FileText className="w-8 h-8 text-white" />,
-  writing: <Target className="w-8 h-8 text-white" />,
-  "data-analysis": <BarChart className="w-8 h-8 text-white" />,
-  "agent-platform": <Briefcase className="w-8 h-8 text-white" />,
-  "video-creation": <Video className="w-8 h-8 text-white" />,
-  "email-writing": <Mail className="w-8 h-8 text-white" />,
-  "customer-service": <MessageSquare className="w-8 h-8 text-white" />,
-  "coding-assistant": <Code className="w-8 h-8 text-white" />,
+  ppt: <FileText className="w-7 h-7 text-gray-700" />,
+  writing: <Target className="w-7 h-7 text-gray-700" />,
+  "data-analysis": <BarChart className="w-7 h-7 text-gray-700" />,
+  "agent-platform": <Briefcase className="w-7 h-7 text-gray-700" />,
+  "video-creation": <Video className="w-7 h-7 text-gray-700" />,
+  "email-writing": <Mail className="w-7 h-7 text-gray-700" />,
+  "customer-service": <MessageSquare className="w-7 h-7 text-gray-700" />,
+  "coding-assistant": <Code className="w-7 h-7 text-gray-700" />,
 };
 
 export default function ScenarioDetailPage() {
@@ -23,12 +24,12 @@ export default function ScenarioDetailPage() {
 
   if (!config) {
     return (
-      <div className="min-h-screen bg-[#F6F8FB]">
+      <div className="page-shell">
         <Header />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">场景不存在</h1>
-            <Link to="/scenarios" className="text-blue-600 hover:text-blue-700">
+            <Link to="/scenarios" className="link-subtle">
               返回场景列表
             </Link>
           </div>
@@ -46,27 +47,41 @@ export default function ScenarioDetailPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F6F8FB]">
+    <div className="page-shell">
       <Header />
 
       {/* 场景标题区 */}
-      <section className="bg-gradient-to-br from-blue-600 to-teal-600 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="hero-shell py-14 md:py-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Breadcrumbs
+            items={[
+              { label: "首页", to: "/" },
+              { label: "场景推荐", to: "/scenarios" },
+              { label: config.title },
+            ]}
+          />
+
           <div className="flex items-center space-x-4 mb-6">
-            <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
+            <div className="w-16 h-16 icon-tile rounded-2xl flex items-center justify-center">
               {iconMap[config.slug]}
             </div>
             <div>
-              <h1 className="text-4xl font-bold mb-2">{config.title}</h1>
-              <p className="text-xl text-blue-100">{config.description}</p>
+              <h1 className="text-3xl md:text-4xl font-semibold text-gray-900 mb-2">{config.title}</h1>
+              <p className="text-lg text-gray-600">{config.description}</p>
             </div>
           </div>
+          <Link
+            to="/scenarios"
+            className="inline-flex items-center px-4 py-2.5 btn-secondary rounded-full transition"
+          >
+            返回场景列表
+          </Link>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* 问题说明 */}
-        <section className="bg-white rounded-2xl p-8 border border-gray-200 mb-8">
+        <section className="panel-base rounded-2xl p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">场景说明</h2>
           <p className="text-gray-700 leading-relaxed">{config.problem}</p>
         </section>
@@ -116,13 +131,13 @@ export default function ScenarioDetailPage() {
         )}
 
         {/* 适合人群说明 */}
-        <section className="bg-white rounded-2xl p-8 border border-gray-200">
+        <section className="panel-base rounded-2xl p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">适合人群</h2>
           <div className="flex flex-wrap gap-3">
             {config.targetAudience.map((audience, index) => (
               <span
                 key={index}
-                className="px-5 py-3 bg-gradient-to-br from-blue-50 to-teal-50 text-blue-700 rounded-xl font-medium border border-blue-100"
+                className="px-5 py-3 tag-muted rounded-xl font-medium"
               >
                 {audience}
               </span>
@@ -131,7 +146,7 @@ export default function ScenarioDetailPage() {
         </section>
 
         {/* 其他场景入口 */}
-        <section className="mt-12 bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-8 border border-gray-200">
+        <section className="mt-12 card-subtle rounded-2xl p-8">
           <h3 className="text-xl font-semibold text-gray-900 mb-4">
             探索其他场景
           </h3>
@@ -143,7 +158,7 @@ export default function ScenarioDetailPage() {
                 <Link
                   key={scenario.slug}
                   to={`/scenarios/${scenario.slug}`}
-                  className="px-4 py-2 bg-white border border-gray-200 rounded-xl hover:shadow-md transition text-gray-700 hover:text-blue-600"
+                  className="px-4 py-2 bg-white border border-gray-200 rounded-xl hover:shadow-md transition text-gray-700 hover:text-gray-900"
                 >
                   {scenario.title}
                 </Link>

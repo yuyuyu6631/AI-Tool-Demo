@@ -1,89 +1,124 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Link } from "react-router";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import RankingCard from "../components/RankingCard";
+import Breadcrumbs from "../components/Breadcrumbs";
 import toolsData from "../../data/tools.json";
 
 const tabs = [
   { id: "hot", label: "热门榜", category: null },
   { id: "writing", label: "写作榜", category: "写作办公" },
   { id: "coding", label: "编程榜", category: "编程开发" },
-  { id: "agent", label: "智能体平台榜", category: "智能体平台" },
+  { id: "agent", label: "智能体平台", category: "智能体平台" },
 ];
 
 const filters = [
   { id: "all", label: "全部" },
   { id: "domestic", label: "国内工具" },
-  { id: "international", label: "国外工具" },
+  { id: "international", label: "海外工具" },
   { id: "free", label: "免费优先" },
   { id: "enterprise", label: "企业场景" },
   { id: "beginner", label: "新手友好" },
 ];
 
+const filterGroups: Record<string, Set<string>> = {
+  domestic: new Set(["kimi", "doubao", "coze", "dify", "yuanbao", "baidu-comate"]),
+  international: new Set([
+    "chatgpt",
+    "claude",
+    "gamma",
+    "cursor",
+    "midjourney",
+    "notion-ai",
+    "copilot",
+    "jasper",
+    "runway",
+    "perplexity",
+    "canva-ai",
+    "suno",
+    "tableau-ai",
+  ]),
+  free: new Set(["kimi", "doubao", "coze", "dify", "perplexity", "canva-ai"]),
+  enterprise: new Set(["dify", "coze", "tableau-ai", "cursor", "copilot"]),
+  beginner: new Set(["doubao", "kimi", "gamma", "canva-ai", "chatgpt"]),
+};
+
+function generateReason(tool: any, rank: number, activeTabLabel: string) {
+  if (rank === 1) {
+    return `${tool.name} 当前位列${activeTabLabel}首位，综合体验和适配度都更稳。`;
+  }
+
+  if (rank <= 3) {
+    return `在 ${tool.tags[0]} 等能力上表现突出，适合优先纳入候选。`;
+  }
+
+  return `${tool.tags[0]}能力较强，适合 ${tool.targetAudience?.[0] || "大多数用户"} 快速上手。`;
+}
+
 export default function RankingsPage() {
   const [activeTab, setActiveTab] = useState("hot");
   const [activeFilter, setActiveFilter] = useState("all");
 
-  // 根据当前标签筛选工具
-  const getFilteredTools = () => {
-    const currentTab = tabs.find((tab) => tab.id === activeTab);
-    if (!currentTab) return [];
+  const currentTab = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
+
+  const filteredTools = useMemo(() => {
+    let items = [...toolsData];
 
     if (currentTab.category) {
-      return toolsData
-        .filter((tool) => tool.category === currentTab.category)
-        .sort((a, b) => b.score - a.score);
+      items = items.filter((tool) => tool.category === currentTab.category);
     }
 
-    // 热门榜按评分排序
-    return [...toolsData].sort((a, b) => b.score - a.score);
-  };
-
-  const filteredTools = getFilteredTools();
-
-  // 生成推荐理由
-  const generateReason = (tool: any, rank: number) => {
-    if (rank === 1) {
-      return `${tool.name} 在${
-        tabs.find((t) => t.id === activeTab)?.label || "榜单"
-      }中排名第一，综合评分最高，是该领域的首选工具。`;
-    } else if (rank <= 3) {
-      return `表现优异，在${tool.tags[0]}等方面有出色表现，值得优先考虑。`;
-    } else {
-      return `${tool.tags[0]}能力突出，适合${
-        tool.targetAudience?.[0] || "专业用户"
-      }使用。`;
+    if (activeFilter !== "all") {
+      const group = filterGroups[activeFilter];
+      if (group) {
+        items = items.filter((tool) => group.has(tool.slug));
+      }
     }
-  };
+
+    return items.sort((a, b) => b.score - a.score);
+  }, [activeFilter, currentTab.category]);
 
   return (
-    <div className="min-h-screen bg-[#F6F8FB]">
+    <div className="page-shell">
       <Header />
 
-      {/* 页面标题区 */}
-      <section className="bg-white border-b border-gray-200 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">AI 工具榜单</h1>
-          <p className="text-gray-600 max-w-3xl">
-            基于热度、功能完整度、场景适配度和上手门槛等维度综合评估，为你推荐最值得尝试的
-            AI
-            工具。榜单每周更新，确保推荐内容的时效性和准确性。所有评测均基于实际使用体验和用户反馈。
+      <section className="section-band py-12 md:py-14">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Breadcrumbs
+            items={[
+              { label: "首页", to: "/" },
+              { label: "榜单" },
+            ]}
+          />
+          <p className="eyebrow text-xs font-medium mb-3">Rankings</p>
+          <h1 className="text-3xl md:text-4xl font-semibold text-gray-900 mb-4">AI 工具榜单</h1>
+          <p className="text-gray-600 max-w-3xl leading-7">
+            先按用途快速筛一轮，再进入详情对比优缺点、适用人群和替代方案。我们把高频决策路径尽量做短。
           </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              to="/scenarios"
+              className="inline-flex items-center px-5 py-3 btn-secondary rounded-full transition"
+            >
+              按场景浏览
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* 榜单切换区 */}
-      <section className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex overflow-x-auto">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-4 font-medium whitespace-nowrap border-b-2 transition ${
+                aria-pressed={activeTab === tab.id}
+                className={`filter-chip px-4 py-2.5 mr-2 rounded-full text-sm font-medium whitespace-nowrap border ${
                   activeTab === tab.id
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-gray-600 hover:text-gray-900"
+                    ? "bg-white border-gray-900 text-gray-900"
+                    : "border-transparent text-gray-500 hover:text-gray-900"
                 }`}
               >
                 {tab.label}
@@ -93,21 +128,19 @@ export default function RankingsPage() {
         </div>
       </section>
 
-      {/* 筛选区 */}
-      <section className="py-6 bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="pb-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-3 overflow-x-auto">
-            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
-              筛选：
-            </span>
+            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">筛选：</span>
             {filters.map((filter) => (
               <button
                 key={filter.id}
                 onClick={() => setActiveFilter(filter.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${
+                aria-pressed={activeFilter === filter.id}
+                className={`filter-chip px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap border ${
                   activeFilter === filter.id
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-white text-gray-700 border-gray-200 hover:border-gray-300"
                 }`}
               >
                 {filter.label}
@@ -117,9 +150,13 @@ export default function RankingsPage() {
         </div>
       </section>
 
-      {/* 榜单列表 */}
       <section className="py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-6 text-sm text-gray-500">
+            当前视图：{currentTab.label}
+            {activeFilter !== "all" ? ` / ${filters.find((item) => item.id === activeFilter)?.label}` : ""}
+          </div>
+
           <div className="space-y-6">
             {filteredTools.map((tool, index) => (
               <RankingCard
@@ -130,14 +167,14 @@ export default function RankingsPage() {
                 summary={tool.summary}
                 tags={tool.tags}
                 score={tool.score}
-                reason={generateReason(tool, index + 1)}
+                reason={generateReason(tool, index + 1, currentTab.label)}
               />
             ))}
           </div>
 
           {filteredTools.length === 0 && (
-            <div className="text-center py-20">
-              <p className="text-gray-500">暂无相关工具</p>
+            <div className="panel-base rounded-2xl p-8 text-center">
+              <p className="text-gray-500">当前筛选下暂时没有结果，建议切换标签或返回全部查看。</p>
             </div>
           )}
         </div>

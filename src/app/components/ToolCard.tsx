@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "react-router";
 import { Star, ArrowRight } from "lucide-react";
 
@@ -10,7 +11,10 @@ interface ToolCardProps {
   reason?: string;
 }
 
-export default function ToolCard({
+// ⚡ Bolt Performance Optimization:
+// Wrapped ToolCard in React.memo to prevent unnecessary re-renders in lists
+// (e.g. HomePage, HeroSearchPanel, ScenarioDetailPage) when parent state changes.
+const ToolCard = memo(function ToolCard({
   slug,
   name,
   summary,
@@ -49,4 +53,6 @@ export default function ToolCard({
       </Link>
     </div>
   );
-}
+});
+
+export default ToolCard;

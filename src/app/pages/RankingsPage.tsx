@@ -44,6 +44,12 @@ const filterGroups: Record<string, Set<string>> = {
   beginner: new Set(["doubao", "kimi", "gamma", "canva-ai", "chatgpt"]),
 };
 
+// ⚡ Bolt: Pre-sort tools data by score once outside the component
+// 💡 What: Replaced O(N log N) sorting on every filter change with a single pre-sort.
+// 🎯 Why: Array.sort() mutates and takes more time when run repeatedly inside useMemo.
+// 📊 Impact: Reduces sorting overhead to zero during render/filter changes (O(N log N) -> O(N)).
+const sortedToolsData = [...toolsData].sort((a, b) => b.score - a.score);
+
 function generateReason(tool: any, rank: number, activeTabLabel: string) {
   if (rank === 1) {
     return `${tool.name} 当前位列${activeTabLabel}首位，综合体验和适配度都更稳。`;
@@ -63,7 +69,8 @@ export default function RankingsPage() {
   const currentTab = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
 
   const filteredTools = useMemo(() => {
-    let items = [...toolsData];
+    // ⚡ Bolt: Use the pre-sorted array directly. Array.filter preserves order.
+    let items = sortedToolsData;
 
     if (currentTab.category) {
       items = items.filter((tool) => tool.category === currentTab.category);
@@ -76,7 +83,7 @@ export default function RankingsPage() {
       }
     }
 
-    return items.sort((a, b) => b.score - a.score);
+    return items;
   }, [activeFilter, currentTab.category]);
 
   return (

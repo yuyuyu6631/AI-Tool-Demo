@@ -1,3 +1,4 @@
+import React, { memo } from "react";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { ArrowRight } from "lucide-react";
@@ -10,7 +11,8 @@ interface ScenarioCardProps {
   icon?: ReactNode;
 }
 
-export default function ScenarioCard({
+// ⚡ Bolt: Wrapped ScenarioCard in React.memo() to prevent unnecessary re-renders.
+const ScenarioCard = memo(function ScenarioCard({
   slug,
   title,
   description,
@@ -39,4 +41,6 @@ export default function ScenarioCard({
       </div>
     </Link>
   );
-}
+});
+
+export default ScenarioCard;

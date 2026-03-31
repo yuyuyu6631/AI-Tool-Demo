@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "react-router";
 import { Star, Trophy } from "lucide-react";
 
@@ -11,7 +12,8 @@ interface RankingCardProps {
   reason?: string;
 }
 
-export default function RankingCard({
+// ⚡ Bolt: Wrapped RankingCard in React.memo() to prevent unnecessary re-renders.
+const RankingCard = memo(function RankingCard({
   rank,
   slug,
   name,
@@ -82,4 +84,6 @@ export default function RankingCard({
       </div>
     </div>
   );
-}
+});
+
+export default RankingCard;

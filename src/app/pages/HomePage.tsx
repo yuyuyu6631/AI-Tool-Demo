@@ -58,6 +58,21 @@ const rankingEntries = [
   },
 ];
 
+// ⚡ Bolt: Hoist static data outside the component to prevent recreating the array on every render
+const recommendedTools = toolsData.slice(0, 6);
+
+// ⚡ Bolt: Hoist static icon mapping outside the function to avoid recreating the object on every call
+const scenarioIconMap: Record<string, ReactNode> = {
+  ppt: <FileText className="w-5 h-5 text-slate-800" />,
+  writing: <Target className="w-5 h-5 text-slate-800" />,
+  "data-analysis": <BarChart className="w-5 h-5 text-slate-800" />,
+  "agent-platform": <Briefcase className="w-5 h-5 text-slate-800" />,
+};
+
+function getScenarioIcon(slug: string) {
+  return scenarioIconMap[slug] || <Sparkles className="w-5 h-5 text-slate-800" />;
+}
+
 const scenarios = scenariosData.slice(0, 4).map((scenario) => ({
   slug: scenario.slug,
   title: scenario.title,
@@ -66,20 +81,7 @@ const scenarios = scenariosData.slice(0, 4).map((scenario) => ({
   icon: getScenarioIcon(scenario.slug),
 }));
 
-function getScenarioIcon(slug: string) {
-  const iconMap: Record<string, ReactNode> = {
-    ppt: <FileText className="w-5 h-5 text-slate-800" />,
-    writing: <Target className="w-5 h-5 text-slate-800" />,
-    "data-analysis": <BarChart className="w-5 h-5 text-slate-800" />,
-    "agent-platform": <Briefcase className="w-5 h-5 text-slate-800" />,
-  };
-
-  return iconMap[slug] || <Sparkles className="w-5 h-5 text-slate-800" />;
-}
-
 export default function HomePage() {
-  const recommendedTools = toolsData.slice(0, 6);
-
   return (
     <div className="page-shell">
       <div className="glass-orb top-18 left-8 w-44 h-44 bg-orange-200/40" />

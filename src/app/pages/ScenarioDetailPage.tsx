@@ -18,9 +18,15 @@ const iconMap: Record<string, React.ReactNode> = {
   "coding-assistant": <Code className="w-7 h-7 text-gray-700" />,
 };
 
+// ⚡ Bolt Optimization: Create static Maps at module scope to turn O(N) array `.find`
+// and `.filter` operations during render into O(1) lookups.
+const scenariosMap = new Map(scenariosData.map((s) => [s.slug, s]));
+const toolsMap = new Map(toolsData.map((t) => [t.slug, t]));
+
 export default function ScenarioDetailPage() {
   const { slug } = useParams<{ slug: string }>();
-  const config = scenariosData.find((s) => s.slug === slug);
+  // ⚡ Bolt Optimization: O(1) lookup instead of scenariosData.find()
+  const config = slug ? scenariosMap.get(slug) : undefined;
 
   if (!config) {
     return (
@@ -39,12 +45,9 @@ export default function ScenarioDetailPage() {
     );
   }
 
-  const primaryTools = toolsData.filter((tool) =>
-    config.primaryTools.includes(tool.slug)
-  );
-  const alternativeTools = toolsData.filter((tool) =>
-    config.alternativeTools.includes(tool.slug)
-  );
+  // ⚡ Bolt Optimization: O(K) lookup instead of O(N) toolsData.filter()
+  const primaryTools = config.primaryTools.map(tSlug => toolsMap.get(tSlug)).filter(Boolean) as typeof toolsData;
+  const alternativeTools = config.alternativeTools.map(tSlug => toolsMap.get(tSlug)).filter(Boolean) as typeof toolsData;
 
   return (
     <div className="page-shell">

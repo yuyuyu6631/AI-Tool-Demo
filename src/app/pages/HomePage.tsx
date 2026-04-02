@@ -77,9 +77,11 @@ function getScenarioIcon(slug: string) {
   return iconMap[slug] || <Sparkles className="w-5 h-5 text-slate-800" />;
 }
 
-export default function HomePage() {
-  const recommendedTools = toolsData.slice(0, 6);
+// ⚡ Bolt Optimization: Hoisted static array slice outside the component
+// to prevent O(N) recalculations and unnecessary allocations on every render.
+const recommendedTools = toolsData.slice(0, 6);
 
+export default function HomePage() {
   return (
     <div className="page-shell">
       <div className="glass-orb top-18 left-8 w-44 h-44 bg-orange-200/40" />

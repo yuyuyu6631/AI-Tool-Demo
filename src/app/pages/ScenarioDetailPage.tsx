@@ -7,6 +7,11 @@ import { FileText, Target, BarChart, Briefcase, Video, Mail, MessageSquare, Code
 import toolsData from "../../data/tools.json";
 import scenariosData from "../../data/scenarios.json";
 
+// Bolt Performance Optimization:
+// Hoist static JSON data processing into O(1) Map lookups outside the component to prevent recalculation on every render
+const toolsMap = new Map(toolsData.map(tool => [tool.slug, tool]));
+const scenariosMap = new Map(scenariosData.map(scenario => [scenario.slug, scenario]));
+
 const iconMap: Record<string, React.ReactNode> = {
   ppt: <FileText className="w-7 h-7 text-gray-700" />,
   writing: <Target className="w-7 h-7 text-gray-700" />,
@@ -20,7 +25,7 @@ const iconMap: Record<string, React.ReactNode> = {
 
 export default function ScenarioDetailPage() {
   const { slug } = useParams<{ slug: string }>();
-  const config = scenariosData.find((s) => s.slug === slug);
+  const config = slug ? scenariosMap.get(slug) : undefined;
 
   if (!config) {
     return (
@@ -39,12 +44,10 @@ export default function ScenarioDetailPage() {
     );
   }
 
-  const primaryTools = toolsData.filter((tool) =>
-    config.primaryTools.includes(tool.slug)
-  );
-  const alternativeTools = toolsData.filter((tool) =>
-    config.alternativeTools.includes(tool.slug)
-  );
+  // Bolt Performance Optimization:
+  // Replace O(N*M) array filtering with O(K) map lookups
+  const primaryTools = config.primaryTools.map(s => toolsMap.get(s)).filter((t): t is typeof toolsData[0] => Boolean(t));
+  const alternativeTools = config.alternativeTools.map(s => toolsMap.get(s)).filter((t): t is typeof toolsData[0] => Boolean(t));
 
   return (
     <div className="page-shell">

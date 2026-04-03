@@ -1,0 +1,3 @@
+## 2023-10-27 - O(N) Array Methods on Static JSON Data during Renders
+**Learning:** In a codebase that heavily uses static JSON files, using methods like `.find()` or `.filter()` inside React components means creating O(N) or O(N*M) complexity operations on every single render. This is a subtle but common performance bottleneck.
+**Action:** Always process static JSON arrays into O(1) Maps or Sets *outside* the React components, so the work is only done once upon module initialization, reducing render costs to O(1) or O(K).

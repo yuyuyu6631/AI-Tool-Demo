@@ -18,9 +18,13 @@ const iconMap: Record<string, React.ReactNode> = {
   "coding-assistant": <Code className="w-7 h-7 text-gray-700" />,
 };
 
+// ⚡ Bolt: Pre-compute maps outside render for O(1) lookups
+const scenariosMap = new Map(scenariosData.map((s) => [s.slug, s]));
+const toolsMap = new Map(toolsData.map((t) => [t.slug, t]));
+
 export default function ScenarioDetailPage() {
   const { slug } = useParams<{ slug: string }>();
-  const config = scenariosData.find((s) => s.slug === slug);
+  const config = slug ? scenariosMap.get(slug) : undefined;
 
   if (!config) {
     return (
@@ -39,12 +43,13 @@ export default function ScenarioDetailPage() {
     );
   }
 
-  const primaryTools = toolsData.filter((tool) =>
-    config.primaryTools.includes(tool.slug)
-  );
-  const alternativeTools = toolsData.filter((tool) =>
-    config.alternativeTools.includes(tool.slug)
-  );
+  // ⚡ Bolt: Use map lookup instead of O(N*M) nested array iterations
+  const primaryTools = config.primaryTools
+    .map((toolSlug) => toolsMap.get(toolSlug))
+    .filter((tool): tool is NonNullable<typeof tool> => tool !== undefined);
+  const alternativeTools = config.alternativeTools
+    .map((toolSlug) => toolsMap.get(toolSlug))
+    .filter((tool): tool is NonNullable<typeof tool> => tool !== undefined);
 
   return (
     <div className="page-shell">

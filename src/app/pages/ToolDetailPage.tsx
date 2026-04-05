@@ -7,9 +7,14 @@ import Breadcrumbs from "../components/Breadcrumbs";
 import { Star, ExternalLink, CheckCircle, XCircle, Target, Users } from "lucide-react";
 import toolsData from "../../data/tools.json";
 
+// Bolt Performance Optimization:
+// Convert O(N) array find/filter operations to O(1) Map lookups outside the component render cycle.
+// This prevents unnecessary iterations over static data during every render.
+const toolsBySlug = new Map(toolsData.map(tool => [tool.slug, tool]));
+
 export default function ToolDetailPage() {
   const { slug } = useParams<{ slug: string }>();
-  const tool = toolsData.find((t) => t.slug === slug);
+  const tool = slug ? toolsBySlug.get(slug) : undefined;
 
   if (!tool) {
     return (
@@ -29,7 +34,10 @@ export default function ToolDetailPage() {
   }
 
   // 获取替代工具
-  const alternatives = toolsData.filter((t) => tool.alternatives.includes(t.slug));
+  // Bolt Performance Optimization: Use O(1) Map lookups instead of O(N*M) filter+includes
+  const alternatives = tool.alternatives
+    .map(altSlug => toolsBySlug.get(altSlug))
+    .filter((t): t is NonNullable<typeof t> => t !== undefined);
 
   return (
     <div className="page-shell">

@@ -22,6 +22,11 @@ const filters = [
   { id: "beginner", label: "新手友好" },
 ];
 
+// Bolt Performance Optimization:
+// Use O(1) Map lookups for static filters/tabs configuration rather than finding them repeatedly
+const tabsById = new Map(tabs.map(tab => [tab.id, tab]));
+const filtersById = new Map(filters.map(filter => [filter.id, filter]));
+
 const filterGroups: Record<string, Set<string>> = {
   domestic: new Set(["kimi", "doubao", "coze", "dify", "yuanbao", "baidu-comate"]),
   international: new Set([
@@ -60,7 +65,7 @@ export default function RankingsPage() {
   const [activeTab, setActiveTab] = useState("hot");
   const [activeFilter, setActiveFilter] = useState("all");
 
-  const currentTab = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
+  const currentTab = tabsById.get(activeTab) ?? tabs[0];
 
   const filteredTools = useMemo(() => {
     let items = [...toolsData];
@@ -154,7 +159,7 @@ export default function RankingsPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6 text-sm text-gray-500">
             当前视图：{currentTab.label}
-            {activeFilter !== "all" ? ` / ${filters.find((item) => item.id === activeFilter)?.label}` : ""}
+            {activeFilter !== "all" ? ` / ${filtersById.get(activeFilter)?.label}` : ""}
           </div>
 
           <div className="space-y-6">

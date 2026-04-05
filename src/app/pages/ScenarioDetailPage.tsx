@@ -7,6 +7,12 @@ import { FileText, Target, BarChart, Briefcase, Video, Mail, MessageSquare, Code
 import toolsData from "../../data/tools.json";
 import scenariosData from "../../data/scenarios.json";
 
+// Bolt Performance Optimization:
+// Convert O(N) array find/filter operations to O(1) Map lookups outside the component render cycle.
+// This prevents unnecessary iterations over static data during every render.
+const toolsBySlug = new Map(toolsData.map(tool => [tool.slug, tool]));
+const scenariosBySlug = new Map(scenariosData.map(scenario => [scenario.slug, scenario]));
+
 const iconMap: Record<string, React.ReactNode> = {
   ppt: <FileText className="w-7 h-7 text-gray-700" />,
   writing: <Target className="w-7 h-7 text-gray-700" />,
@@ -20,7 +26,7 @@ const iconMap: Record<string, React.ReactNode> = {
 
 export default function ScenarioDetailPage() {
   const { slug } = useParams<{ slug: string }>();
-  const config = scenariosData.find((s) => s.slug === slug);
+  const config = slug ? scenariosBySlug.get(slug) : undefined;
 
   if (!config) {
     return (
@@ -39,12 +45,14 @@ export default function ScenarioDetailPage() {
     );
   }
 
-  const primaryTools = toolsData.filter((tool) =>
-    config.primaryTools.includes(tool.slug)
-  );
-  const alternativeTools = toolsData.filter((tool) =>
-    config.alternativeTools.includes(tool.slug)
-  );
+  // Bolt Performance Optimization: Use O(1) Map lookups instead of O(N*M) filter+includes
+  const primaryTools = config.primaryTools
+    .map(toolSlug => toolsBySlug.get(toolSlug))
+    .filter((t): t is NonNullable<typeof t> => t !== undefined);
+
+  const alternativeTools = config.alternativeTools
+    .map(toolSlug => toolsBySlug.get(toolSlug))
+    .filter((t): t is NonNullable<typeof t> => t !== undefined);
 
   return (
     <div className="page-shell">

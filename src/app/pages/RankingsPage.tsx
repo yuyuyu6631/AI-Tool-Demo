@@ -44,6 +44,10 @@ const filterGroups: Record<string, Set<string>> = {
   beginner: new Set(["doubao", "kimi", "gamma", "canva-ai", "chatgpt"]),
 };
 
+// Hoist static data processing outside the component to prevent O(N) operations on every render
+const tabsMap = new Map(tabs.map((tab) => [tab.id, tab]));
+const filtersMap = new Map(filters.map((filter) => [filter.id, filter]));
+
 function generateReason(tool: any, rank: number, activeTabLabel: string) {
   if (rank === 1) {
     return `${tool.name} 当前位列${activeTabLabel}首位，综合体验和适配度都更稳。`;
@@ -60,7 +64,7 @@ export default function RankingsPage() {
   const [activeTab, setActiveTab] = useState("hot");
   const [activeFilter, setActiveFilter] = useState("all");
 
-  const currentTab = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
+  const currentTab = tabsMap.get(activeTab) ?? tabs[0];
 
   const filteredTools = useMemo(() => {
     let items = [...toolsData];
@@ -154,7 +158,7 @@ export default function RankingsPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6 text-sm text-gray-500">
             当前视图：{currentTab.label}
-            {activeFilter !== "all" ? ` / ${filters.find((item) => item.id === activeFilter)?.label}` : ""}
+            {activeFilter !== "all" ? ` / ${filtersMap.get(activeFilter)?.label}` : ""}
           </div>
 
           <div className="space-y-6">

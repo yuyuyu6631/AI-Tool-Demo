@@ -21,10 +21,13 @@ os.environ.setdefault("AI_PROVIDER", "stub")
 os.environ.setdefault("AI_API_KEY", "")
 
 import app.services.catalog_service as catalog_svc  # noqa: E402
+import app.db.session as session_mod  # noqa: E402
 from app.db.session import Base, get_db  # noqa: E402
-from app.main import app  # noqa: E402
+from app.main import create_app  # noqa: E402
 from app.models import models  # noqa: E402, F401
 from app.services.seed_data import CATEGORIES, TOOLS  # noqa: E402
+
+app = create_app()
 
 # ---------------------------------------------------------------------------
 # 测试数据库 fixture
@@ -35,10 +38,12 @@ _test_engine = create_engine(
     connect_args={"check_same_thread": False},
 )
 _TestSession = sessionmaker(bind=_test_engine, autoflush=False, autocommit=False, class_=Session)
+_ORIGINAL_SESSION_LOCAL = session_mod.SessionLocal
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def setup_test_db():
+    session_mod.SessionLocal = _TestSession
     Base.metadata.create_all(bind=_test_engine)
     catalog_svc.SessionLocal = _TestSession
 
@@ -73,6 +78,7 @@ def setup_test_db():
 
     yield
 
+    session_mod.SessionLocal = _ORIGINAL_SESSION_LOCAL
     Base.metadata.drop_all(bind=_test_engine)
     try:
         if os.path.exists(_TEST_DB_PATH):
@@ -89,7 +95,6 @@ def _override_get_db():
         db.close()
 
 
-app.dependency_overrides[get_db] = _override_get_db
 client = TestClient(app)
 
 
@@ -276,6 +281,31 @@ class TestB4_异常处理:
         resp = client.get("/health")
         assert resp.status_code == 200
         assert resp.json()["status"] == "ok"
+
+    def test_readiness_endpoint_returns_ok_when_database_is_ready(self):
+        resp = client.get("/health/ready")
+        assert resp.status_code == 200
+        payload = resp.json()
+        assert payload["status"] == "ok"
+        assert payload["checks"] == {"database": "ok", "catalog": "ok", "auth": "ok"}
+
+    def test_readiness_endpoint_returns_503_when_database_check_fails(self, monkeypatch):
+        class BrokenSession:
+            def execute(self, *_args, **_kwargs):
+                raise RuntimeError("db down")
+
+            def close(self):
+                return None
+
+        from app import main as main_module
+
+        monkeypatch.setattr(main_module, "SessionLocal", lambda: BrokenSession())
+        resp = client.get("/health/ready")
+        assert resp.status_code == 503
+        payload = resp.json()
+        assert payload["status"] == "not_ready"
+        assert payload["reason"] == "database_unavailable"
+        assert payload["checks"]["database"] == "error"
 
 
 # ---------------------------------------------------------------------------

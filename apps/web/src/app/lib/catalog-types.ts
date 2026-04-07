@@ -56,7 +56,7 @@ export interface ToolsDirectoryResponse {
   categories: FacetOption[];
   tags: FacetOption[];
   statuses: FacetOption[];
-  priceFacets: FacetOption[];
+  priceFacets?: FacetOption[];
   presets: PresetView[];
 }
 

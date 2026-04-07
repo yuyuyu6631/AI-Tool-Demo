@@ -13,11 +13,14 @@ os.environ.setdefault("AUTH_SECRET_KEY", "test-auth-secret")
 os.environ.setdefault("SESSION_COOKIE_NAME", "xingdianping_session")
 os.environ.setdefault("COOKIE_SECURE", "false")
 
+import app.db.session as session_mod  # noqa: E402
 from app.db.session import Base, get_db  # noqa: E402
-from app.main import app  # noqa: E402
+from app.main import create_app  # noqa: E402
 from app.models import models  # noqa: E402, F401
 from app.models.models import User, UserSession  # noqa: E402
 from app.services import auth_service  # noqa: E402
+
+app = create_app()
 
 
 _test_engine = create_engine(
@@ -25,22 +28,15 @@ _test_engine = create_engine(
     connect_args={"check_same_thread": False},
 )
 _TestSession = sessionmaker(bind=_test_engine, autoflush=False, autocommit=False, class_=Session)
+_ORIGINAL_SESSION_LOCAL = session_mod.SessionLocal
 
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_test_db():
+    session_mod.SessionLocal = _TestSession
     Base.metadata.create_all(bind=_test_engine)
-
-    def _override_get_db():
-        db = _TestSession()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    app.dependency_overrides[get_db] = _override_get_db
     yield
-    app.dependency_overrides.clear()
+    session_mod.SessionLocal = _ORIGINAL_SESSION_LOCAL
     Base.metadata.drop_all(bind=_test_engine)
     try:
         if os.path.exists(_TEST_DB_PATH):

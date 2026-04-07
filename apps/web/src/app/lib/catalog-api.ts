@@ -6,6 +6,15 @@ import type {
 } from "./catalog-types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+export const CATALOG_CACHE_TAG = "catalog";
+export const CATALOG_REVALIDATE_SECONDS = 60;
+
+type CatalogFetchOptions = RequestInit & {
+  next?: {
+    revalidate?: number | false;
+    tags?: string[];
+  };
+};
 
 class ApiError extends Error {
   status: number;
@@ -17,10 +26,18 @@ class ApiError extends Error {
   }
 }
 
-async function fetchJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    cache: "no-store",
-  });
+function withCatalogCache(options?: CatalogFetchOptions): CatalogFetchOptions {
+  return {
+    ...options,
+    next: {
+      revalidate: options?.next?.revalidate ?? CATALOG_REVALIDATE_SECONDS,
+      tags: options?.next?.tags ?? [CATALOG_CACHE_TAG],
+    },
+  };
+}
+
+async function fetchJson<T>(path: string, options?: CatalogFetchOptions): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, withCatalogCache(options));
 
   if (!response.ok) {
     throw new ApiError(path, response.status);

@@ -1,6 +1,5 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import BrandMark from "./BrandMark";
 
 interface ToolLogoProps {
@@ -12,20 +11,15 @@ interface ToolLogoProps {
 }
 
 export default function ToolLogo({
-  slug: _slug,
+  slug,
   name,
   size = "md",
   className = "",
   logoPath = null,
 }: ToolLogoProps) {
-  const [hasError, setHasError] = useState(false);
-  const src = normalizeLogoPath(logoPath);
+  const src = resolveToolLogoPath(slug, logoPath);
 
-  useEffect(() => {
-    setHasError(false);
-  }, [src]);
-
-  if (!src || hasError) {
+  if (!src) {
     return <BrandMark label={name} size={size} />;
   }
 
@@ -40,15 +34,23 @@ export default function ToolLogo({
     <div
       className={`overflow-hidden border border-white/50 bg-white/85 shadow-[0_10px_28px_rgba(15,23,42,0.08)] ${sizeClass} ${className}`}
     >
-      <img
-        src={src}
-        alt={`${name} logo`}
-        className="h-full w-full object-contain p-2"
-        loading="lazy"
-        onError={() => setHasError(true)}
-      />
+      <img src={src} alt={`${name} logo`} className="h-full w-full object-contain p-2" loading="lazy" />
     </div>
   );
+}
+
+function resolveToolLogoPath(slug: string, value?: string | null) {
+  const normalized = normalizeLogoPath(value);
+  if (normalized && publicAssetExists(normalized)) {
+    return normalized;
+  }
+
+  const slugCandidate = encodePath(`/logos/${slug}.png`);
+  if (publicAssetExists(slugCandidate)) {
+    return slugCandidate;
+  }
+
+  return null;
 }
 
 function normalizeLogoPath(value?: string | null) {
@@ -70,8 +72,13 @@ function normalizeLogoPath(value?: string | null) {
   return encodePath(`/logos/${filename}`);
 }
 
-function encodePath(path: string) {
-  return path
+function publicAssetExists(assetPath: string) {
+  const relativePath = assetPath.replace(/^\/+/, "").split("/").join(path.sep);
+  return existsSync(path.join(process.cwd(), "public", relativePath));
+}
+
+function encodePath(pathname: string) {
+  return pathname
     .split("/")
     .map((segment, index) => (index === 0 ? segment : encodeURIComponent(segment)))
     .join("/");

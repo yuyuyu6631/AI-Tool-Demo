@@ -32,6 +32,7 @@ const directory: ToolsDirectoryResponse = {
       status: "draft",
       featured: true,
       createdAt: "2026-03-01",
+      price: "",
     },
   ],
   total: 28,
@@ -39,19 +40,30 @@ const directory: ToolsDirectoryResponse = {
   pageSize: 9,
   hasMore: true,
   categories: [{ slug: "general", label: "通用助手", count: 1 }],
-  tags: [{ slug: "chat", label: "对话", count: 1 }],
+  tags: [
+    { slug: "chat", label: "对话", count: 1 },
+    { slug: "writing", label: "写作", count: 1 },
+    { slug: "image", label: "图像", count: 1 },
+    { slug: "video", label: "视频", count: 1 },
+    { slug: "audio", label: "音频", count: 1 },
+    { slug: "code", label: "代码", count: 1 },
+    { slug: "agent", label: "智能体", count: 1 },
+    { slug: "office", label: "办公", count: 1 },
+    { slug: "report", label: "报表", count: 1 },
+    { slug: "analytics", label: "分析", count: 1 },
+  ],
   statuses: [{ slug: "draft", label: "草稿", count: 1 }],
-  presets: [{ id: "hot", label: "热门", description: "优先查看当前目录中的高频工具。", count: 1 }],
+  priceFacets: [{ slug: "free", label: "免费", count: 1 }],
+  presets: [{ id: "hot", label: "最热", description: "优先查看当前目录中的高频工具。", count: 1 }],
 };
 
 describe("ToolsPage", () => {
   it("renders directory filters and numbered pagination", () => {
     render(<ToolsPage directory={directory} state={{ view: "hot", page: "2" }} />);
 
-    expect(screen.getByRole("heading", { name: "工具分类" })).toBeInTheDocument();
-    expect(screen.getByText("筛选条件")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "工具目录" })).toBeInTheDocument();
+    expect(screen.getByText("决策筛选")).toBeInTheDocument();
     expect(screen.getByText("ChatGPT")).toBeInTheDocument();
-    expect(screen.getAllByText("草稿").length).toBeGreaterThan(0);
     expect(screen.getByRole("navigation", { name: "分页导航" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "1" })).toHaveAttribute("href", "/tools?view=hot&page=1");
     expect(screen.getByRole("link", { name: "2" })).toHaveAttribute("aria-current", "page");
@@ -65,7 +77,13 @@ describe("ToolsPage", () => {
       />,
     );
 
-    expect(screen.getByText("暂无匹配的工具")).toBeInTheDocument();
+    expect(screen.getByText("暂无匹配工具")).toBeInTheDocument();
     expect(screen.getAllByText("重置筛选").length).toBeGreaterThan(0);
+  });
+
+  it("collapses low-frequency tags into the more section", () => {
+    render(<ToolsPage directory={directory} state={{ view: "hot", page: "1" }} />);
+
+    expect(screen.getByText("更多标签 (2)")).toBeInTheDocument();
   });
 });

@@ -7,8 +7,8 @@ import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+import bcrypt
 from fastapi import Cookie, Depends, HTTPException, Request, Response, status
-from passlib.context import CryptContext
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -20,7 +20,7 @@ from app.schemas.auth import AuthLoginRequest, AuthRegisterRequest
 
 
 logger = logging.getLogger(__name__)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+_BCRYPT_SHA256_PREFIX = "bcrypt_sha256$"
 EMAIL_PATTERN = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
 INVALID_CREDENTIALS_DETAIL = "账号或密码不正确。"
 SESSION_INVALID_DETAIL = "登录状态已失效，请重新登录。"
@@ -31,6 +31,35 @@ NOT_LOGGED_IN_DETAIL = "当前未登录。"
 class AuthResult:
     user: User
     session_token: str
+
+
+class PasswordContext:
+    @staticmethod
+    def _coerce_secret(password: str) -> bytes:
+        raw = password.encode("utf-8")
+        if len(raw) <= 72:
+            return raw
+        return hashlib.sha256(raw).hexdigest().encode("ascii")
+
+    def hash(self, password: str) -> str:
+        secret = self._coerce_secret(password)
+        digest = bcrypt.hashpw(secret, bcrypt.gensalt()).decode("utf-8")
+        return f"{_BCRYPT_SHA256_PREFIX}{digest}"
+
+    def verify(self, password: str, password_hash: str) -> bool:
+        if not password_hash:
+            return False
+
+        secret = self._coerce_secret(password)
+        stored_hash = password_hash.removeprefix(_BCRYPT_SHA256_PREFIX)
+
+        try:
+            return bcrypt.checkpw(secret, stored_hash.encode("utf-8"))
+        except ValueError:
+            return False
+
+
+pwd_context = PasswordContext()
 
 
 def _now() -> datetime:

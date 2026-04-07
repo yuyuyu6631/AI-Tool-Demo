@@ -6,30 +6,27 @@ import Breadcrumbs from "../components/Breadcrumbs";
 import ToolLogo from "../components/ToolLogo";
 import ToolCard from "../components/ToolCard";
 import type { ToolDetail, ToolSummary } from "../lib/catalog-types";
-import { slugifyLabel } from "../lib/catalog-utils";
-
-const STATUS_STYLES = {
-  published: "bg-emerald-100 text-emerald-800",
-  draft: "bg-amber-100 text-amber-800",
-  archived: "bg-slate-200 text-slate-700",
-} as const;
-
-const STATUS_LABELS = {
-  published: "已发布",
-  draft: "草稿",
-  archived: "已归档",
-} as const;
+import { buildDecisionBadges, slugifyLabel } from "../lib/catalog-utils";
 
 interface ToolDetailPageProps {
   tool: ToolDetail | null;
   relatedTools: ToolSummary[];
 }
 
+function detectPriceLabel(tool: ToolSummary) {
+  const text = `${tool.price} ${tool.name} ${tool.summary} ${tool.tags.join(" ")}`.toLowerCase();
+  if (text.includes("免费") || text.includes("free")) return "free";
+  if (text.includes("免费增值") || text.includes("freemium")) return "freemium";
+  if (text.includes("订阅") || text.includes("月付") || text.includes("yearly") || text.includes("monthly")) return "subscription";
+  if (text.includes("付费") || text.includes("一次性") || text.includes("lifetime")) return "one-time";
+  return null;
+}
+
 export default function ToolDetailPage({ tool, relatedTools }: ToolDetailPageProps) {
   if (!tool) {
     return (
       <div className="page-shell">
-        <Header />
+        <Header currentPath="/tools" currentRoute="/tools" />
         <main className="mx-auto w-full max-w-[1440px] px-4 py-20 text-center sm:px-6 lg:px-8">
           <h1 className="text-3xl font-semibold text-slate-950">暂无相关内容</h1>
           <p className="mt-3 text-sm text-slate-600">当前工具信息暂未收录，你可以返回列表继续浏览其他内容。</p>
@@ -54,7 +51,7 @@ export default function ToolDetailPage({ tool, relatedTools }: ToolDetailPagePro
 
   return (
     <div className="page-shell">
-      <Header />
+      <Header currentPath={`/tools/${tool.slug}`} currentRoute={`/tools/${tool.slug}`} />
 
       <main className="py-8 md:py-10">
         <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8">
@@ -74,16 +71,26 @@ export default function ToolDetailPage({ tool, relatedTools }: ToolDetailPagePro
                   <div className="flex flex-wrap items-center gap-3">
                     <h1 className="text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">{tool.name}</h1>
                     <span className="flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-lg font-semibold text-amber-600">
-                      ⭐ {tool.score.toFixed(1)}
+                      ★ {tool.score.toFixed(1)}
                     </span>
                     <Link href={categoryHref} className="rounded-full bg-white/70 px-3 py-1 text-sm font-medium text-slate-700">
                       {tool.category}
                     </Link>
-                    <span className={`rounded-full px-3 py-1 text-sm font-semibold ${STATUS_STYLES[tool.status]}`}>
-                      {STATUS_LABELS[tool.status]}
-                    </span>
                   </div>
                   <p className="mt-4 max-w-3xl text-base leading-8 text-slate-600 md:text-lg">{tool.summary}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {buildDecisionBadges({
+                      price: tool.price,
+                      summary: tool.summary,
+                      tags: tool.tags,
+                      platforms: tool.platforms,
+                      vpnRequired: tool.vpnRequired,
+                    }).map((badge) => (
+                      <span key={badge} className="rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-slate-700">
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -128,13 +135,6 @@ export default function ToolDetailPage({ tool, relatedTools }: ToolDetailPagePro
                 </div>
               ) : null}
 
-              {tool.editorComment ? (
-                <div className="panel-base rounded-[28px] p-6">
-                  <h2 className="text-xl font-semibold text-slate-900">编辑点评</h2>
-                  <p className="mt-4 text-sm leading-8 text-slate-700">{tool.editorComment}</p>
-                </div>
-              ) : null}
-
               <div className="panel-base rounded-[28px] p-6">
                 <h2 className="text-xl font-semibold text-slate-900">标签</h2>
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -152,34 +152,24 @@ export default function ToolDetailPage({ tool, relatedTools }: ToolDetailPagePro
                 <div className="panel-base rounded-[28px] p-5">
                   <h2 className="text-lg font-semibold text-slate-900">同类工具</h2>
                   <div className="mt-4 space-y-4">
-                    {relatedTools.map((item) => {
-                      // Detect price type from price field first, then summary and tags
-                      const text = `${item.price} ${item.name} ${item.summary} ${item.tags.join(' ')}`.toLowerCase();
-                      let priceLabel: string | null = null;
-                      if (text.includes('免费') || text.includes('free')) {
-                        priceLabel = 'free';
-                      } else if (text.includes('免费增值') || text.includes('freemium')) {
-                        priceLabel = 'freemium';
-                      } else if (text.includes('订阅') || text.includes('月付') || text.includes('yearly') || text.includes('monthly')) {
-                        priceLabel = 'subscription';
-                      } else if (text.includes('付费') || text.includes('一次性') || text.includes('lifetime')) {
-                        priceLabel = 'one-time';
-                      }
-                      return (
-                        <ToolCard
-                          key={item.slug}
-                          slug={item.slug}
-                          name={item.name}
-                          summary={item.summary}
-                          tags={item.tags}
-                          url={item.officialUrl}
-                          logoPath={item.logoPath}
-                          status={item.status}
-                          score={item.score}
-                          priceLabel={priceLabel}
-                        />
-                      );
-                    })}
+                    {relatedTools.map((item) => (
+                      <ToolCard
+                        key={item.slug}
+                        slug={item.slug}
+                        name={item.name}
+                        summary={item.summary}
+                        tags={item.tags}
+                        url={item.officialUrl}
+                        logoPath={item.logoPath}
+                        score={item.score}
+                        priceLabel={detectPriceLabel(item)}
+                        decisionBadges={buildDecisionBadges({
+                          price: item.price,
+                          summary: item.summary,
+                          tags: item.tags,
+                        })}
+                      />
+                    ))}
                   </div>
                 </div>
               ) : null}

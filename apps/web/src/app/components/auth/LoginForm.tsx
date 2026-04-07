@@ -2,7 +2,7 @@
 
 import { LoaderCircle } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { AuthApiError, type AuthUser, loginAuth } from "@/src/app/lib/auth-api";
+import { AuthApiError, resolveAuthFailureMessage, type AuthUser, loginAuth } from "@/src/app/lib/auth-api";
 import AuthField from "./AuthField";
 import PasswordField from "./PasswordField";
 import SocialLoginButtons from "./SocialLoginButtons";
@@ -62,7 +62,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         return;
       }
 
-      setErrors({ form: "登录请求失败了，请确认后端服务已经启动，再稍后重试。" });
+      setErrors({ form: await resolveAuthFailureMessage() });
     } finally {
       setLoading(false);
     }

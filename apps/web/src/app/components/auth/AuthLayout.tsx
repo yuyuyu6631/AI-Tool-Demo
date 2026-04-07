@@ -20,7 +20,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
               <PlatformLogo />
               <div>
                 <p className="text-lg font-semibold tracking-tight text-slate-950">星点评</p>
-                <p className="text-sm text-slate-500">AI 工具点评与导航</p>
+                <p className="text-sm text-slate-500">AI 工具点评与发现</p>
               </div>
             </Link>
 

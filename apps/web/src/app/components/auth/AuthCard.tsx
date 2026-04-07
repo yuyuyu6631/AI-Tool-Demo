@@ -176,11 +176,7 @@ export default function AuthCard({ nextHref }: AuthCardProps) {
         ) : null}
 
         <div className="mt-8">
-          {tab === "login" ? (
-            <LoginForm onSuccess={handleSuccess} />
-          ) : (
-            <RegisterForm onSuccess={handleSuccess} />
-          )}
+          {tab === "login" ? <LoginForm onSuccess={handleSuccess} /> : <RegisterForm onSuccess={handleSuccess} />}
         </div>
       </div>
     </section>

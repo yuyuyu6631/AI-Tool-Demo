@@ -1,5 +1,3 @@
-"use client";
-
 interface BrandMarkProps {
   label: string;
   size?: "sm" | "md" | "lg";
@@ -35,7 +33,7 @@ export default function BrandMark({ label, size = "md" }: BrandMarkProps) {
 
   return (
     <div
-      aria-label={`${label} 标识`}
+      aria-label={`${label} mark`}
       className={`brand-mark ${sizeClass} flex items-center justify-center font-semibold tracking-[0.14em]`}
     >
       {getInitials(label)}

@@ -4,6 +4,8 @@ import json
 import re
 from urllib import error, request
 
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
 from app.core.config import settings
 from app.schemas.recommend import RecommendRequest
 from app.services.prompt_builder import build_prompt
@@ -46,6 +48,16 @@ def _extract_json_block(content: str) -> dict | None:
             return None
 
 
+@retry(
+    stop=stop_after_attempt(2),
+    wait=wait_exponential(multiplier=1, min=1, max=4),
+    retry=retry_if_exception_type((error.URLError, TimeoutError)),
+)
+def _call_ai_api(api_request: request.Request) -> dict:
+    with request.urlopen(api_request, timeout=20) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
 def rank_with_ai(payload: RecommendRequest, candidates: list) -> tuple[list, dict[str, str]]:
     if not settings.ai_api_key or not settings.ai_model or not settings.ai_openai_base_url:
         return candidates, {}
@@ -77,10 +89,9 @@ def rank_with_ai(payload: RecommendRequest, candidates: list) -> tuple[list, dic
     )
 
     try:
-        with request.urlopen(api_request, timeout=20) as response:
-            payload_data = json.loads(response.read().decode("utf-8"))
+        payload_data = _call_ai_api(api_request)
     except (error.URLError, TimeoutError, ValueError) as e:
-        print(f"[AI_CLIENT] API call failed: {type(e).__name__}: {e}")
+        print(f"[AI_CLIENT] API call failed after retries: {type(e).__name__}: {e}")
         return candidates, {}
 
     content = (

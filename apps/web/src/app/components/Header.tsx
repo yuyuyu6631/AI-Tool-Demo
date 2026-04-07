@@ -1,35 +1,17 @@
-"use client";
-
 import Link from "next/link";
-import { LoaderCircle, LogOut, Menu, Search, UserRound, X } from "lucide-react";
-import { useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { Search, ShieldCheck } from "lucide-react";
+import HeaderAuthControls from "./HeaderAuthControls";
+import HeaderMobileMenu from "./HeaderMobileMenu";
 import PlatformLogo from "./PlatformLogo";
-import { useAuth } from "./auth/AuthProvider";
+import { headerNavItems, isHeaderNavActive } from "./header-nav";
 
-const navItems = [
-  { href: "/", label: "首页" },
-  { href: "/tools", label: "工具目录" },
-  { href: "/rankings", label: "榜单" },
-  { href: "/scenarios", label: "场景" },
-];
+interface HeaderProps {
+  currentPath: string;
+  currentRoute?: string;
+}
 
-export default function Header() {
-  const [open, setOpen] = useState(false);
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const { currentUser, status, logout } = useAuth();
-  const currentRoute = pathname === "/" && !searchParams.toString() ? "/" : `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
-  const authHref = pathname === "/auth" ? "/auth" : `/auth?next=${encodeURIComponent(currentRoute)}`;
-
-  async function handleLogout() {
-    try {
-      await logout();
-      setOpen(false);
-    } catch {
-      // Keep the current UI if logout fails.
-    }
-  }
+export default function Header({ currentPath, currentRoute = currentPath }: HeaderProps) {
+  const authHref = currentPath === "/auth" ? "/auth" : `/auth?next=${encodeURIComponent(currentRoute)}`;
 
   return (
     <header className="site-header sticky top-0 z-50">
@@ -39,12 +21,12 @@ export default function Header() {
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex">
-          {navItems.map((item) => (
+          {headerNavItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={`nav-link text-sm font-medium transition ${
-                pathname === item.href ? "is-active text-slate-950" : "text-slate-600 hover:text-slate-900"
+                isHeaderNavActive(currentPath, item.href) ? "is-active text-slate-950" : "text-slate-600 hover:text-slate-900"
               }`}
             >
               {item.label}
@@ -53,82 +35,26 @@ export default function Header() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
+          <div
+            className="hidden max-w-[320px] items-start gap-2 rounded-full border border-white/45 bg-white/70 px-4 py-2 text-left text-[11px] leading-4 text-slate-700 shadow-sm backdrop-blur-md lg:inline-flex"
+            title="持续评测、可追溯的 AI 工具推荐"
+            aria-label="持续评测、可追溯的 AI 工具推荐"
+          >
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-slate-700" aria-hidden="true" />
+            <span className="min-w-0">
+              <span className="block font-medium text-slate-900">持续评测，可追溯推荐</span>
+              <span className="block text-slate-500">围绕任务给建议，而不只是工具链接列表</span>
+            </span>
+          </div>
           <Link href="/tools" className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/70 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-white">
             <Search className="h-4 w-4" />
-            查看全部
+            浏览工具
           </Link>
-          {status === "loading" ? (
-            <span className="inline-flex h-10 items-center gap-2 rounded-full border border-white/40 bg-white/70 px-4 text-sm text-slate-600">
-              <LoaderCircle className="h-4 w-4 animate-spin" />
-              登录状态读取中
-            </span>
-          ) : currentUser ? (
-            <>
-              <Link href={authHref} className="user-chip inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-slate-800">
-                <UserRound className="h-4 w-4" />
-                {currentUser.username}
-              </Link>
-              <button
-                type="button"
-                onClick={() => void handleLogout()}
-                className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/70 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-white"
-              >
-                <LogOut className="h-4 w-4" />
-                退出
-              </button>
-            </>
-          ) : (
-            <Link href={authHref} className="btn-primary inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium">
-              <UserRound className="h-4 w-4" />
-              登录 / 注册
-            </Link>
-          )}
+          <HeaderAuthControls authHref={authHref} />
         </div>
 
-        <button
-          type="button"
-          className="rounded-xl border border-white/40 bg-white/75 p-2 md:hidden"
-          onClick={() => setOpen((value) => !value)}
-          aria-label={open ? "关闭导航" : "打开导航"}
-        >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        <HeaderMobileMenu currentPath={currentPath} authHref={authHref} />
       </div>
-
-      {open ? (
-        <div className="border-t border-white/25 bg-white/85 md:hidden">
-          <div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-4 py-4 sm:px-6">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
-                  pathname === item.href ? "bg-white text-slate-950 shadow-sm" : "text-slate-700 hover:bg-white"
-                }`}
-                onClick={() => setOpen(false)}
-              >
-                {item.label}
-              </Link>
-            ))}
-            <Link
-              href={authHref}
-              className="rounded-xl border border-white/40 bg-white/70 px-3 py-2 text-sm font-medium text-slate-800 transition hover:bg-white"
-              onClick={() => setOpen(false)}
-            >
-              {currentUser ? `账号：${currentUser.username}` : "登录 / 注册"}
-            </Link>
-            {currentUser ? (
-              <button
-                type="button"
-                onClick={() => void handleLogout()}
-                className="rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-white"
-              >
-                退出登录
-              </button>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
     </header>
   );
 }

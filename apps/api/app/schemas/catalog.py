@@ -31,7 +31,6 @@ class ToolsDirectoryResponse(BaseModel):
     categories: list[FacetOption]
     tags: list[FacetOption]
     statuses: list[FacetOption]
-    priceFacets: list[FacetOption]
     presets: list[PresetView]
 
 

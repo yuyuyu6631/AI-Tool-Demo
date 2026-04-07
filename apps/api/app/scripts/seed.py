@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import Base, SessionLocal, engine
 from app.models.models import Category, Tool
+from app.services.catalog_views_seed import seed_catalog_views
 from app.services.logo_assets import LOGO_SOURCE_FALLBACK, normalize_logo_path, resolve_logo_status
 from app.services.seed_data import CATEGORIES, TOOLS
 
@@ -45,8 +46,13 @@ def run() -> None:
                     )
                 )
 
+        session.flush()
+        ranking_count, scenario_count = seed_catalog_views(session)
         session.commit()
-        print("Database tables and seed data ensured.")
+        print(
+            f"Database tables and seed data ensured. "
+            f"Catalog views refreshed: {ranking_count} rankings, {scenario_count} scenarios."
+        )
     finally:
         session.close()
 

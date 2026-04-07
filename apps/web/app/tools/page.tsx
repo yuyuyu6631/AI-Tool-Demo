@@ -2,8 +2,6 @@ import ToolsPage from "@/src/app/pages/ToolsPage";
 import { fetchDirectory } from "@/src/app/lib/catalog-api";
 import type { ToolsDirectoryResponse } from "@/src/app/lib/catalog-types";
 
-export const dynamic = "force-dynamic";
-
 const EMPTY_DIRECTORY: ToolsDirectoryResponse = {
   items: [],
   total: 0,
@@ -13,6 +11,7 @@ const EMPTY_DIRECTORY: ToolsDirectoryResponse = {
   categories: [],
   tags: [],
   statuses: [],
+  priceFacets: [],
   presets: [],
 };
 
@@ -30,7 +29,7 @@ export default async function Page({ searchParams }: ToolsRouteProps) {
     q: readValue(params.q),
     category: readValue(params.category),
     tag: readValue(params.tag),
-    status: readValue(params.status),
+    price: readValue(params.price),
     sort: readValue(params.sort),
     view: readValue(params.view),
     page: readValue(params.page),
@@ -40,7 +39,7 @@ export default async function Page({ searchParams }: ToolsRouteProps) {
   if (state.q) query.set("q", state.q);
   if (state.category) query.set("category", state.category);
   if (state.tag) query.set("tag", state.tag);
-  query.set("status", state.status ?? "published");
+  if (state.price) query.set("price", state.price);
   if (state.sort) query.set("sort", state.sort);
   if (state.view) query.set("view", state.view);
   if (state.page) query.set("page", state.page);

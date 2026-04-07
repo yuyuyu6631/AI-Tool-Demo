@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session, sessionmaker
 os.environ["DATABASE_URL"] = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'test_catalog_cases.db')}"
 
 import app.services.catalog_service as catalog_svc  # noqa: E402
+import app.db.session as session_mod  # noqa: E402
 from app.db.session import Base, get_db  # noqa: E402
-from app.main import app  # noqa: E402
+from app.main import create_app  # noqa: E402
 from app.models.models import (  # noqa: E402
     Category,
     Ranking,
@@ -21,12 +22,15 @@ from app.models.models import (  # noqa: E402
     ToolTag,
 )
 
+app = create_app()
+
 _TEST_DB_PATH = os.path.join(os.path.dirname(__file__), "test_catalog_cases.db")
 _test_engine = create_engine(
     f"sqlite:///{_TEST_DB_PATH}",
     connect_args={"check_same_thread": False},
 )
 _TestSession = sessionmaker(bind=_test_engine, autoflush=False, autocommit=False, class_=Session)
+_ORIGINAL_SESSION_LOCAL = session_mod.SessionLocal
 
 
 def _add_tool(
@@ -39,6 +43,7 @@ def _add_tool(
     score: float,
     created_on: date,
     tags: list[str],
+    description: str | None = None,
     status: str = "published",
     featured: bool = False,
 ) -> Tool:
@@ -47,7 +52,7 @@ def _add_tool(
         name=name,
         category_name=category_name,
         summary=summary,
-        description=f"{name} description",
+        description=description or f"{name} description",
         editor_comment="",
         official_url=f"https://example.com/{slug}",
         logo_path=None,
@@ -74,6 +79,7 @@ def _add_tool(
 
 
 def setup_module():
+    session_mod.SessionLocal = _TestSession
     Base.metadata.create_all(bind=_test_engine)
     catalog_svc.SessionLocal = _TestSession
 
@@ -117,9 +123,21 @@ def setup_module():
                 name="Gamma",
                 category_name="Office",
                 summary="presentation builder",
+                description="AI presentation builder for slides and storytelling",
                 score=8.7,
                 created_on=date(2026, 3, 8),
                 tags=["slides"],
+            ),
+            _add_tool(
+                db,
+                slug="data-pilot",
+                name="Data Pilot",
+                category_name="Office",
+                summary="business intelligence workspace",
+                description="Built for dashboard building, analytics workflows, and report generation teams.",
+                score=8.4,
+                created_on=date(2026, 3, 7),
+                tags=["analytics", "report"],
             ),
             _add_tool(
                 db,
@@ -222,9 +240,9 @@ def setup_module():
         db.add_all(
             [
                 RankingItem(ranking_id=top100.id, tool_id=tools[0].id, rank_order=1, reason="best"),
-                RankingItem(ranking_id=top100.id, tool_id=tools[10].id, rank_order=2, reason="draft"),
+                RankingItem(ranking_id=top100.id, tool_id=tools[11].id, rank_order=2, reason="draft"),
                 RankingItem(ranking_id=top100.id, tool_id=tools[2].id, rank_order=3, reason="strong"),
-                RankingItem(ranking_id=empty_ranking.id, tool_id=tools[10].id, rank_order=1, reason="draft"),
+                RankingItem(ranking_id=empty_ranking.id, tool_id=tools[11].id, rank_order=1, reason="draft"),
             ]
         )
 
@@ -248,8 +266,8 @@ def setup_module():
             [
                 ScenarioTool(scenario_id=writing.id, tool_id=tools[0].id, is_primary=True),
                 ScenarioTool(scenario_id=writing.id, tool_id=tools[2].id, is_primary=False),
-                ScenarioTool(scenario_id=writing.id, tool_id=tools[10].id, is_primary=False),
-                ScenarioTool(scenario_id=empty_scenario.id, tool_id=tools[10].id, is_primary=True),
+                ScenarioTool(scenario_id=writing.id, tool_id=tools[11].id, is_primary=False),
+                ScenarioTool(scenario_id=empty_scenario.id, tool_id=tools[11].id, is_primary=True),
             ]
         )
         db.commit()
@@ -258,6 +276,7 @@ def setup_module():
 
 
 def teardown_module():
+    session_mod.SessionLocal = _ORIGINAL_SESSION_LOCAL
     Base.metadata.drop_all(bind=_test_engine)
     try:
         if os.path.exists(_TEST_DB_PATH):
@@ -274,7 +293,6 @@ def _override_get_db():
         db.close()
 
 
-app.dependency_overrides[get_db] = _override_get_db
 client = TestClient(app)
 
 
@@ -296,7 +314,7 @@ def test_tools_directory_default_response_shape_and_visibility():
     }
     assert payload["page"] == 1
     assert payload["pageSize"] == 9
-    assert payload["total"] == 10
+    assert payload["total"] == 11
     assert len(payload["items"]) == 9
     assert payload["hasMore"] is True
     assert {item["slug"] for item in payload["items"]}.isdisjoint({"draft-tool", "archived-tool"})
@@ -308,9 +326,9 @@ def test_tools_directory_page_two_returns_only_second_page_slice():
     assert response.status_code == 200
     payload = response.json()
     assert payload["page"] == 2
-    assert payload["total"] == 10
+    assert payload["total"] == 11
     assert payload["hasMore"] is False
-    assert [item["slug"] for item in payload["items"]] == ["zeta-flow"]
+    assert [item["slug"] for item in payload["items"]] == ["meeting-note", "zeta-flow"]
 
 
 def test_tools_directory_supports_combined_filters_and_facets():
@@ -335,7 +353,7 @@ def test_tools_directory_status_all_includes_non_published_rows():
     assert "draft-tool" in slugs
     assert "archived-tool" in slugs
     statuses = {item["slug"]: item["count"] for item in payload["statuses"]}
-    assert statuses == {"all": 12, "published": 10, "draft": 1, "archived": 1}
+    assert statuses == {"all": 13, "published": 11, "draft": 1, "archived": 1}
 
 
 def test_tools_directory_latest_and_name_sorting():
@@ -346,6 +364,24 @@ def test_tools_directory_latest_and_name_sorting():
     assert [item["slug"] for item in latest_response.json()["items"]] == ["chatgpt", "claude", "gamma"]
     assert name_response.status_code == 200
     assert [item["slug"] for item in name_response.json()["items"]] == ["agent-hub", "chatgpt", "claude"]
+
+
+def test_tools_directory_task_query_matches_data_tools():
+    response = client.get("/api/tools?q=做数据")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] >= 1
+    assert "data-pilot" in [item["slug"] for item in payload["items"]]
+
+
+def test_tools_directory_task_query_matches_writing_tools():
+    response = client.get("/api/tools?q=写文案")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] >= 1
+    assert {"notion-ai", "free-writer", "meeting-note"}.intersection({item["slug"] for item in payload["items"]})
 
 
 def test_category_tools_only_return_published_tools():
@@ -377,8 +413,8 @@ def test_scenarios_hide_empty_scenarios_and_unpublished_items():
     assert detail_response.status_code == 200
     payload = detail_response.json()
     assert payload["toolCount"] == 2
-    assert payload["primaryTools"] == ["chatgpt"]
-    assert payload["alternativeTools"] == ["gamma"]
+    assert [item["slug"] for item in payload["primaryTools"]] == ["chatgpt"]
+    assert [item["slug"] for item in payload["alternativeTools"]] == ["gamma"]
     assert empty_response.status_code == 404
 
 

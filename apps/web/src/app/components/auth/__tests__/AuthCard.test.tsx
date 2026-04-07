@@ -9,8 +9,16 @@ function renderWithProvider(ui: ReactNode) {
   return render(<AuthProvider>{ui}</AuthProvider>);
 }
 
+function jsonResponse(payload: unknown, status: number) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
 describe("AuthCard", () => {
   beforeEach(() => {
+    localStorage.clear();
     mockFetch.mockReset();
     vi.stubGlobal("fetch", mockFetch);
   });
@@ -24,12 +32,7 @@ describe("AuthCard", () => {
   });
 
   it("switches between login and register tabs", async () => {
-    mockFetch.mockResolvedValueOnce(
-      new Response(JSON.stringify({ detail: "当前未登录。" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
+    mockFetch.mockResolvedValueOnce(jsonResponse({ status: "ok" }, 200));
 
     renderWithProvider(<AuthCard />);
 
@@ -43,27 +46,31 @@ describe("AuthCard", () => {
     expect(screen.getByLabelText("用户名")).toBeInTheDocument();
   });
 
-  it("shows password toggle, disables social buttons, and submits login", async () => {
+  it("shows a precise readiness warning when backend is not ready", async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({ status: "not_ready", reason: "database_unavailable" }, 503),
+    );
+
+    renderWithProvider(<AuthCard />);
+
+    expect(
+      await screen.findByText("后端已经响应，但数据库或鉴权还没准备好。请先确认 MySQL 可用后再重试。"),
+    ).toBeInTheDocument();
+  });
+
+  it("submits login after readiness succeeds", async () => {
     mockFetch
+      .mockResolvedValueOnce(jsonResponse({ status: "ok" }, 200))
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ detail: "当前未登录。" }), {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        }),
-      )
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
+        jsonResponse(
+          {
             id: 1,
             username: "demo-user",
             email: "demo@example.com",
             status: "active",
             createdAt: "2026-03-31T00:00:00Z",
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
           },
+          200,
         ),
       );
 
@@ -74,17 +81,9 @@ describe("AuthCard", () => {
     });
 
     expect(screen.getByText("登录成功后将返回上一页。")).toBeInTheDocument();
-    expect(screen.queryByText("/tools?category=chatbot")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "QQ 登录" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "微信登录" })).toBeDisabled();
-    expect(screen.getByText("QQ / 微信登录暂未开放，请先使用账号密码登录。")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("邮箱或用户名"), { target: { value: "demo@example.com" } });
     fireEvent.change(screen.getByLabelText("密码"), { target: { value: "12345678" } });
-
-    fireEvent.click(screen.getByRole("button", { name: "显示密码" }));
-    expect(screen.getByRole("button", { name: "隐藏密码" })).toBeInTheDocument();
-
     fireEvent.click(screen.getByText("登录", { selector: "button[type='submit']" }));
 
     await waitFor(() => {

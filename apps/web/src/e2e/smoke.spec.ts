@@ -2,10 +2,10 @@ import { expect, test } from "@playwright/test";
 
 test("core directory path, rankings, and scenarios use live routes", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("button", { name: "开始搜索" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "开始筛选" })).toBeVisible();
 
-  await page.getByPlaceholder("搜索工具名称、用途或标签，例如：AI PPT、代码编辑器、会议总结").fill("AI");
-  await page.getByRole("button", { name: "开始搜索" }).click();
+  await page.getByPlaceholder("想写文案 / 做海报 / 写代码？丢需求我帮你挑工具").fill("AI");
+  await page.getByRole("button", { name: "开始筛选" }).click();
   await expect(page).toHaveURL(/\/tools\?q=AI/);
   await expect(page.getByRole("heading", { name: "搜索结果" })).toBeVisible();
 
@@ -17,8 +17,8 @@ test("core directory path, rankings, and scenarios use live routes", async ({ pa
   await expect(externalLink).toBeVisible();
 
   await page.goto("/rankings", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "工具榜单" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "严选榜单" })).toBeVisible();
 
   await page.goto("/scenarios", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "使用场景" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "按真实人群和场景找工具" })).toBeVisible();
 });

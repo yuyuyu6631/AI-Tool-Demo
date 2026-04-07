@@ -63,8 +63,8 @@ class ToolCategory(Base):
     __table_args__ = (UniqueConstraint("tool_id", "category_id", name="uq_tool_category"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    tool_id: Mapped[int] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"))
-    category_id: Mapped[int] = mapped_column(ForeignKey("categories.id", ondelete="CASCADE"))
+    tool_id: Mapped[int] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"), index=True)
+    category_id: Mapped[int] = mapped_column(ForeignKey("categories.id", ondelete="CASCADE"), index=True)
 
     tool: Mapped["Tool"] = relationship(back_populates="categories")
     category: Mapped["Category"] = relationship(back_populates="tools")
@@ -84,8 +84,8 @@ class ToolTag(Base):
     __table_args__ = (UniqueConstraint("tool_id", "tag_id", name="uq_tool_tag"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    tool_id: Mapped[int] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"))
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tags.id", ondelete="CASCADE"))
+    tool_id: Mapped[int] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"), index=True)
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tags.id", ondelete="CASCADE"), index=True)
 
     tool: Mapped["Tool"] = relationship(back_populates="tags")
     tag: Mapped["Tag"] = relationship(back_populates="tools")
@@ -107,9 +107,11 @@ class ScenarioTool(Base):
     __table_args__ = (UniqueConstraint("scenario_id", "tool_id", name="uq_scenario_tool"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    scenario_id: Mapped[int] = mapped_column(ForeignKey("scenarios.id", ondelete="CASCADE"))
-    tool_id: Mapped[int] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"))
+    scenario_id: Mapped[int] = mapped_column(ForeignKey("scenarios.id", ondelete="CASCADE"), index=True)
+    tool_id: Mapped[int] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"), index=True)
     is_primary: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    tool: Mapped["Tool"] = relationship()
 
 
 class Ranking(Base, TimestampMixin):
@@ -126,17 +128,19 @@ class RankingItem(Base):
     __table_args__ = (UniqueConstraint("ranking_id", "tool_id", name="uq_ranking_tool"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    ranking_id: Mapped[int] = mapped_column(ForeignKey("rankings.id", ondelete="CASCADE"))
-    tool_id: Mapped[int] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"))
+    ranking_id: Mapped[int] = mapped_column(ForeignKey("rankings.id", ondelete="CASCADE"), index=True)
+    tool_id: Mapped[int] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"), index=True)
     rank_order: Mapped[int] = mapped_column(Integer)
     reason: Mapped[str] = mapped_column(String(255))
+
+    tool: Mapped["Tool"] = relationship()
 
 
 class Source(Base, TimestampMixin):
     __tablename__ = "sources"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    tool_id: Mapped[int | None] = mapped_column(ForeignKey("tools.id", ondelete="SET NULL"), nullable=True)
+    tool_id: Mapped[int | None] = mapped_column(ForeignKey("tools.id", ondelete="SET NULL"), nullable=True, index=True)
     source_type: Mapped[str] = mapped_column(String(64))
     source_url: Mapped[str] = mapped_column(String(255))
 
@@ -156,7 +160,7 @@ class CrawlSnapshot(Base, TimestampMixin):
     __tablename__ = "crawl_snapshots"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    crawl_job_id: Mapped[int | None] = mapped_column(ForeignKey("crawl_jobs.id", ondelete="SET NULL"), nullable=True)
+    crawl_job_id: Mapped[int | None] = mapped_column(ForeignKey("crawl_jobs.id", ondelete="SET NULL"), nullable=True, index=True)
     tool_slug: Mapped[str] = mapped_column(String(120))
     raw_payload: Mapped[str] = mapped_column(Text)
     parsed_payload: Mapped[str] = mapped_column(Text)
@@ -167,7 +171,7 @@ class ToolUpdate(Base, TimestampMixin):
     __tablename__ = "tool_updates"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    tool_id: Mapped[int] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"))
+    tool_id: Mapped[int] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"), index=True)
     status: Mapped[str] = mapped_column(String(32), default="pending_review")
     proposed_payload: Mapped[str] = mapped_column(Text)
     reviewer_note: Mapped[str | None] = mapped_column(Text, nullable=True)

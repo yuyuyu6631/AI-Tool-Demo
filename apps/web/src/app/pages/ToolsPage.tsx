@@ -5,10 +5,17 @@ import Footer from "../components/Footer";
 import Breadcrumbs from "../components/Breadcrumbs";
 import ToolCard from "../components/ToolCard";
 import type { ToolsDirectoryResponse } from "../lib/catalog-types";
-import { buildToolsHref } from "../lib/catalog-utils";
+import { buildDecisionBadges, buildToolsHref, derivePriceFacets } from "../lib/catalog-utils";
 
-const CATEGORY_LIMIT = 8;
-const TAG_LIMIT = 14;
+const CATEGORY_LIMIT = 6;
+const TAG_LIMIT = 8;
+
+const DECISION_SHORTCUTS = [
+  { id: "latest", label: "最新", hrefKey: "view", value: "latest" },
+  { id: "hot", label: "最热", hrefKey: "view", value: "hot" },
+  { id: "free", label: "免费优先", hrefKey: "price", value: "free" },
+  { id: "subscription", label: "需要付费", hrefKey: "price", value: "subscription" },
+] as const;
 
 interface ToolsPageProps {
   directory: ToolsDirectoryResponse;
@@ -16,7 +23,6 @@ interface ToolsPageProps {
     q?: string;
     category?: string;
     tag?: string;
-    status?: string;
     price?: string;
     sort?: string;
     view?: string;
@@ -43,35 +49,47 @@ function buildPagination(currentPage: number, totalPages: number) {
   return tokens;
 }
 
+function detectPriceLabel(toolText: string) {
+  if (toolText.includes("免费") || toolText.includes("free")) return "free";
+  if (toolText.includes("免费增值") || toolText.includes("freemium")) return "freemium";
+  if (toolText.includes("订阅") || toolText.includes("月付") || toolText.includes("yearly") || toolText.includes("monthly") || toolText.includes("subscription")) {
+    return "subscription";
+  }
+  if (toolText.includes("付费") || toolText.includes("一次性") || toolText.includes("lifetime")) return "one-time";
+  return null;
+}
+
 export default function ToolsPage({ directory, state, loadState = "idle" }: ToolsPageProps) {
   const activeView = state.view || "hot";
   const activeSort = state.sort || "featured";
+  const priceFacets = directory.priceFacets ?? derivePriceFacets(directory.items);
+  const visibleCategories = directory.categories.slice(0, CATEGORY_LIMIT);
+  const overflowCategories = directory.categories.slice(CATEGORY_LIMIT);
+  const visibleTags = directory.tags.slice(0, TAG_LIMIT);
+  const overflowTags = directory.tags.slice(TAG_LIMIT);
   const selectedCategory = directory.categories.find((item) => item.slug === state.category);
   const selectedTag = directory.tags.find((item) => item.slug === state.tag);
-  const selectedStatus = directory.statuses.find((item) => item.slug === state.status);
-  const selectedPrice = directory.priceFacets.find((item) => item.slug === state.price);
+  const selectedPrice = priceFacets.find((item) => item.slug === state.price);
   const showEmpty = directory.items.length === 0;
   const current = {
     q: state.q,
     category: state.category,
     tag: state.tag,
-    status: state.status,
     price: state.price,
     sort: state.sort,
     view: state.view,
     page: state.page,
   };
-  const pageTitle = state.q ? "搜索结果" : "工具分类";
+  const pageTitle = state.q ? "搜索结果" : "工具目录";
   const currentPage = Number(state.page || directory.page || 1);
   const totalPages = Math.max(1, Math.ceil(directory.total / Math.max(1, directory.pageSize || 9)));
   const pagination = buildPagination(currentPage, totalPages);
-  const isFiltered = Boolean(
-    state.q || state.category || state.tag || state.status || state.price || activeView !== "hot" || activeSort !== "featured",
-  );
+  const currentRoute = buildToolsHref(current, {});
+  const isFiltered = Boolean(state.q || state.category || state.tag || state.price || activeView !== "hot" || activeSort !== "featured");
 
   return (
     <div className="page-shell">
-      <Header />
+      <Header currentPath="/tools" currentRoute={currentRoute} />
 
       <main className="py-8 md:py-10">
         <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8">
@@ -80,12 +98,10 @@ export default function ToolsPage({ directory, state, loadState = "idle" }: Tool
           <section className="panel-base rounded-[32px] p-5 md:p-6">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Tools</p>
-                <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">
-                  {pageTitle}
-                </h1>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">工具目录</p>
+                <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">{pageTitle}</h1>
                 <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
-                  支持按关键词搜索工具名称、用途和标签，并结合分类、状态、标签继续筛选，帮助你更快找到合适的工具。
+                  这里不是把工具堆给你，而是帮你按需求、分类、标签和价格更快缩小范围，再进入详情页判断是否适合。
                 </p>
               </div>
 
@@ -97,21 +113,40 @@ export default function ToolsPage({ directory, state, loadState = "idle" }: Tool
                       type="search"
                       name="q"
                       defaultValue={state.q || ""}
-                      placeholder="搜索工具名称、标签或用途"
+                      placeholder="想写文案、做海报、写代码？告诉我你的任务。"
                       className="w-full rounded-[18px] border border-white/50 bg-white/80 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white"
                     />
                     {state.view ? <input type="hidden" name="view" value={state.view} /> : null}
                     {state.category ? <input type="hidden" name="category" value={state.category} /> : null}
                     {state.tag ? <input type="hidden" name="tag" value={state.tag} /> : null}
-                    {state.status ? <input type="hidden" name="status" value={state.status} /> : null}
                     {state.price ? <input type="hidden" name="price" value={state.price} /> : null}
                     {state.sort ? <input type="hidden" name="sort" value={state.sort} /> : null}
                   </div>
                   <button type="submit" className="btn-primary rounded-[18px] px-5 py-3 text-sm font-semibold">
-                    开始搜索
+                    开始筛选
                   </button>
                 </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {DECISION_SHORTCUTS.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={buildToolsHref(current, { [item.hrefKey]: item.value, page: 1 })}
+                      className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
+                        (item.hrefKey === "view" ? activeView === item.value : state.price === item.value)
+                          ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
+                          : "border border-white/45 bg-white/70 text-slate-700 hover:bg-white"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
               </form>
+            </div>
+
+            <div className="mt-6 rounded-[28px] border border-white/40 bg-white/50 px-4 py-3 text-sm text-slate-600">
+              先说需求，再看工具。你也可以按热门预设、分类、标签和价格继续缩小范围。
             </div>
 
             <div className="mt-6 flex flex-wrap gap-2">
@@ -136,19 +171,38 @@ export default function ToolsPage({ directory, state, loadState = "idle" }: Tool
             </div>
           </section>
 
-          <section className="mt-6 grid gap-6 xl:grid-cols-[288px_minmax(0,1fr)]">
+          <section className="mt-6 grid items-start gap-6 xl:grid-cols-[288px_minmax(0,1fr)]">
             <aside className="xl:sticky xl:top-24 xl:self-start">
               <div className="panel-base rounded-[28px] p-5">
                 <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                   <SlidersHorizontal className="h-4 w-4" />
-                  筛选条件
+                  决策筛选
+                </div>
+
+                <div className="mt-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">快速入口</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {DECISION_SHORTCUTS.map((item) => (
+                      <Link
+                        key={`sidebar-${item.id}`}
+                        href={buildToolsHref(current, { [item.hrefKey]: item.value, page: 1 })}
+                        className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
+                          (item.hrefKey === "view" ? activeView === item.value : state.price === item.value)
+                            ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
+                            : "bg-white/70 text-slate-700 hover:bg-white"
+                        }`}
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="mt-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">排序</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {[
-                      { id: "featured", label: "推荐" },
+                      { id: "featured", label: "最热" },
                       { id: "latest", label: "最新" },
                       { id: "name", label: "名称" },
                     ].map((sortOption) => (
@@ -177,25 +231,23 @@ export default function ToolsPage({ directory, state, loadState = "idle" }: Tool
                     ) : null}
                   </div>
                   <div className="mt-3 space-y-2">
-                    {directory.categories.slice(0, CATEGORY_LIMIT).map((category) => (
+                    {visibleCategories.map((category) => (
                       <Link
                         key={category.slug}
                         href={buildToolsHref(current, { category: category.slug, page: 1 })}
                         className={`aside-item flex items-center justify-between rounded-2xl px-3 py-2 text-sm ${
-                          state.category === category.slug
-                            ? "bg-slate-900 text-white"
-                            : "bg-white/70 text-slate-700 hover:bg-white"
+                          state.category === category.slug ? "bg-slate-900 text-white" : "bg-white/70 text-slate-700 hover:bg-white"
                         }`}
                       >
                         <span>{category.label}</span>
                         <span className="text-xs opacity-70">{category.count}</span>
                       </Link>
                     ))}
-                    {directory.categories.length > CATEGORY_LIMIT ? (
+                    {overflowCategories.length > 0 ? (
                       <details className="rounded-2xl bg-white/60 p-3">
                         <summary className="cursor-pointer text-sm font-medium text-slate-700">查看更多分类</summary>
                         <div className="mt-3 space-y-2">
-                          {directory.categories.slice(CATEGORY_LIMIT).map((category) => (
+                          {overflowCategories.map((category) => (
                             <Link
                               key={category.slug}
                               href={buildToolsHref(current, { category: category.slug, page: 1 })}
@@ -211,33 +263,7 @@ export default function ToolsPage({ directory, state, loadState = "idle" }: Tool
                   </div>
                 </div>
 
-                <div className="mt-6">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">状态</p>
-                    {state.status ? (
-                      <Link href={buildToolsHref(current, { status: null, page: 1 })} className="text-xs text-slate-500 hover:text-slate-900">
-                        清除状态
-                      </Link>
-                    ) : null}
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {directory.statuses.map((status) => (
-                      <Link
-                        key={status.slug}
-                        href={buildToolsHref(current, { status: status.slug, page: 1 })}
-                        className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
-                          state.status === status.slug
-                            ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
-                            : "bg-white/70 text-slate-700 hover:bg-white"
-                        }`}
-                      >
-                        {status.label} ({status.count})
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-
-                {directory.priceFacets.length > 0 && (
+                {priceFacets.length > 0 ? (
                   <div className="mt-6">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">价格</p>
@@ -248,7 +274,7 @@ export default function ToolsPage({ directory, state, loadState = "idle" }: Tool
                       ) : null}
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {directory.priceFacets.map((price) => (
+                      {priceFacets.map((price) => (
                         <Link
                           key={price.slug}
                           href={buildToolsHref(current, { price: price.slug, page: 1 })}
@@ -263,7 +289,7 @@ export default function ToolsPage({ directory, state, loadState = "idle" }: Tool
                       ))}
                     </div>
                   </div>
-                )}
+                ) : null}
 
                 <div className="mt-6">
                   <div className="flex items-center justify-between gap-3">
@@ -275,7 +301,7 @@ export default function ToolsPage({ directory, state, loadState = "idle" }: Tool
                     ) : null}
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {directory.tags.slice(0, TAG_LIMIT).map((tag) => (
+                    {visibleTags.map((tag) => (
                       <Link
                         key={tag.slug}
                         href={buildToolsHref(current, { tag: tag.slug, page: 1 })}
@@ -289,19 +315,33 @@ export default function ToolsPage({ directory, state, loadState = "idle" }: Tool
                       </Link>
                     ))}
                   </div>
-                  {directory.tags.length > TAG_LIMIT ? (
-                    <p className="mt-3 text-xs leading-5 text-slate-500">
-                      标签较多时，优先展示高频标签。你也可以通过搜索直接定位具体工具。
-                    </p>
+                  {overflowTags.length > 0 ? (
+                    <details className="mt-3 rounded-2xl bg-white/60 p-3">
+                      <summary className="cursor-pointer text-sm font-medium text-slate-700">
+                        更多标签 ({overflowTags.length})
+                      </summary>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {overflowTags.map((tag) => (
+                          <Link
+                            key={tag.slug}
+                            href={buildToolsHref(current, { tag: tag.slug, page: 1 })}
+                            className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
+                              state.tag === tag.slug
+                                ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
+                                : "bg-white/70 text-slate-700 hover:bg-white"
+                            }`}
+                          >
+                            {tag.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </details>
                   ) : null}
                 </div>
 
                 {isFiltered ? (
                   <div className="mt-6">
-                    <Link
-                      href="/tools"
-                      className="inline-flex items-center gap-2 text-sm font-medium text-slate-900 hover:underline"
-                    >
+                    <Link href="/tools" className="inline-flex items-center gap-2 text-sm font-medium text-slate-900 hover:underline">
                       <RotateCcw className="h-4 w-4" />
                       重置筛选
                     </Link>
@@ -313,12 +353,8 @@ export default function ToolsPage({ directory, state, loadState = "idle" }: Tool
             <div>
               {loadState !== "idle" ? (
                 <div className="panel-base rounded-[28px] p-6">
-                  <h2 className="text-lg font-semibold text-slate-900">
-                    {loadState === "timeout" ? "目录加载超时" : "目录加载失败"}
-                  </h2>
-                  <p className="mt-2 text-sm leading-7 text-slate-600">
-                    当前未能完整获取工具目录数据。你可以刷新重试，或先清空筛选条件后重新访问。
-                  </p>
+                  <h2 className="text-lg font-semibold text-slate-900">{loadState === "timeout" ? "目录加载超时" : "目录加载失败"}</h2>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">当前未能完整获取工具目录数据。你可以刷新重试，或稍后再访问。</p>
                   <div className="mt-4 flex flex-wrap gap-3">
                     <Link href={buildToolsHref(current, {})} className="btn-primary rounded-full px-4 py-2 text-sm">
                       重新加载
@@ -337,48 +373,32 @@ export default function ToolsPage({ directory, state, loadState = "idle" }: Tool
                     <span>{`当前页：${currentPage} / ${totalPages}`}</span>
                     {selectedCategory ? <span>{`分类：${selectedCategory.label}`}</span> : null}
                     {selectedTag ? <span>{`标签：${selectedTag.label}`}</span> : null}
-                    {selectedStatus ? <span>{`状态：${selectedStatus.label}`}</span> : null}
                     {selectedPrice ? <span>{`价格：${selectedPrice.label}`}</span> : null}
                     {state.q ? <span>{`搜索：${state.q}`}</span> : null}
                   </div>
-                  {!showEmpty && totalPages > 1 ? (
-                    <div className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
-                      列表 → 详情 → 返回
-                    </div>
-                  ) : null}
+                  {!showEmpty && totalPages > 1 ? <div className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">列表 / 详情 / 返回</div> : null}
                 </div>
               </div>
 
               {showEmpty ? (
                 <div className="panel-base rounded-[28px] p-8 text-center">
-                  <h2 className="text-xl font-semibold text-slate-900">暂无匹配的工具</h2>
-                  <p className="mt-3 text-sm leading-7 text-slate-600">
-                    当前筛选条件下没有找到结果。可以尝试更换关键词，或清除分类、状态和标签后重新查看。
-                  </p>
+                  <h2 className="text-xl font-semibold text-slate-900">暂无匹配工具</h2>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">当前筛选条件下没有找到结果。你可以换一个关键词，或清除分类、价格和标签后再试。</p>
                   <div className="mt-5 flex flex-wrap justify-center gap-3">
                     <Link href="/tools" className="btn-primary rounded-full px-5 py-3 text-sm">
                       重置筛选
                     </Link>
                     <Link href="/tools?view=hot" className="btn-secondary rounded-full px-5 py-3 text-sm">
-                      返回推荐
+                      返回最热
                     </Link>
                   </div>
                 </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {directory.items.map((tool) => {
-                    // Detect price type from price field first, then summary and tags
-                    const text = `${tool.price} ${tool.name} ${tool.summary} ${tool.tags.join(' ')}`.toLowerCase();
-                    let priceLabel: string | null = null;
-                    if (text.includes('免费') || text.includes('free')) {
-                      priceLabel = 'free';
-                    } else if (text.includes('免费增值') || text.includes('freemium')) {
-                      priceLabel = 'freemium';
-                    } else if (text.includes('订阅') || text.includes('月付') || text.includes('yearly') || text.includes('monthly') || text.includes('subscription')) {
-                      priceLabel = 'subscription';
-                    } else if (text.includes('付费') || text.includes('一次性') || text.includes('lifetime')) {
-                      priceLabel = 'one-time';
-                    }
+                    const text = `${tool.price} ${tool.name} ${tool.summary} ${tool.tags.join(" ")}`.toLowerCase();
+                    const priceLabel = detectPriceLabel(text);
+
                     return (
                       <ToolCard
                         key={tool.slug}
@@ -388,9 +408,9 @@ export default function ToolsPage({ directory, state, loadState = "idle" }: Tool
                         tags={tool.tags}
                         url={tool.officialUrl}
                         logoPath={tool.logoPath}
-                        status={tool.status}
                         score={tool.score}
                         priceLabel={priceLabel}
+                        decisionBadges={buildDecisionBadges({ price: tool.price, summary: tool.summary, tags: tool.tags })}
                       />
                     );
                   })}

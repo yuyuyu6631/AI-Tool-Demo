@@ -9,22 +9,10 @@ interface ToolCardProps {
   tags: string[];
   url: string;
   logoPath?: string | null;
-  status: "published" | "draft" | "archived";
   score: number;
   priceLabel?: string | null;
+  decisionBadges?: string[];
 }
-
-const STATUS_STYLES = {
-  published: "bg-emerald-100 text-emerald-800",
-  draft: "bg-amber-100 text-amber-800",
-  archived: "bg-slate-200 text-slate-700",
-} as const;
-
-const STATUS_LABELS = {
-  published: "已发布",
-  draft: "草稿",
-  archived: "已归档",
-} as const;
 
 const PRICE_TYPE_COLORS: Record<string, string> = {
   free: "bg-green-100 text-green-800",
@@ -48,13 +36,11 @@ export default function ToolCard({
   tags,
   url,
   logoPath = null,
-  status,
   score,
   priceLabel = null,
+  decisionBadges = [],
 }: ToolCardProps) {
-  const priceDisplay = priceLabel && PRICE_TYPE_LABELS[priceLabel]
-    ? PRICE_TYPE_LABELS[priceLabel]
-    : priceLabel;
+  const priceDisplay = priceLabel && PRICE_TYPE_LABELS[priceLabel] ? PRICE_TYPE_LABELS[priceLabel] : priceLabel;
 
   return (
     <article className="card-base card-interactive rounded-[28px] p-5" data-testid="tool-card">
@@ -62,25 +48,27 @@ export default function ToolCard({
         <div className="flex items-start gap-3">
           <ToolLogo slug={slug} name={name} logoPath={logoPath} />
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex flex-wrap items-center gap-2">
               <Link href={`/tools/${slug}`} className="block min-w-0 flex-1">
                 <h3 className="truncate text-base font-semibold text-slate-950 transition group-hover:text-slate-900">{name}</h3>
               </Link>
-              <span className="text-amber-500 text-sm font-semibold">⭐ {score.toFixed(1)}</span>
-              <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${STATUS_STYLES[status]}`}>
-                {STATUS_LABELS[status]}
-              </span>
+              <span className="text-sm font-semibold text-amber-500">★ {score.toFixed(1)}</span>
             </div>
             <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">{summary}</p>
           </div>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {priceDisplay && (
+          {priceDisplay ? (
             <span data-testid="price-tag" className={`rounded-full px-3 py-1 text-xs font-semibold ${PRICE_TYPE_COLORS[priceLabel || "other"]}`}>
               {priceDisplay}
             </span>
-          )}
+          ) : null}
+          {decisionBadges.slice(0, 4).map((badge) => (
+            <span key={badge} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+              {badge}
+            </span>
+          ))}
           {tags.slice(0, 2).map((tag) => (
             <span key={tag} className="rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-slate-700">
               {tag}
@@ -89,10 +77,7 @@ export default function ToolCard({
         </div>
 
         <div className="mt-5 flex items-center justify-between gap-3 border-t border-white/35 pt-4">
-          <Link
-            href={`/tools/${slug}`}
-            className="inline-flex items-center gap-1 text-sm font-medium text-slate-900 underline-offset-4 transition hover:underline"
-          >
+          <Link href={`/tools/${slug}`} className="inline-flex items-center gap-1 text-sm font-medium text-slate-900 underline-offset-4 transition hover:underline">
             查看详情
             <ArrowRight className="h-4 w-4" />
           </Link>

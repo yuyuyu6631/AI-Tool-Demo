@@ -8,9 +8,18 @@ export default function RouteFeedback() {
   const searchParams = useSearchParams();
   const routeKey = `${pathname}?${searchParams.toString()}`;
   const previousPath = useRef(routeKey);
+  const [mounted, setMounted] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) {
+      return;
+    }
+
     if (previousPath.current !== routeKey) {
       previousPath.current = routeKey;
       setIsTransitioning(true);
@@ -22,7 +31,11 @@ export default function RouteFeedback() {
 
       return () => window.clearTimeout(timer);
     }
-  }, [routeKey]);
+  }, [mounted, routeKey]);
+
+  if (!mounted) {
+    return null;
+  }
 
   return <div aria-hidden="true" className={`route-feedback ${isTransitioning ? "is-active" : ""}`} />;
 }

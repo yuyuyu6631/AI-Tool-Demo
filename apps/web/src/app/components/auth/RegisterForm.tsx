@@ -2,7 +2,7 @@
 
 import { LoaderCircle } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { AuthApiError, type AuthUser, registerAuth } from "@/src/app/lib/auth-api";
+import { AuthApiError, resolveAuthFailureMessage, type AuthUser, registerAuth } from "@/src/app/lib/auth-api";
 import AuthField from "./AuthField";
 import PasswordField from "./PasswordField";
 
@@ -48,7 +48,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
     }
 
     if (!confirmPassword.trim()) {
-      nextErrors.confirmPassword = "请再次输入一次密码。";
+      nextErrors.confirmPassword = "请再输入一次密码。";
     } else if (confirmPassword !== password) {
       nextErrors.confirmPassword = "两次输入的密码还不一致，请重新确认。";
     }
@@ -92,7 +92,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
         return;
       }
 
-      setErrors({ form: "注册请求失败了，请确认后端服务已经启动，再稍后重试。" });
+      setErrors({ form: await resolveAuthFailureMessage() });
     } finally {
       setLoading(false);
     }
@@ -139,7 +139,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
         <PasswordField
           label="确认密码"
           name="confirmPassword"
-          placeholder="请再次输入密码"
+          placeholder="请再输入一次密码"
           autoComplete="new-password"
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}

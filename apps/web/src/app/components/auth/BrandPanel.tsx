@@ -26,7 +26,7 @@ const valueItems = [
 export default function BrandPanel() {
   return (
     <section className="widget-glass-hero auth-brand-panel rounded-[32px] p-6 sm:p-8 lg:p-10">
-      <div className="relative z-10 flex h-full flex-col justify-between">
+      <div className="relative z-10 flex flex-col gap-10">
         <div className="max-w-[560px]">
           <p className="eyebrow text-xs font-semibold">可信的 AI 工具发现入口</p>
           <h1 className="mt-4 text-4xl font-semibold leading-tight tracking-tight text-slate-950 md:text-5xl">
@@ -39,7 +39,7 @@ export default function BrandPanel() {
           </p>
         </div>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           {valueItems.map((item) => {
             const Icon = item.icon;
 

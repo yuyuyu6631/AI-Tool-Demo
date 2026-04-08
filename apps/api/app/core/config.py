@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     ai_model: str = ""
     ai_openai_base_url: str = ""
     ai_anthropic_base_url: str = ""
+    embedding_provider: str = ""
+    embedding_api_key: str = ""
+    embedding_model: str = ""
+    embedding_openai_base_url: str = ""
+    embedding_recall_top_k: int = 12
+    embedding_recall_min_similarity: float = 0.2
     recommendation_ttl_seconds: int = 1800
 
     model_config = SettingsConfigDict(env_file=ROOT_DIR / ".env", extra="ignore")

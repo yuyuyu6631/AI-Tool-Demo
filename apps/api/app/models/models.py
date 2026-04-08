@@ -47,6 +47,18 @@ class Tool(Base, TimestampMixin):
     categories: Mapped[list["ToolCategory"]] = relationship(back_populates="tool", cascade="all, delete-orphan")
 
 
+class ToolEmbedding(Base, TimestampMixin):
+    __tablename__ = "tool_embeddings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    tool_id: Mapped[int] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"), unique=True, index=True)
+    provider: Mapped[str] = mapped_column(String(32), default="stub")
+    model: Mapped[str] = mapped_column(String(120), default="semantic-hash-v1")
+    content_hash: Mapped[str] = mapped_column(String(64), index=True)
+    source_text: Mapped[str] = mapped_column(Text)
+    embedding_json: Mapped[str] = mapped_column(Text)
+
+
 class Category(Base, TimestampMixin):
     __tablename__ = "categories"
 

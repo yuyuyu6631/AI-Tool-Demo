@@ -32,6 +32,7 @@ from app.services.catalog_views_seed import (
     sort_ranking_sections,
     sort_scenario_sections,
 )
+from app.services.embedding_service import recall_tool_ids_by_embedding
 from app.services.logo_assets import normalize_logo_path
 
 
@@ -431,6 +432,38 @@ def _filter_tools(
     return filtered
 
 
+def _apply_query_recall(*, db, items: list[SearchableTool], q: str | None) -> list[SearchableTool]:
+    if not q:
+        return items
+
+    lexical_matches = [item for item in items if _matches_query(item.search_text, q)]
+    candidate_tool_ids = [item.summary.id for item in items]
+
+    try:
+        semantic_tool_ids = recall_tool_ids_by_embedding(db=db, query=q, candidate_tool_ids=candidate_tool_ids)
+    except Exception:
+        semantic_tool_ids = []
+
+    if not semantic_tool_ids:
+        return lexical_matches
+
+    semantic_rank = {tool_id: index for index, tool_id in enumerate(semantic_tool_ids)}
+    semantic_matches = sorted(
+        (item for item in items if item.summary.id in semantic_rank),
+        key=lambda item: semantic_rank[item.summary.id],
+    )
+
+    merged: list[SearchableTool] = []
+    seen_slugs: set[str] = set()
+    for item in [*lexical_matches, *semantic_matches]:
+        if item.summary.slug in seen_slugs:
+            continue
+        seen_slugs.add(item.summary.slug)
+        merged.append(item)
+
+    return merged
+
+
 def get_tools_directory(
     *,
     db,
@@ -446,13 +479,14 @@ def get_tools_directory(
 ) -> ToolsDirectoryResponse:
     active_status = _normalize_status_filter(status_slug)
     searchable_tools = _load_searchable_tools(db, status_filter=active_status)
-    filtered_searchable = _filter_tools(
+    base_filtered_searchable = _filter_tools(
         searchable_tools,
-        q=q,
+        q=None,
         category_slug=category_slug,
         tag_slug=tag_slug,
         price_slug=price_slug,
     )
+    filtered_searchable = _apply_query_recall(db=db, items=base_filtered_searchable, q=q)
     filtered_searchable = _expand_with_ai_recommendations(
         db=db,
         q=q,

@@ -19,8 +19,10 @@ from app.models.models import (  # noqa: E402
     ScenarioTool,
     Tag,
     Tool,
+    ToolEmbedding,
     ToolTag,
 )
+from app.services.embedding_service import build_tool_embedding_source, compute_content_hash, embed_text, serialize_embedding  # noqa: E402
 
 app = create_app()
 
@@ -76,6 +78,33 @@ def _add_tool(
         db.add(ToolTag(tool_id=tool.id, tag_id=tag.id))
 
     return tool
+
+
+def _upsert_tool_embedding(db: Session, tool: Tool) -> None:
+    source_text = build_tool_embedding_source(tool)
+    embedding = embed_text(source_text)
+    row = db.query(ToolEmbedding).filter(ToolEmbedding.tool_id == tool.id).first()
+    payload = serialize_embedding(embedding.vector)
+    content_hash = compute_content_hash(source_text)
+
+    if row is None:
+        db.add(
+            ToolEmbedding(
+                tool_id=tool.id,
+                provider=embedding.provider,
+                model=embedding.model,
+                content_hash=content_hash,
+                source_text=source_text,
+                embedding_json=payload,
+            )
+        )
+        return
+
+    row.provider = embedding.provider
+    row.model = embedding.model
+    row.content_hash = content_hash
+    row.source_text = source_text
+    row.embedding_json = payload
 
 
 def setup_module():
@@ -270,6 +299,10 @@ def setup_module():
                 ScenarioTool(scenario_id=empty_scenario.id, tool_id=tools[11].id, is_primary=True),
             ]
         )
+
+        for tool in tools:
+            if tool.slug in {"gamma", "data-pilot", "notion-ai"}:
+                _upsert_tool_embedding(db, tool)
         db.commit()
     finally:
         db.close()
@@ -342,6 +375,50 @@ def test_tools_directory_supports_combined_filters_and_facets():
     assert payload["tags"][0] == {"slug": "assistant", "label": "assistant", "count": 1}
     statuses = {item["slug"]: item["count"] for item in payload["statuses"]}
     assert statuses == {"all": 1, "published": 1}
+
+
+def test_tools_directory_empty_query_matches_default_behavior():
+    default_response = client.get("/api/tools?page_size=24")
+    empty_response = client.get("/api/tools?q=&page_size=24")
+
+    assert default_response.status_code == 200
+    assert empty_response.status_code == 200
+    assert default_response.json()["total"] == empty_response.json()["total"]
+    assert [item["slug"] for item in default_response.json()["items"]] == [
+        item["slug"] for item in empty_response.json()["items"]
+    ]
+
+
+def test_tools_directory_lexical_query_hit_still_works():
+    response = client.get("/api/tools?q=ChatGPT")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] >= 1
+    assert payload["items"][0]["slug"] == "chatgpt"
+
+
+def test_tools_directory_embedding_recall_hits_when_lexical_misses():
+    response = client.get("/api/tools?q=幻灯片&page_size=24")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "gamma" in [item["slug"] for item in payload["items"]]
+
+
+def test_tools_directory_missing_embedding_falls_back_to_legacy_lexical_search():
+    db = _TestSession()
+    try:
+        db.query(ToolEmbedding).delete()
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get("/api/tools?q=ChatGPT&page_size=24")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "chatgpt" in [item["slug"] for item in payload["items"]]
 
 
 def test_tools_directory_status_all_includes_non_published_rows():
@@ -423,3 +500,59 @@ def test_tool_detail_missing_slug_returns_404():
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Tool not found"
+
+
+def _restore_selected_embeddings(*slugs: str) -> None:
+    db = _TestSession()
+    try:
+        tools = db.query(Tool).filter(Tool.slug.in_(slugs)).all()
+        for tool in tools:
+            _upsert_tool_embedding(db, tool)
+        db.commit()
+    finally:
+        db.close()
+
+
+def test_tools_directory_acceptance_writing_assistant_returns_writing_tools():
+    _restore_selected_embeddings("notion-ai")
+    response = client.get("/api/tools?q=\u5199\u4f5c\u52a9\u624b&page_size=24")
+
+    assert response.status_code == 200
+    payload = response.json()
+    slugs = {item["slug"] for item in payload["items"]}
+    assert "notion-ai" in slugs
+    assert slugs.intersection({"notion-ai", "free-writer", "meeting-note"})
+
+
+def test_tools_directory_acceptance_semantic_query_returns_gamma():
+    _restore_selected_embeddings("gamma")
+    response = client.get("/api/tools?q=\u5e7b\u706f\u7247&page_size=24")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "gamma" in [item["slug"] for item in payload["items"]]
+
+
+def test_tools_directory_missing_partial_embeddings_still_falls_back_to_legacy_lexical_search():
+    db = _TestSession()
+    try:
+        db.query(ToolEmbedding).filter(ToolEmbedding.tool_id == 3).delete()
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get("/api/tools?q=ChatGPT&page_size=24")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "chatgpt" in [item["slug"] for item in payload["items"]]
+
+
+def test_tools_directory_embedding_recall_exception_still_returns_lexical_results(monkeypatch):
+    monkeypatch.setattr(catalog_svc, "recall_tool_ids_by_embedding", lambda **kwargs: (_ for _ in ()).throw(TimeoutError("boom")))
+
+    response = client.get("/api/tools?q=ChatGPT&page_size=24")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "chatgpt" in [item["slug"] for item in payload["items"]]

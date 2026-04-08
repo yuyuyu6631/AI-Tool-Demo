@@ -12,7 +12,7 @@ import threading
 import time
 from pathlib import Path
 from urllib.error import HTTPError
-from urllib.request import Request, urlopen
+from urllib.request import ProxyHandler, Request, build_opener
 
 
 ROOT = Path(__file__).resolve().parent
@@ -28,6 +28,7 @@ MYSQL_PORT = 3306
 REDIS_PORT = 6379
 DEFAULT_WAIT_SECONDS = 45
 DEV_SERVER_PORTS = (DEFAULT_API_PORT, DEFAULT_WEB_PORT)
+HTTP_OPENER = build_opener(ProxyHandler({}))
 
 
 def get_api_python_executable() -> Path:
@@ -198,23 +199,71 @@ def wait_for_port(port: int, *, name: str, timeout_seconds: int = DEFAULT_WAIT_S
     fail(f"{name} did not become reachable on localhost:{port} within {timeout_seconds}s.")
 
 
-def wait_for_http_ready(url: str, *, name: str, timeout_seconds: int = DEFAULT_WAIT_SECONDS) -> None:
-    deadline = time.time() + timeout_seconds
-    last_error = ""
-    while time.time() < deadline:
+def _probe_http_once(url: str, *, timeout_seconds: int) -> tuple[int | None, str]:
+    result: dict[str, object] = {}
+
+    def worker() -> None:
         try:
-            request = Request(url, headers={"User-Agent": "start.py"})
-            with urlopen(request, timeout=3) as response:
-                if 200 <= response.status < 300:
-                    info(f"{name} responded successfully at {url}.")
-                    return
+            request = Request(url, headers={"User-Agent": "start.py", "Connection": "close"})
+            with HTTP_OPENER.open(request, timeout=timeout_seconds) as response:
                 body = response.read().decode("utf-8", errors="replace").strip()
-                last_error = f"HTTP {response.status}: {body}" if body else f"HTTP {response.status}"
+                result["status"] = response.status
+                result["message"] = body
         except HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace").strip()
-            last_error = f"HTTP {exc.code}: {body}" if body else f"HTTP {exc.code}"
+            result["status"] = exc.code
+            result["message"] = f"HTTP {exc.code}: {body}" if body else f"HTTP {exc.code}"
         except Exception as exc:
-            last_error = str(exc)
+            result["message"] = str(exc)
+
+    thread = threading.Thread(target=worker, daemon=True)
+    thread.start()
+    thread.join(timeout_seconds + 1)
+
+    if thread.is_alive():
+        return None, f"timed out after {timeout_seconds + 1}s"
+
+    status = result.get("status")
+    if isinstance(status, int):
+        return status, str(result.get("message", "") or "")
+    return None, str(result.get("message", "unknown error") or "unknown error")
+
+
+def wait_for_http_ready(
+    url: str,
+    *,
+    name: str,
+    timeout_seconds: int = DEFAULT_WAIT_SECONDS,
+    watched_processes: list[tuple[str, subprocess.Popen[str]]] | None = None,
+) -> None:
+    deadline = time.time() + timeout_seconds
+    last_error = ""
+    last_progress_log_at = 0.0
+    while time.time() < deadline:
+        if watched_processes:
+            for process_name, process in watched_processes:
+                exit_code = process.poll()
+                if exit_code is not None:
+                    fail(
+                        f"{name} did not become ready because {process_name} exited with code {exit_code}. "
+                        "Check the process logs printed above for the root cause."
+                    )
+
+        status, message = _probe_http_once(url, timeout_seconds=3)
+        if status is not None and 200 <= status < 300:
+            info(f"{name} responded successfully at {url}.")
+            return
+
+        if status is not None:
+            last_error = message or f"HTTP {status}"
+        else:
+            last_error = message
+
+        now = time.time()
+        if now - last_progress_log_at >= 5:
+            remaining = max(0, int(deadline - now))
+            info(f"Waiting for {name}... {remaining}s left. Last error: {last_error or 'unknown'}")
+            last_progress_log_at = now
         time.sleep(1)
 
     fail(f"{name} did not become reachable at {url} within {timeout_seconds}s. Last error: {last_error or 'unknown'}")
@@ -797,6 +846,18 @@ def main() -> None:
             env=runtime_env,
             name="api",
         )
+        update_lock_file(
+            START_LOCK_FILE,
+            api_pid=api_process.pid,
+            web_pid=None,
+        )
+
+        wait_for_http_ready(
+            f"http://localhost:{DEFAULT_API_PORT}/health/ready",
+            name="API readiness",
+            watched_processes=[("API", api_process)],
+        )
+
         web_process, web_thread = spawn_process(
             ["node", str(WEB_DIR / "scripts" / "dev.mjs"), "--hostname", "0.0.0.0", "--port", str(DEFAULT_WEB_PORT)],
             cwd=WEB_DIR,
@@ -808,9 +869,11 @@ def main() -> None:
             api_pid=api_process.pid,
             web_pid=web_process.pid,
         )
-
-        wait_for_http_ready(f"http://localhost:{DEFAULT_API_PORT}/health/ready", name="API readiness")
-        wait_for_http_ready(f"http://localhost:{DEFAULT_WEB_PORT}", name="Web")
+        wait_for_http_ready(
+            f"http://localhost:{DEFAULT_WEB_PORT}",
+            name="Web",
+            watched_processes=[("API", api_process), ("Web", web_process)],
+        )
 
         info(f"API: http://localhost:{DEFAULT_API_PORT}")
         info(f"Web: http://localhost:{DEFAULT_WEB_PORT}")

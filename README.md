@@ -1,38 +1,74 @@
-# 星点评 Monorepo
+# 星点评 (Xingdianping)
+
+> AI 工具点评与发现平台 - "AI工具界的豆瓣"，帮助用户发现、比较和推荐 AI 工具。
+
+星点评是一个开源的 AI 工具点评平台，目标是成为 AI Agent 时代的公共点评社区，让用户更好地发现和选择优质 AI 工具。
+
+## 技术栈
+
+- **后端**: FastAPI 0.115+, Python 3.11+, SQLAlchemy 2.0, Alembic, Pydantic
+- **前端**: Next.js 15.2+, React 19, TypeScript 5.8+, Tailwind CSS 4.1+, Vitest
+- **数据库**: MySQL 8.4 (Docker), Redis 7.4 (Docker)
+- **基础设施**: Docker Compose 本地开发
+
+## 项目结构
 
 当前运行链路已经收敛为单一应用栈：
 
 - `apps/web`：唯一前端入口，基于 Next.js
 - `apps/api`：唯一后端入口，基于 FastAPI
-- `packages/contracts`：前后端共享契约
+- `packages/contracts`：前后端共享类型契约
 
 历史 demo、旧工具资产和临时文件已经移出运行链路，统一归档到 `archive/drawer/`，只作参考，不参与启动、构建或测试。
 
-## 启动
+## 快速开始
+
+### 一键启动开发环境（推荐）
 
 ```bash
-python start.py
-```
-
-也可以使用：
-
-```bash
-npm run dev
+python start.py              # 启动全栈 (MySQL + Redis + API + Web)
+python start.py --stop       # 停止所有进程
+python start.py --restart    # 重启全栈
 ```
 
 默认行为：
 
-- 自动读取 `秘钥.txt`
+- 自动读取 `秘钥.txt` 中的 AI 密钥配置
 - 自动为 API 与前端分配可用端口
 - 尝试拉起本地 MySQL / Redis 容器
-- 同时启动 `apps/api` 与 `apps/web`
+- 同时启动 `apps/api` 后端与 `apps/web` 前端
+
+### 单独启动前端开发
+
+```bash
+npm run dev              # 仅启动前端开发服务器，3000 被占用时自动顺延到下一个空闲端口
+```
 
 ## 常用命令
 
+### 前端开发
 ```bash
-npm run build:web
-npm run test:web
-npm run lint:web
+npm run dev              # 启动前端开发服务器
+npm run build:web        # 生产环境构建前端
+npm run lint:web         # 运行 ESLint 检查
+npm run test:web         # 运行 Vitest 单元测试
+npm run test:web:watch   # 监听模式运行测试
+```
+
+### 后端开发
+```bash
+cd apps/api
+pytest                   # 运行所有 pytest 测试
+pytest tests/test_file.py  # 运行单个测试文件
+alembic upgrade head    # 执行数据库迁移
+```
+
+### 数据导入
+```bash
+npm run organize:aitool         # 整理 AI 工具资产
+npm run validate:aitool:preview # 验证预览数据导入
+npm run import:aitool:preview   # 导入预览数据
+npm run import:aitool:all       # 导入全部 AI 工具数据
 ```
 
 ## 当前项目结构

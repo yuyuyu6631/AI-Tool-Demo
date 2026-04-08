@@ -24,7 +24,7 @@ python start.py --restart    # Restart the entire stack
 
 ### Frontend Development
 ```bash
-npm run dev              # Start frontend dev server only
+npm run dev              # Start frontend dev server only, auto-picking the next free port if 3000 is busy
 npm run build:web        # Build frontend for production
 npm run lint:web         # Run ESLint
 npm run test:web         # Run Vitest unit tests

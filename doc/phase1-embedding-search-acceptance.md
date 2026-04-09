@@ -18,7 +18,7 @@
 - `pytest tests/test_backfill_tool_embeddings.py -q`
 
 Latest local result:
-- `20 passed` in `tests/test_catalog_cases.py`
+- `19 passed` in `tests/test_catalog_cases.py`
 - `2 passed` in `tests/test_backfill_tool_embeddings.py`
 
 ## Known Uncovered Risks

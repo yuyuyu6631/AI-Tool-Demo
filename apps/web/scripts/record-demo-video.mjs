@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "@playwright/test";
+import { buildDemoScenes, readHeaderNavItems, validateDemoScenes } from "./demo-video-scenes.mjs";
 
 const repoRoot = path.resolve(process.cwd(), "..", "..");
 const outputRoot = path.join(repoRoot, "output", "demo");
@@ -18,8 +19,8 @@ function formatSrtTime(valueMs) {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")},${String(milliseconds).padStart(3, "0")}`;
 }
 
-function addCue(startMs, endMs, text) {
-  cues.push({ startMs, endMs, text });
+function buildAbsoluteUrl(targetPath) {
+  return new URL(targetPath, `${baseURL.replace(/\/$/, "")}/`).toString();
 }
 
 async function hold(page, ms) {
@@ -28,20 +29,169 @@ async function hold(page, ms) {
 }
 
 async function smoothWheel(page, distance, steps = 6, waitMs = 220) {
-  const step = distance / steps;
+  const stepDistance = distance / steps;
   for (let index = 0; index < steps; index += 1) {
-    await page.mouse.wheel(0, step);
+    await page.mouse.wheel(0, stepDistance);
     await hold(page, waitMs);
   }
 }
 
-async function typeSlow(locator, value) {
+async function typeSlow(locator, value, delay = 90) {
+  await locator.fill("");
   for (const char of value) {
-    await locator.type(char, { delay: 90 });
+    await locator.type(char, { delay });
   }
 }
 
+async function resolveTarget(page, target) {
+  const resolvers = {
+    toolsQuickDecisionChip: () => page.locator('form[action="/tools"]').locator('a[href*="view="], a[href*="price="]').first(),
+    toolsPresetChip: () => page.locator('main a[href="/tools?view=free&page=1"]').first(),
+    toolsSortChip: () => page.locator('aside a[href*="sort="]').first(),
+    toolsCategoryLink: () => page.locator('aside a[href*="category="]').first(),
+    toolsPriceChip: () => page.locator('aside a[href*="price="]').first(),
+    toolsTagChip: () => page.locator('aside a[href*="tag="]').first(),
+    toolsMoreCategoriesSummary: () => page.locator("aside details summary").first(),
+    toolsMoreCategoriesLink: () => page.locator("aside details").first().locator('a[href*="category="]').first(),
+    toolsMoreTagsSummary: () => page.locator("aside details summary").nth(1),
+    toolsMoreTagsChip: () => page.locator("aside details").nth(1).locator('a[href*="tag="]').first(),
+    toolsSearchInput: () => page.locator('input[name="q"]').first(),
+    wolframDetailLink: () => page.locator('a[href="/tools/wolframalpha"]').first(),
+    detailBackToList: () => page.locator('main a[href="/tools"]').last(),
+    refinedCategoryLink: () => page.locator('aside a[href*="category="]').first(),
+  };
+
+  const resolver = resolvers[target];
+  if (!resolver) {
+    throw new Error(`Unknown target: ${target}`);
+  }
+
+  const locator = resolver();
+  if ((await locator.count()) === 0) {
+    throw new Error(`Target not found: ${target}`);
+  }
+
+  return locator.first();
+}
+
+async function executeStep(page, step) {
+  switch (step.type) {
+    case "goto": {
+      await page.goto(buildAbsoluteUrl(step.path), { waitUntil: "domcontentloaded" });
+      await page.waitForLoadState("domcontentloaded");
+      break;
+    }
+    case "clickHeaderNav": {
+      const locator = page.locator(`header nav a[href="${step.href}"]`).first();
+      if ((await locator.count()) === 0) {
+        throw new Error(`Header nav item not found: ${step.href}`);
+      }
+      await locator.click();
+      await page.waitForURL((url) => url.pathname === step.href);
+      await page.waitForLoadState("domcontentloaded");
+      break;
+    }
+    case "click": {
+      const locator = await resolveTarget(page, step.target);
+      await locator.click();
+      await page.waitForLoadState("domcontentloaded");
+      break;
+    }
+    case "hold": {
+      await hold(page, step.ms);
+      break;
+    }
+    case "hover": {
+      const locator = await resolveTarget(page, step.target);
+      await locator.hover();
+      break;
+    }
+    case "press": {
+      const locator = await resolveTarget(page, step.target);
+      await locator.press(step.key);
+      await page.waitForLoadState("domcontentloaded");
+      break;
+    }
+    case "scrollIntoView": {
+      const locator = await resolveTarget(page, step.target);
+      await locator.scrollIntoViewIfNeeded();
+      await hold(page, 500);
+      break;
+    }
+    case "scrollToTop": {
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+      await hold(page, 400);
+      break;
+    }
+    case "smoothWheel": {
+      await smoothWheel(page, step.distance, step.steps, step.waitMs);
+      break;
+    }
+    case "type": {
+      const locator = await resolveTarget(page, step.target);
+      await typeSlow(locator, step.text, step.delay ?? 90);
+      break;
+    }
+    case "waitForURL": {
+      const pattern = new RegExp(step.pattern.slice(1, step.pattern.lastIndexOf("/")), step.pattern.slice(step.pattern.lastIndexOf("/") + 1));
+      await page.waitForURL(pattern);
+      await page.waitForLoadState("domcontentloaded");
+      break;
+    }
+    default:
+      throw new Error(`Unsupported step type: ${step.type}`);
+  }
+}
+
+async function recordScenes(page, scenes) {
+  const sceneResults = [];
+
+  for (const scene of scenes) {
+    console.log(`Recording scene ${scene.id}`);
+    const startMs = timelineMs;
+
+    for (const step of scene.steps) {
+      await executeStep(page, step);
+    }
+
+    const endMs = timelineMs;
+    const currentUrl = new URL(page.url());
+    const resolvedRoute = `${currentUrl.pathname}${currentUrl.search}`;
+
+    cues.push({
+      id: scene.id,
+      startMs,
+      endMs,
+      text: scene.subtitle,
+    });
+
+    if (scene.includeInManifest !== false) {
+      sceneResults.push({
+        id: scene.id,
+        section: scene.section,
+        label: scene.label,
+        route: resolvedRoute,
+        plannedRoute: scene.route,
+        subtitle: scene.subtitle,
+        startMs,
+        endMs,
+      });
+    }
+  }
+
+  return sceneResults;
+}
+
 async function main() {
+  const headerNavItems = await readHeaderNavItems(repoRoot);
+  const scenes = await buildDemoScenes({ repoRoot });
+  validateDemoScenes(scenes);
+
+  if (process.env.DEMO_VALIDATE_ONLY === "1") {
+    console.log(`Validated ${scenes.length} scenes`);
+    return;
+  }
+
   const sessionId = new Date().toISOString().replace(/[:.]/g, "-");
   const videoRoot = path.join(outputRoot, "raw", sessionId);
   await fs.mkdir(videoRoot, { recursive: true });
@@ -60,62 +210,7 @@ async function main() {
   const page = await context.newPage();
   page.setDefaultTimeout(20_000);
 
-  await page.goto(baseURL, { waitUntil: "domcontentloaded" });
-  addCue(0, 3500, "星点评首页：先看聚合入口，再进入目录检索。");
-  await hold(page, 1800);
-  await smoothWheel(page, 580, 4, 260);
-  addCue(3500, 7600, "首页同时展示常用分类和精选工具，适合演示站点的信息组织。");
-  await smoothWheel(page, 420, 3, 240);
-  await hold(page, 1000);
-
-  console.log("Navigating to latest tools directory");
-  await page.goto(`${baseURL}/tools?status=published&view=latest`, { waitUntil: "domcontentloaded" });
-  addCue(7600, 11800, "切到最新排序后，目录会展示完整工具库，按收录时间倒序排列。");
-  await hold(page, 1800);
-
-  const searchInput = page.locator('input[name="q"]').first();
-  await searchInput.click();
-  await hold(page, 500);
-  await typeSlow(searchInput, "Wolfram");
-  addCue(11800, 16200, "通过关键词检索，能快速从两千多条草稿里定位目标工具。");
-  await hold(page, 600);
-  await searchInput.press("Enter");
-  await page.waitForURL(/\/tools\?/);
-  await page.waitForLoadState("domcontentloaded");
-  await hold(page, 1600);
-
-  const detailLink = page.locator('a[href="/tools/wolframalpha"]').first();
-  console.log("Opening tool detail");
-  await detailLink.click();
-  await page.waitForURL(/\/tools\/wolframalpha$/);
-  await page.waitForLoadState("domcontentloaded");
-  addCue(16200, 20900, "详情页保留工具摘要、状态、标签和同类工具，方便做人工审核与发布判断。");
-  await hold(page, 1800);
-
-  await smoothWheel(page, 760, 5, 260);
-  addCue(20900, 25500, "继续下滑可以看到简介、标签，以及右侧的同类工具推荐。");
-  await hold(page, 1000);
-
-  const backToList = page.locator('a[href="/tools"]').nth(1);
-  if (await backToList.count()) {
-    await backToList.click();
-    await page.waitForURL(/\/tools$/);
-    await page.waitForLoadState("domcontentloaded");
-  } else {
-    await page.goto(`${baseURL}/tools?status=draft&view=latest`, { waitUntil: "domcontentloaded" });
-  }
-  addCue(25500, 30000, "回到列表后，可以继续按分类、标签和排序做二次筛选。");
-  await hold(page, 1500);
-
-  const categoryLink = page.locator('a[href*="category=ai"]').first();
-  if (await categoryLink.count()) {
-    await categoryLink.click();
-    await page.waitForLoadState("domcontentloaded");
-    await hold(page, 1600);
-  }
-  addCue(30000, 34600, "这套流程适合现场演示数据检索、内容审核和目录运营三类能力。");
-
-  await hold(page, 1800);
+  const sceneResults = await recordScenes(page, scenes);
 
   await context.close();
   await browser.close();
@@ -135,6 +230,8 @@ async function main() {
     durationMs: timelineMs,
     rawVideoPath: finalRawVideoPath,
     subtitlesPath: path.join(outputRoot, "system-demo.srt"),
+    headerNavItems,
+    scenes: sceneResults,
     cues,
   };
 

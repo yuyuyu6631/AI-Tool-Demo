@@ -8,8 +8,8 @@
 
 - **后端**: FastAPI 0.115+, Python 3.11+, SQLAlchemy 2.0, Alembic, Pydantic
 - **前端**: Next.js 15.2+, React 19, TypeScript 5.8+, Tailwind CSS 4.1+, Vitest
-- **数据库**: MySQL 8.4 (Docker), Redis 7.4 (Docker)
-- **基础设施**: Docker Compose 本地开发
+- **数据库**: MySQL 8.4+, Redis 7.4+ (支持 Docker 容器或本地直接安装)
+- **基础设施**: Docker Compose 可选，也可纯本地开发
 
 ## 项目结构
 
@@ -26,16 +26,16 @@
 ### 一键启动开发环境（推荐）
 
 ```bash
-python start.py              # 启动全栈 (MySQL + Redis + API + Web)
+python start.py              # 启动全栈 (API + Web，需要先确保 MySQL + Redis 已启动)
 python start.py --stop       # 停止所有进程
 python start.py --restart    # 重启全栈
 ```
 
 默认行为：
 
-- 自动读取 `秘钥.txt` 中的 AI 密钥配置
-- 自动为 API 与前端分配可用端口
-- 尝试拉起本地 MySQL / Redis 容器
+- 从 `.env` 读取环境和密钥配置
+- 自动检查端口占用，只在端口空闲时启动
+- 检查本地 MySQL / Redis 服务是否可达
 - 同时启动 `apps/api` 后端与 `apps/web` 前端
 
 ### 单独启动前端开发
@@ -43,6 +43,64 @@ python start.py --restart    # 重启全栈
 ```bash
 npm run dev              # 仅启动前端开发服务器，3000 被占用时自动顺延到下一个空闲端口
 ```
+
+### 手动完整启动（不使用一键脚本）
+
+如果你需要手动分步启动，按照以下步骤操作：
+
+**1. 准备环境配置**
+```bash
+cp .env.example .env
+# 编辑 .env 文件，填入正确的 DATABASE_URL 和 REDIS_URL 配置
+```
+
+**2. 启动基础服务**
+
+如果使用 Docker：
+```bash
+cd infra/docker
+docker-compose up -d mysql redis
+cd ../..
+```
+
+如果本地已经直接安装了 MySQL + Redis：
+```bash
+# 确保 MySQL 已经在 3306 端口启动
+# 确保 Redis 已经在 6379 端口启动
+# 检查 .env 文件中的 DATABASE_URL 和 REDIS_URL 指向你的本地服务
+```
+
+**3. 安装依赖**
+```bash
+# 安装前端依赖
+cd apps/web
+npm install
+
+# 安装后端依赖
+cd ../api
+pip install -r requirements.txt
+```
+
+**4. 运行数据库迁移**
+```bash
+# 仍在 apps/api 目录下
+alembic upgrade head
+```
+
+**5. 启动后端 API（FastAPI）**
+```bash
+# 在 apps/api 目录
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+API 将运行在 `http://localhost:8000`
+
+**6. 启动前端 Web（Next.js）**
+打开新终端，执行：
+```bash
+cd apps/web
+node scripts/dev.mjs --hostname 0.0.0.0 --port 3000
+```
+前端将运行在 `http://localhost:3000`
 
 ## 常用命令
 
@@ -118,8 +176,7 @@ workfile/
 ├─ .env
 ├─ .env.example
 ├─ package.json                # 根工作区脚本
-├─ start.py                    # 一键启动脚本
-└─ 秘钥.txt
+└─ start.py                    # 一键启动脚本
 ```
 
 ## 目录职责

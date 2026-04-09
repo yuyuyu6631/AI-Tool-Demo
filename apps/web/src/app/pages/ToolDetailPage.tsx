@@ -5,6 +5,7 @@ import Footer from "../components/Footer";
 import Breadcrumbs from "../components/Breadcrumbs";
 import ToolLogo from "../components/ToolLogo";
 import ToolCard from "../components/ToolCard";
+import MarkToolUsageButton from "../components/MarkToolUsageButton";
 import type { ToolDetail, ToolSummary } from "../lib/catalog-types";
 import { buildDecisionBadges, slugifyLabel } from "../lib/catalog-utils";
 
@@ -104,6 +105,7 @@ export default function ToolDetailPage({ tool, relatedTools }: ToolDetailPagePro
                   访问官网
                   <ExternalLink className="h-4 w-4" />
                 </a>
+                <MarkToolUsageButton toolId={tool.id} />
                 <Link href="/tools" className="btn-secondary inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-medium">
                   返回列表
                 </Link>

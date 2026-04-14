@@ -48,6 +48,9 @@ const filterGroups: Record<string, Set<string>> = {
 const tabsMap = new Map(tabs.map((tab) => [tab.id, tab]));
 const filtersMap = new Map(filters.map((filter) => [filter.id, filter]));
 
+// Pre-sort toolsData to avoid O(N log N) sorting on every render/filter
+const sortedToolsData = [...toolsData].sort((a, b) => b.score - a.score);
+
 function generateReason(tool: any, rank: number, activeTabLabel: string) {
   if (rank === 1) {
     return `${tool.name} 当前位列${activeTabLabel}首位，综合体验和适配度都更稳。`;
@@ -67,7 +70,7 @@ export default function RankingsPage() {
   const currentTab = tabsMap.get(activeTab) ?? tabs[0];
 
   const filteredTools = useMemo(() => {
-    let items = [...toolsData];
+    let items = sortedToolsData;
 
     if (currentTab.category) {
       items = items.filter((tool) => tool.category === currentTab.category);
@@ -80,7 +83,7 @@ export default function RankingsPage() {
       }
     }
 
-    return items.sort((a, b) => b.score - a.score);
+    return items;
   }, [activeFilter, currentTab.category]);
 
   return (

@@ -1,5 +1,9 @@
 import toolsData from "../../data/tools.json";
 
+// Pre-sort and pre-map toolsData for faster O(1) lookups and O(N) filtering
+const sortedToolsData = [...toolsData].sort((a, b) => b.score - a.score);
+const toolsMap = new Map(toolsData.map((t) => [t.slug, t]));
+
 interface RecommendRequest {
   query: string;
 }
@@ -48,7 +52,7 @@ export async function recommendTools(
   // 1. 先尝试直接工具名匹配
   for (const [slug, keywords] of Object.entries(toolRules)) {
     if (keywords.some((keyword) => lowerQuery.includes(keyword))) {
-      const tool = toolsData.find((t) => t.slug === slug);
+      const tool = toolsMap.get(slug);
       if (tool && !recommendedSlugs.has(slug)) {
         results.push({
           name: tool.name,
@@ -70,42 +74,40 @@ export async function recommendTools(
 
         switch (scenario) {
           case "ppt":
-            categoryTools = toolsData.filter(
+            categoryTools = sortedToolsData.filter(
               (t) => t.slug === "gamma" || t.slug === "canva-ai"
             );
             break;
           case "writing":
-            categoryTools = toolsData.filter(
+            categoryTools = sortedToolsData.filter(
               (t) =>
                 t.category === "写作办公" || t.slug === "chatgpt" || t.slug === "claude"
             );
             break;
           case "coding":
-            categoryTools = toolsData.filter((t) => t.category === "编程开发");
+            categoryTools = sortedToolsData.filter((t) => t.category === "编程开发");
             break;
           case "design":
-            categoryTools = toolsData.filter((t) => t.category === "设计绘图");
+            categoryTools = sortedToolsData.filter((t) => t.category === "设计绘图");
             break;
           case "video":
-            categoryTools = toolsData.filter((t) => t.category === "视频音频");
+            categoryTools = sortedToolsData.filter((t) => t.category === "视频音频");
             break;
           case "data":
-            categoryTools = toolsData.filter(
+            categoryTools = sortedToolsData.filter(
               (t) => t.category === "数据分析" || t.slug === "chatgpt"
             );
             break;
           case "agent":
-            categoryTools = toolsData.filter((t) => t.category === "智能体平台");
+            categoryTools = sortedToolsData.filter((t) => t.category === "智能体平台");
             break;
           case "meeting":
-            categoryTools = toolsData.filter((t) => t.slug === "fireflies");
+            categoryTools = sortedToolsData.filter((t) => t.slug === "fireflies");
             break;
         }
 
-        // 按评分排序并添加
-        categoryTools
-          .sort((a, b) => b.score - a.score)
-          .forEach((tool) => {
+        // 按评分排序并添加 (已经是按评分排序过的)
+        categoryTools.forEach((tool) => {
             if (!recommendedSlugs.has(tool.slug) && results.length < 3) {
               results.push({
                 name: tool.name,
@@ -125,7 +127,7 @@ export async function recommendTools(
 
   // 3. 如果还是没有结果，返回热门工具
   if (results.length === 0) {
-    const topTools = [...toolsData].sort((a, b) => b.score - a.score).slice(0, 3);
+    const topTools = sortedToolsData.slice(0, 3);
     topTools.forEach((tool) => {
       results.push({
         name: tool.name,

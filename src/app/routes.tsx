@@ -1,10 +1,5 @@
 import { createBrowserRouter } from "react-router";
 import RootLayout from "./layouts/RootLayout";
-import HomePage from "./pages/HomePage";
-import RankingsPage from "./pages/RankingsPage";
-import ToolDetailPage from "./pages/ToolDetailPage";
-import ScenariosPage from "./pages/ScenariosPage";
-import ScenarioDetailPage from "./pages/ScenarioDetailPage";
 
 export const router = createBrowserRouter([
   {
@@ -12,23 +7,23 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        Component: HomePage,
+        lazy: () => import("./pages/HomePage").then((m) => ({ Component: m.default })),
       },
       {
         path: "/rankings",
-        Component: RankingsPage,
+        lazy: () => import("./pages/RankingsPage").then((m) => ({ Component: m.default })),
       },
       {
         path: "/tools/:slug",
-        Component: ToolDetailPage,
+        lazy: () => import("./pages/ToolDetailPage").then((m) => ({ Component: m.default })),
       },
       {
         path: "/scenarios",
-        Component: ScenariosPage,
+        lazy: () => import("./pages/ScenariosPage").then((m) => ({ Component: m.default })),
       },
       {
         path: "/scenarios/:slug",
-        Component: ScenarioDetailPage,
+        lazy: () => import("./pages/ScenarioDetailPage").then((m) => ({ Component: m.default })),
       },
     ],
   },

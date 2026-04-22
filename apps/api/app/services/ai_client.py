@@ -4,7 +4,7 @@ import json
 import re
 from urllib import error, request
 
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import RetryError, retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
 from app.schemas.recommend import RecommendRequest
@@ -92,7 +92,7 @@ def rank_with_ai(payload: RecommendRequest, candidates: list) -> tuple[list, dic
 
     try:
         payload_data = _call_ai_api(api_request)
-    except (error.URLError, TimeoutError, ValueError) as e:
+    except (error.URLError, error.HTTPError, TimeoutError, ValueError, RetryError) as e:
         print(f"[AI_CLIENT] API call failed after retries: {type(e).__name__}: {e}")
         return candidates, {}
 

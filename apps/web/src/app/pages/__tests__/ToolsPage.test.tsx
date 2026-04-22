@@ -82,6 +82,7 @@ describe("ToolsPage", () => {
     expect(screen.getByText("ChatGPT")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "分页导航" })).toBeInTheDocument();
     expect(screen.getByText("模式：直接搜索")).toBeInTheDocument();
+    expect(screen.getByRole("searchbox")).toHaveAttribute("data-global-search-target", "tools");
   });
 
   it("renders ai mode panel", () => {

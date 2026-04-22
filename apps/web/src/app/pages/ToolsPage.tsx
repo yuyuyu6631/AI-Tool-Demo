@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, RotateCcw, Search, SlidersHorizontal } from 
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import Breadcrumbs from "../components/Breadcrumbs";
+import CatalogScrollRestorer from "../components/CatalogScrollRestorer";
 import CompareToolsGrid from "../components/CompareToolsGrid";
 import { Skeleton } from "../components/ui/skeleton";
 import type { AiQuickAction, AiSearchResponse, ToolsDirectoryResponse } from "../lib/catalog-types";
@@ -37,6 +38,7 @@ interface ToolsPageProps {
     sort?: string;
     view?: string;
     page?: string;
+    source?: string;
   };
   loadState?: "idle" | "error" | "timeout";
 }
@@ -117,7 +119,13 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
     view: state.view,
     page: state.page,
   };
-  const pageTitle = state.q ? "搜索结果" : "工具目录";
+  const sourceTitleMap: Record<string, string> = {
+    home_hot: "首页热门工具",
+    home_latest: "首页最新工具",
+    home_category: "首页分类工具",
+    home_search: "首页搜索结果",
+  };
+  const pageTitle = state.q ? "搜索结果" : sourceTitleMap[state.source || ""] || "工具目录";
   const currentPage = Number(state.page || directory.page || 1);
   const totalPages = Math.max(1, Math.ceil(directory.total / Math.max(1, directory.pageSize || 9)));
   const pagination = buildPagination(currentPage, totalPages);
@@ -144,6 +152,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
 
   return (
     <div className="page-shell">
+      <CatalogScrollRestorer />
       <Header currentPath="/tools" currentRoute={currentRoute} />
 
       <main className="py-8 md:py-10">
@@ -201,10 +210,12 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                   <div className="relative flex-1">
                     <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
+                      id="tools-search"
                       type="search"
                       name="q"
                       defaultValue={state.q || ""}
                       placeholder="想写文案、做海报、写代码？告诉我你的任务。"
+                      data-global-search-target="tools"
                       className="w-full rounded-[18px] border border-white/50 bg-white/80 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white"
                     />
                     <input type="hidden" name="mode" value={activeMode} />
@@ -621,6 +632,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
               ) : (
                 <CompareToolsGrid
                   items={directory.items}
+                  rememberDetailNavigation
                   onToolDetailClick={(tool) => {
                     if (activeMode !== "ai") return;
                     trackEvent("tools_ai_to_detail_click", {

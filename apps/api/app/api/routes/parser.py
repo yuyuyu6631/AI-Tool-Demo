@@ -1,17 +1,30 @@
-from fastapi import APIRouter
-from pydantic import BaseModel
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, status
+from pydantic import AnyHttpUrl, BaseModel
+
 from app.services.tool_parser_service import generate_tool_metadata
 
 router = APIRouter()
 
-class ParseToolRequest(BaseModel):
-    url: str
 
-@router.post("/extract")
+class ParseToolRequest(BaseModel):
+    url: AnyHttpUrl
+
+
+class ParseToolResponse(BaseModel):
+    success: bool
+    data: dict[str, Any]
+
+
+@router.post("/extract", response_model=ParseToolResponse)
 def extract_tool_metadata(payload: ParseToolRequest):
     """
     接收目标工具URL，使用爬虫并调用LLM自动抽取相关特征（分类、标签、描述）。
     供管理后台等前端系统直接调研。
     """
-    data = generate_tool_metadata(str(payload.url))
+    try:
+        data = generate_tool_metadata(str(payload.url))
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return {"success": bool(data), "data": data}

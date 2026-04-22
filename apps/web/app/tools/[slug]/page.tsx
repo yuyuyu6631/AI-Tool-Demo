@@ -55,5 +55,5 @@ export default async function Page({ params }: ToolDetailRouteProps) {
   const relatedDirectory = await fetchDirectory(`category=${slugifyLabel(tool.category)}&page=1&page_size=4`).catch(() => null);
   const relatedTools = relatedDirectory ? relatedDirectory.items.filter((item) => item.slug !== slug).slice(0, 3) : [];
 
-  return <ToolDetailPage tool={tool} relatedTools={relatedTools} />;
+  return <ToolDetailPage tool={tool} relatedTools={relatedTools} reviews={null} />;
 }

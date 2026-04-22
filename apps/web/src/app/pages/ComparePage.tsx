@@ -4,7 +4,14 @@ import Footer from "../components/Footer";
 import Breadcrumbs from "../components/Breadcrumbs";
 import ToolLogo from "../components/ToolLogo";
 import type { ToolDetail } from "../lib/catalog-types";
-import { buildCompareValue, buildAccessBadges, formatPriceRange, formatPricingType, getNetworkStatusValue, getScoreBadge } from "../lib/tool-display";
+import {
+  buildCompareValue,
+  buildAccessBadges,
+  formatPriceRange,
+  formatPricingType,
+  getNetworkStatusValue,
+  getScoreBadge,
+} from "../lib/tool-display";
 
 interface ComparePageProps {
   tools: ToolDetail[];
@@ -62,7 +69,7 @@ export default function ComparePage({ tools, comparisonSlug }: ComparePageProps)
 
       <main className="py-8 md:py-10">
         <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8">
-          <Breadcrumbs items={[{ label: "首页", href: "/" }, { label: "工具目录", href: "/tools" }, { label: "工具对比" }]} />
+          <Breadcrumbs items={[{ label: "首页", href: "/" }, { label: "工具对比" }]} />
 
           <section className="panel-base rounded-[32px] p-6 md:p-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -70,11 +77,11 @@ export default function ComparePage({ tools, comparisonSlug }: ComparePageProps)
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">工具对比</p>
                 <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">别凭感觉选，放一起更容易看清。</h1>
                 <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
-                  对比不是看谁功能多，而是看谁更适合你现在的任务。价格、功能、适用人群、上手门槛，摆在一起看，差别会清楚很多。
+                  对比不是看谁功能多，而是看谁更适合你现在的任务。价格、功能、适用人群、上手门槛，摆在一起看，差别会清晰很多。
                 </p>
               </div>
-              <Link href="/tools" className="btn-secondary inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-medium">
-                返回工具目录
+              <Link href="/" className="btn-secondary inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-medium">
+                返回首页继续找工具
               </Link>
             </div>
           </section>

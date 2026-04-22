@@ -4,7 +4,7 @@ const cases = [
   { name: "home-1280", path: "/", width: 1280, height: 1200 },
   { name: "home-1440", path: "/", width: 1440, height: 1200 },
   { name: "home-1920", path: "/", width: 1920, height: 1280 },
-  { name: "tools-390", path: "/tools", width: 390, height: 1100 },
+  { name: "home-search-390", path: "/?q=AI", width: 390, height: 1100 },
 ];
 
 for (const item of cases) {

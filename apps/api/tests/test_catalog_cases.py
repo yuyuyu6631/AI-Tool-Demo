@@ -122,6 +122,8 @@ def _upsert_tool_embedding(db: Session, tool: Tool) -> None:
 
 def setup_module():
     session_mod.SessionLocal = _TestSession
+    if os.path.exists(_TEST_DB_PATH):
+        os.remove(_TEST_DB_PATH)
     Base.metadata.create_all(bind=_test_engine)
     catalog_svc.SessionLocal = _TestSession
 
@@ -562,8 +564,11 @@ def test_categories_hide_empty_by_default_and_can_include_empty():
 
     assert hidden_response.status_code == 200
     assert full_response.status_code == 200
-    assert [item["slug"] for item in hidden_response.json()] == ["chatbot", "office"]
-    assert [item["slug"] for item in full_response.json()] == ["chatbot", "office", "empty"]
+    assert [item["slug"] for item in hidden_response.json()] == ["office", "chatbot"]
+    assert [item["slug"] for item in full_response.json()] == ["office", "chatbot", "empty"]
+    assert hidden_response.json()[0]["toolCount"] == 9
+    assert hidden_response.json()[1]["toolCount"] == 2
+    assert hidden_response.json()[1]["legacySlugs"] == ["ai-chat", "general-assistants"]
 
 
 def test_category_tools_only_return_published_tools():
@@ -571,6 +576,27 @@ def test_category_tools_only_return_published_tools():
 
     assert response.status_code == 200
     assert [item["slug"] for item in response.json()] == ["chatgpt", "claude"]
+    assert response.json()[0]["categorySlug"] == "chatbot"
+
+
+def test_category_tools_accept_legacy_slug_aliases():
+    response = client.get("/api/categories/general-assistants/tools")
+
+    assert response.status_code == 200
+    assert [item["slug"] for item in response.json()] == ["chatgpt", "claude"]
+
+
+def test_home_catalog_only_returns_governed_sections():
+    response = client.get("/api/home")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["hotTools"]
+    assert payload["latestTools"]
+    assert [item["label"] for item in payload["sidebarCategories"]] == ["Chatbot", "Office"]
+    assert payload["sidebarCategories"][0]["navigationType"] == "route"
+    assert payload["sidebarCategories"][0]["href"] == "/tools?mode=search&category=chatbot&page=1"
+    assert payload["categorySections"][0]["browseCategorySlug"] == "office"
 
 
 def test_rankings_hide_empty_rankings_and_unpublished_items():

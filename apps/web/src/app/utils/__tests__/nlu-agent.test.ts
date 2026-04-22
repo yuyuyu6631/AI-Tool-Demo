@@ -1,30 +1,49 @@
 import { parseSearchIntent } from "../nlu-agent";
 
 describe("parseSearchIntent", () => {
-  it("extracts category + price and keeps task keywords", () => {
-    expect(parseSearchIntent("帮我找免费做海报的工具")).toEqual({
-      q: "做",
-      category: "ai-tuxiang",
+  const categories = [
+    {
+      slug: "chatbot",
+      canonicalSlug: "chatbot",
+      name: "AI聊天助手",
+      description: "",
+      toolCount: 10,
+      legacySlugs: ["ai-chat"],
+    },
+    {
+      slug: "office",
+      canonicalSlug: "office",
+      name: "AI办公工具",
+      description: "",
+      toolCount: 6,
+      legacySlugs: ["writing-office"],
+    },
+  ];
+
+  it("extracts dynamic category aliases and price", () => {
+    expect(parseSearchIntent("帮我找 ai-chat 免费工具", categories)).toEqual({
+      q: "",
+      category: "chatbot",
       price: "free",
       tag: "",
     });
   });
 
-  it("recognizes paid one-time query", () => {
-    expect(parseSearchIntent("有没有买断的代码工具")).toEqual({
+  it("falls back to static business keywords when no dynamic category matches", () => {
+    expect(parseSearchIntent("有没有买断的代码工具", categories)).toEqual({
       q: "",
-      category: "dai-ma",
+      category: "coding",
       price: "one-time",
       tag: "",
     });
   });
 
-  it("extracts hashtag as tag", () => {
-    expect(parseSearchIntent("推荐 #效率 的免费工具")).toEqual({
-      q: "",
+  it("keeps query text when multiple dynamic categories collide", () => {
+    expect(parseSearchIntent("AI聊天助手 AI办公工具", categories)).toEqual({
+      q: "ai聊天助手ai办公",
       category: "",
-      price: "free",
-      tag: "效率",
+      price: "",
+      tag: "",
     });
   });
 });

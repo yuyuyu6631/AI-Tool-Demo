@@ -2,121 +2,93 @@
 
 ## 文档目的
 
-本文档记录当前仓库已经完成的关键事实、当前状态和下一阶段预期。  
-它描述的是“现在代码已经有什么”，不是历史方案回顾。
+本文档记录当前仓库已经完成的关键事实、当前状态和下一阶段预期。
 
 ## 本轮已完成事实
 
-### 1. 仓库结构已稳定
+### 1. 仓库主干已稳定
 
-当前仓库主体已经稳定为：
+当前主干包括：
 
 - `apps/web`
 - `apps/api`
 - `packages/contracts`
-- `infra/docker`
-- `infra/sql`
+- `infra`
 - `doc`
+- `docs`
 
-### 2. 前端基线已稳定
+### 2. 前端能力已从“目录展示”扩展到“公开站点 + 后台”
 
-当前 Web 端已经基于 Next.js App Router 落地，真实页面包括：
+当前前端已经具备：
 
-- `/`
-- `/tools`
-- `/tools/[slug]`
-- `/rankings`
-- `/scenarios`
-- `/scenarios/[slug]`
-- `/auth`
+- 首页主承接页
+- 工具详情页
+- 场景页
+- 对比页
+- 认证页
+- 匹配页
+- 后台总览、工具、评论、榜单管理页
 
-当前前端已具备：
+### 3. 后端主路由已扩展
 
-- 首页目录入口
-- 工具目录检索
-- 工具详情展示
-- 榜单展示
-- 场景展示
-- 基础登录注册页
-- Header 登录态展示
+当前 API 已覆盖：
 
-### 3. 后端基线已稳定
+- 目录与首页
+- 评论读取与提交
+- 认证
+- AI 搜索、推荐、Chat
+- 抓取与解析入口
+- 后台工具/评论/榜单管理
 
-当前 API 已具备以下主路由：
-
-- `GET /api/tools`
-- `GET /api/tools/{slug}`
-- `GET /api/tools/search-index`
-- `GET /api/tools/import-preview/validation`
-- `GET /api/categories`
-- `GET /api/categories/{slug}/tools`
-- `GET /api/rankings`
-- `GET /api/rankings/{slug}`
-- `GET /api/scenarios`
-- `GET /api/scenarios/{slug}`
-- `GET /api/ai-search`（AI 意图解析搜索，含 AI Panel，与 recommend 是两个独立端点）
-- `POST /api/recommend`（批量工具推荐）
-- `POST /api/chat`（流式 RAG 对话）
-- `POST /api/crawl/jobs`
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
-
-### 4. 数据库与认证已进入当前事实
+### 4. 数据模型已覆盖运营基本面
 
 当前数据库模型已经覆盖：
 
 - 工具目录
 - 分类与标签
 - 榜单与场景
+- 评论与评分
 - 抓取快照与更新候选
-- 用户与用户会话
+- 用户、会话与角色
 
-这意味着：
+### 5. 文档工作流已自动化
 
-- “只靠静态 mock 数据”已经不是当前事实
-- “登录注册不做”已经不是当前事实
+当前已新增：
 
-### 5. 测试资产已存在
-
-当前已存在：
-
-- 前端 Vitest 测试
-- 前端 Playwright 用例
-- 后端 pytest
-- 认证 API 测试
+- `npm run docs:sync`
+- `npm run docs:check`
+- `pre-commit` 自动刷新当前实现基线
+- `docs/current-implementation-baseline.*`
 
 ## 当前实际状态
 
 可以概括为：
 
-- 前后端主干已经搭好
-- 目录和认证已经是可运行能力
-- 抓取和运营链路仍未闭环
-- 后台管理侧仍未落地
+- 前后端主干已经稳定
+- 评论和后台管理已进入当前事实
+- 自动文档基线已经接入流程
+- 抓取审核闭环和商业化仍未完成
 
 ## 下一阶段预期
 
-### 1. 类型与文档统一
+### 1. 收敛类型和文档
 
-- 把前后端共享类型进一步统一
-- 保持 `doc/` 与代码同步
+- 继续减少重复类型
+- 保持正文文档与自动基线一致
 
-### 2. 测试补强
+### 2. 补测试
 
-- 继续补页面级测试
-- 补充更多后端接口覆盖
+- 扩展后台与评论链路测试
+- 增强前端回归覆盖
 
-### 3. 抓取审核闭环
+### 3. 补抓取审核闭环
 
-- 让抓取结果进入审核流
-- 明确发布和回滚能力
+- 让抓取结果进入可审可发的工作流
 
-### 4. 后台与权限
+### 4. 补权限与增长能力
 
-- 引入后台角色体系
-- 为内容管理和审核提供前端入口
+- 更细粒度角色
+- SEO / 专题 / 线索收集
 
 ## 当前口径约束
 

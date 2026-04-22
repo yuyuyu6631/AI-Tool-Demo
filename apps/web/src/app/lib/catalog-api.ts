@@ -1,15 +1,25 @@
 import type {
+  AdminRankingListItem,
+  AdminRankingPayload,
+  AdminOverviewResponse,
+  AdminReviewListItem,
+  AdminToolListItem,
   RankingSection,
   ScenarioSummary,
   AiSearchResponse,
+  CategorySummary,
+  HomeCatalogResponse,
   ToolSummary,
   ToolDetail,
+  ToolReviewItem,
+  ToolReviewsResponse,
   ToolsDirectoryResponse,
 } from "./catalog-types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 export const CATALOG_CACHE_TAG = "catalog";
 export const CATALOG_REVALIDATE_SECONDS = 60;
+const CATALOG_FETCH_TIMEOUT_MS = 8000;
 
 type CatalogFetchOptions = RequestInit & {
   next?: {
@@ -39,7 +49,13 @@ function withCatalogCache(options?: CatalogFetchOptions): CatalogFetchOptions {
 }
 
 async function fetchJson<T>(path: string, options?: CatalogFetchOptions): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, withCatalogCache(options));
+  const response = await fetch(
+    `${API_BASE_URL}${path}`,
+    withCatalogCache({
+      ...options,
+      signal: withTimeoutSignal(options?.signal ?? undefined),
+    }),
+  );
 
   if (!response.ok) {
     throw new ApiError(path, response.status);
@@ -58,9 +74,44 @@ export async function fetchAiSearch(queryString = ""): Promise<AiSearchResponse>
   return fetchJson<AiSearchResponse>(`/api/ai-search${queryString ? `?${queryString}` : ""}`);
 }
 
+function withTimeoutSignal(signal?: AbortSignal, timeoutMs = CATALOG_FETCH_TIMEOUT_MS) {
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  return signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+}
+
+async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    signal: withTimeoutSignal(init?.signal ?? undefined, 6000),
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  if (!response.ok) {
+    throw new ApiError(path, response.status);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+export async function fetchCategories(): Promise<CategorySummary[]> {
+  return fetchJson<CategorySummary[]>("/api/categories");
+}
+
 export async function fetchSearchIndex(): Promise<ToolSummary[]> {
   // 不传递 options 禁用缓存，或者给一个更长时间的缓存，依赖数据实时性，这里我们复用 catalog cache
   return fetchJson<ToolSummary[]>("/api/tools/search-index");
+}
+
+export async function fetchHomeCatalog(queryString = ""): Promise<HomeCatalogResponse> {
+  return fetchJson<HomeCatalogResponse>(`/api/home${queryString ? `?${queryString}` : ""}`);
 }
 
 export async function fetchToolDetail(slug: string): Promise<ToolDetail | null> {
@@ -87,6 +138,74 @@ export async function fetchScenarioDetail(slug: string): Promise<ScenarioSummary
 
 export async function fetchRankings(): Promise<RankingSection[]> {
   return fetchJson<RankingSection[]>("/api/rankings");
+}
+
+export async function fetchToolReviews(slug: string): Promise<ToolReviewsResponse> {
+  return fetchJson<ToolReviewsResponse>(`/api/tools/${slug}/reviews`);
+}
+
+export async function fetchMyToolReview(slug: string): Promise<ToolReviewItem | null> {
+  try {
+    return await requestJson<ToolReviewItem | null>(`/api/tools/${slug}/reviews/me`, { method: "GET" });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function saveMyToolReview(
+  slug: string,
+  payload: { rating: number; title: string; body: string },
+): Promise<ToolReviewItem> {
+  return requestJson<ToolReviewItem>(`/api/tools/${slug}/reviews/me`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchAdminTools(): Promise<AdminToolListItem[]> {
+  return requestJson<AdminToolListItem[]>("/api/admin/tools", { method: "GET" });
+}
+
+export async function fetchAdminOverview(): Promise<AdminOverviewResponse> {
+  return requestJson<AdminOverviewResponse>("/api/admin/overview", { method: "GET" });
+}
+
+export async function fetchAdminTool(toolId: number): Promise<ToolDetail> {
+  return requestJson<ToolDetail>(`/api/admin/tools/${toolId}`, { method: "GET" });
+}
+
+export async function saveAdminTool(payload: object, toolId?: number): Promise<ToolDetail> {
+  return requestJson<ToolDetail>(toolId ? `/api/admin/tools/${toolId}` : "/api/admin/tools", {
+    method: toolId ? "PUT" : "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchAdminReviews(toolSlug?: string): Promise<AdminReviewListItem[]> {
+  const query = toolSlug ? `?tool_slug=${encodeURIComponent(toolSlug)}` : "";
+  return requestJson<AdminReviewListItem[]>(`/api/admin/reviews${query}`, { method: "GET" });
+}
+
+export async function deleteAdminReview(reviewId: number): Promise<void> {
+  await requestJson<void>(`/api/admin/reviews/${reviewId}`, { method: "DELETE" });
+}
+
+export async function fetchAdminRankings(): Promise<AdminRankingListItem[]> {
+  return requestJson<AdminRankingListItem[]>("/api/admin/rankings", { method: "GET" });
+}
+
+export async function fetchAdminRanking(rankingId: number): Promise<AdminRankingPayload> {
+  return requestJson<AdminRankingPayload>(`/api/admin/rankings/${rankingId}`, { method: "GET" });
+}
+
+export async function saveAdminRanking(payload: object, rankingId?: number): Promise<AdminRankingPayload> {
+  return requestJson<AdminRankingPayload>(rankingId ? `/api/admin/rankings/${rankingId}` : "/api/admin/rankings", {
+    method: rankingId ? "PUT" : "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function fetchScenarios(): Promise<ScenarioSummary[]> {

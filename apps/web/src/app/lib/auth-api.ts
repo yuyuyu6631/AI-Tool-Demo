@@ -4,6 +4,7 @@ export type AuthUser = {
   email: string;
   status: string;
   createdAt: string;
+  role?: string;
 };
 
 type ErrorDetail = string | Record<string, string> | null;

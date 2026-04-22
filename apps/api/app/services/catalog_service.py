@@ -19,13 +19,16 @@ from app.models.models import Category, Ranking, RankingItem, Scenario, Scenario
 from app.schemas.catalog import (
     CategorySummary,
     FacetOption,
+    HomeCatalogResponse,
+    HomeCategorySection,
+    HomeSidebarCategory,
     PresetView,
     RankingItem as RankingItemSchema,
     RankingSection,
     ScenarioSummary,
     ToolsDirectoryResponse,
 )
-from app.schemas.tool import AccessFlags, ReviewPreview, ScenarioRecommendation, ToolDetail, ToolSummary
+from app.schemas.tool import AccessFlags, ReviewPreview, ScenarioRecommendation, ToolDetail, ToolRatingSummary, ToolSummary
 from app.services.cache_service import get_redis_client
 from app.services.catalog_views_seed import (
     get_scenario_target_audience,
@@ -39,6 +42,10 @@ from app.services.logo_assets import normalize_logo_path
 PUBLIC_TOOL_STATUS = "published"
 VISIBLE_TOOL_STATUSES = ("published", "draft", "archived")
 ALL_STATUS_SLUG = "all"
+LEGACY_CATEGORY_SLUGS: dict[str, list[str]] = {
+    "chatbot": ["ai-chat", "general-assistants"],
+}
+HOME_SIDEBAR_ORDER = ["chatbot", "office"]
 
 PRESET_DEFINITIONS = {
     "hot": {
@@ -177,6 +184,16 @@ def _published_reviews(tool: Tool) -> list[ToolReview]:
     )
 
 
+def _build_rating_summary(reviews: list[ToolReview]) -> ToolRatingSummary:
+    ratings = [review.rating for review in reviews if review.rating is not None]
+    review_count = len(ratings)
+    average = round(sum(ratings) / review_count, 2) if review_count else 0.0
+    distribution = {str(score): 0 for score in range(5, 0, -1)}
+    for rating in ratings:
+        distribution[str(int(rating))] = distribution.get(str(int(rating)), 0) + 1
+    return ToolRatingSummary(average=average, reviewCount=review_count, ratingDistribution=distribution)
+
+
 def _tool_row_to_summary(tool: Tool) -> ToolSummary:
     tags = [_repair_text(item.tag.name) for item in tool.tags] if tool.tags else []
     category_name = tool.category_name
@@ -188,6 +205,7 @@ def _tool_row_to_summary(tool: Tool) -> ToolSummary:
         slug=tool.slug,
         name=_repair_text(tool.name),
         category=_repair_text(category_name),
+        categorySlug=_slugify(category_name),
         score=tool.score,
         summary=_repair_text(tool.summary),
         tags=tags,
@@ -234,6 +252,7 @@ def _tool_row_to_detail(tool: Tool) -> ToolDetail:
         for review in reviews[:3]
         if _repair_text(review.title) or _repair_text(review.body)
     ]
+    rating_summary = _build_rating_summary(reviews)
     return ToolDetail(
         **base.model_dump(),
         description=_repair_text(tool.description),
@@ -251,6 +270,7 @@ def _tool_row_to_detail(tool: Tool) -> ToolDetail:
         scenarios=[item.task for item in scenario_recommendations],
         scenarioRecommendations=scenario_recommendations,
         reviewPreview=review_preview,
+        ratingSummary=rating_summary,
         alternatives=[],
         lastVerifiedAt=tool.last_verified_at,
     )
@@ -743,16 +763,22 @@ def list_categories(*, db, include_empty: bool = False) -> list[CategorySummary]
             pass  # fall through to DB
 
     rows = db.scalars(select(Category)).all()
-    visible_categories = {_slugify(tool.category) for tool in _load_summaries(db)} if not include_empty else set()
+    published_tools = _load_summaries(db)
+    category_counts = Counter(tool.categorySlug or _slugify(tool.category) for tool in published_tools)
+    visible_categories = set(category_counts) if not include_empty else set()
     result = [
         CategorySummary(
             slug=row.slug,
             name=_repair_text(row.name),
             description=_repair_text(row.description),
+            toolCount=category_counts.get(row.slug, 0),
+            canonicalSlug=row.slug,
+            legacySlugs=LEGACY_CATEGORY_SLUGS.get(row.slug, []),
         )
         for row in rows
         if include_empty or row.slug in visible_categories or _slugify(row.name) in visible_categories
     ]
+    result.sort(key=lambda item: (-item.toolCount, item.slug))
 
     if redis_client:
         try:
@@ -767,9 +793,55 @@ def list_categories(*, db, include_empty: bool = False) -> list[CategorySummary]
 
 def list_tools_by_category(*, db, category_slug: str) -> list[ToolSummary]:
     normalized = _slugify(category_slug)
+    canonical_slug = next(
+        (slug for slug, aliases in LEGACY_CATEGORY_SLUGS.items() if normalized == slug or normalized in aliases),
+        normalized,
+    )
     # status already filtered by _load_summaries default to PUBLIC_TOOL_STATUS
-    tools = [tool for tool in _load_summaries(db) if _slugify(tool.category) == normalized]
+    tools = [tool for tool in _load_summaries(db) if (tool.categorySlug or _slugify(tool.category)) == canonical_slug]
     return _sort_tools(tools, sort="featured", view="hot")
+
+
+def get_home_catalog(*, db, section_size: int = 8) -> HomeCatalogResponse:
+    all_tools = _load_summaries(db)
+    hot_tools = _sort_tools(all_tools, sort="featured", view="hot")[:section_size]
+    latest_tools = _sort_tools(all_tools, sort="featured", view="latest")[:section_size]
+    categories = list_categories(db=db, include_empty=False)
+
+    sidebar_categories = [
+        HomeSidebarCategory(
+            homeSlug=item.slug,
+            label=item.name,
+            count=item.toolCount,
+            sectionId=f"category-{item.slug}",
+            description=item.description,
+            navigationType="route",
+            href=f"/tools?mode=search&category={item.slug}&page=1",
+        )
+        for slug in HOME_SIDEBAR_ORDER
+        for item in categories
+        if item.slug == slug
+    ]
+
+    category_sections = [
+        HomeCategorySection(
+            homeSlug=item.slug,
+            label=item.name,
+            description=item.description,
+            sectionId=f"category-{item.slug}",
+            browseCategorySlug=item.slug,
+            items=list_tools_by_category(db=db, category_slug=item.slug)[:section_size],
+            moreHref=f"/tools?mode=search&category={item.slug}&page=1",
+        )
+        for item in categories
+    ]
+
+    return HomeCatalogResponse(
+        hotTools=hot_tools,
+        latestTools=latest_tools,
+        sidebarCategories=sidebar_categories,
+        categorySections=category_sections,
+    )
 
 
 def _build_scenario_summary(scenario: Scenario, db) -> ScenarioSummary:

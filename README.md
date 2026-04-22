@@ -1,23 +1,31 @@
-﻿# 星点评（Xingdianping）
+# 星点评（Xingdianping）
 
 AI 工具发现、评测与对比平台（Monorepo）。
 
-## 当前能力
+## 当前重点
 
-- 工具目录：列表页、详情页、分类筛选、状态展示
-- 对比能力：多工具对比页（`/compare/[comparisonSlug]`）
-- 匹配推荐：`/matches` 场景化推荐流
-- AI 能力：
-  - 聊天与 RAG（后端 `chat` 路由）
-  - AI Search（后端 `ai_search` 路由）
-  - 工具解析（后端 `parser` 路由）
-- 评测与访问条件：评分、评论计数、可访问性标识（VPN/中文等）
+当前仓库正在准备一轮前端布局大改，优先目标不是继续堆功能，而是先把整站页面结构、入口逻辑和文档口径统一。
+
+这轮改动前，建议先阅读以下文档：
+
+- [布局改版工作台](./doc/15-布局改版工作台.md)
+- [页面设计规范](./doc/03-页面设计规范.md)
+- [前端落地设计说明](./doc/10-前端设计稿.md)
+- [一期统一入口测试说明](./docs/phase1-testing-handoff.md)
+
+## 当前产品能力
+
+- 首页统一主入口，承接 `直接搜索` / `AI 帮找`
+- 工具目录页支持搜索、筛选、排序、分页
+- 工具详情页支持基础信息、标签、评分、相似工具推荐
+- 榜单页、场景页、认证页已具备可运行骨架
+- AI 搜索链路已接入 `/api/ai-search`，支持基础意图理解和降级
 
 ## 技术栈
 
-- 前端：Next.js 15、React 19、TypeScript、Vitest、Playwright
+- 前端：Next.js 15、React 19、TypeScript、Tailwind CSS 4、Vitest、Playwright
 - 后端：FastAPI、SQLAlchemy、Alembic、Pytest
-- 基础设施：MySQL、Redis（本地或 Docker）
+- 基础设施：MySQL、Redis、Docker Compose
 
 ## 项目结构
 
@@ -27,9 +35,10 @@ apps/
   web/                Next.js 前端与测试
 packages/
   contracts/          前后端共享类型
-doc/                  项目过程文档
-docs/                 技术方案与交接文档
+doc/                  产品、页面、交互与技术文档
+docs/                 阶段性交接、测试与专项说明
 scripts/              根目录脚本
+infra/                本地基础设施配置
 ```
 
 ## 本地启动
@@ -45,35 +54,13 @@ pip install -e .[dev]
 2. 配置环境变量
 
 - 复制 `.env.example` 为 `.env`
-- 配置数据库与 Redis 连接
+- 配置数据库、Redis 与模型相关环境变量
 
 3. 启动服务
 
 ```bash
-# 根目录
 npm start
 ```
-
-## 测试
-
-```bash
-# 前端单测
-npm run test:web
-
-# 后端测试
-cd apps/api
-python -m pytest
-```
-
-本次推送前已执行：
-- `npm run test:web` 通过（12 files, 36 tests）
-- `python -m pytest` 通过（132 passed）
-
-## 提交规范（本仓库约定）
-
-- 仅提交有效源码、测试与必要文档
-- 不提交构建缓存与临时文件（如 `*.tsbuildinfo`、`output/`）
-- 调试脚本与临时验证文件不进入主干提交
 
 ## 常用命令
 
@@ -82,6 +69,9 @@ npm run dev:web
 npm run build:web
 npm run lint:web
 npm run test:web
+npm run docs:sync
+npm run docs:check
+npm run stop
 ```
 
 后端：
@@ -89,5 +79,16 @@ npm run test:web
 ```bash
 cd apps/api
 alembic upgrade head
+python -m pytest
 python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+## 协作约定
+
+- 当前以仓库代码为唯一事实来源
+- 页面布局、信息架构和交互口径以 `doc/` 下文档为准
+- 阶段性交接、测试范围和灰度说明以 `docs/` 下文档为准
+- 若文档与代码不一致，先以代码为准，再回写文档
+- 本轮布局大改期间，优先维护入口文档和页面结构文档的一致性
+- `docs/current-implementation-baseline.md` 由代码自动生成，提交前会通过 `pre-commit` 自动刷新
+- 若只想校验生成结果是否过期，运行 `npm run docs:check`

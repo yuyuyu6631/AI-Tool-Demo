@@ -1,0 +1,695 @@
+{
+  "generatedAt": "2026-04-22T02:49:39.089Z",
+  "summary": {
+    "frontendRouteCount": 15,
+    "apiEndpointCount": 36,
+    "dataModelCount": 17,
+    "testFileCount": 38
+  },
+  "frontendRoutes": [
+    {
+      "route": "/",
+      "kind": "page",
+      "redirectTarget": null,
+      "source": "apps/web/app/page.tsx"
+    },
+    {
+      "route": "/admin",
+      "kind": "page",
+      "redirectTarget": null,
+      "source": "apps/web/app/admin/page.tsx"
+    },
+    {
+      "route": "/admin/rankings",
+      "kind": "page",
+      "redirectTarget": null,
+      "source": "apps/web/app/admin/rankings/page.tsx"
+    },
+    {
+      "route": "/admin/reviews",
+      "kind": "page",
+      "redirectTarget": null,
+      "source": "apps/web/app/admin/reviews/page.tsx"
+    },
+    {
+      "route": "/admin/tools",
+      "kind": "page",
+      "redirectTarget": null,
+      "source": "apps/web/app/admin/tools/page.tsx"
+    },
+    {
+      "route": "/admin/tools/[id]",
+      "kind": "page",
+      "redirectTarget": null,
+      "source": "apps/web/app/admin/tools/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/tools/new",
+      "kind": "page",
+      "redirectTarget": null,
+      "source": "apps/web/app/admin/tools/new/page.tsx"
+    },
+    {
+      "route": "/auth",
+      "kind": "page",
+      "redirectTarget": null,
+      "source": "apps/web/app/auth/page.tsx"
+    },
+    {
+      "route": "/compare/[comparisonSlug]",
+      "kind": "redirect",
+      "redirectTarget": "/compare/${canonicalSlug}",
+      "source": "apps/web/app/compare/[comparisonSlug]/page.tsx"
+    },
+    {
+      "route": "/matches",
+      "kind": "page",
+      "redirectTarget": null,
+      "source": "apps/web/app/matches/page.tsx"
+    },
+    {
+      "route": "/rankings",
+      "kind": "redirect",
+      "redirectTarget": "/",
+      "source": "apps/web/app/rankings/page.tsx"
+    },
+    {
+      "route": "/scenarios",
+      "kind": "page",
+      "redirectTarget": null,
+      "source": "apps/web/app/scenarios/page.tsx"
+    },
+    {
+      "route": "/scenarios/[slug]",
+      "kind": "page",
+      "redirectTarget": null,
+      "source": "apps/web/app/scenarios/[slug]/page.tsx"
+    },
+    {
+      "route": "/tools",
+      "kind": "redirect",
+      "redirectTarget": "[dynamic redirect]",
+      "source": "apps/web/app/tools/page.tsx"
+    },
+    {
+      "route": "/tools/[slug]",
+      "kind": "page",
+      "redirectTarget": null,
+      "source": "apps/web/app/tools/[slug]/page.tsx"
+    }
+  ],
+  "apiEndpoints": [
+    {
+      "method": "POST",
+      "path": "/api",
+      "handler": "chat_stream",
+      "responseModel": null,
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/chat.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/overview",
+      "handler": "get_overview",
+      "responseModel": "AdminOverviewResponse",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/admin.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/rankings",
+      "handler": "list_rankings",
+      "responseModel": "list[AdminRankingListItem]",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/admin.py"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/rankings",
+      "handler": "create_ranking",
+      "responseModel": "AdminRankingPayload",
+      "statusCode": "201",
+      "source": "apps/api/app/api/routes/admin.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/rankings/{ranking_id}",
+      "handler": "get_ranking",
+      "responseModel": "AdminRankingPayload",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/admin.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/rankings/{ranking_id}",
+      "handler": "update_ranking",
+      "responseModel": "AdminRankingPayload",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/admin.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/reviews",
+      "handler": "list_reviews",
+      "responseModel": "list[AdminReviewListItem]",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/admin.py"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/reviews/{review_id}",
+      "handler": "delete_review",
+      "responseModel": null,
+      "statusCode": "204",
+      "source": "apps/api/app/api/routes/admin.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/tools",
+      "handler": "list_tools",
+      "responseModel": "list[AdminToolListItem]",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/admin.py"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/tools",
+      "handler": "create_tool",
+      "responseModel": "ToolDetail",
+      "statusCode": "201",
+      "source": "apps/api/app/api/routes/admin.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/tools/{tool_id}",
+      "handler": "get_tool",
+      "responseModel": "ToolDetail",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/admin.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/tools/{tool_id}",
+      "handler": "update_tool",
+      "responseModel": "ToolDetail",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/admin.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/ai-search",
+      "handler": "get_ai_search",
+      "responseModel": "AiSearchResponse",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/ai_search.py"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "handler": "login",
+      "responseModel": "AuthUserResponse",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/auth.py"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "handler": "logout",
+      "responseModel": null,
+      "statusCode": "204",
+      "source": "apps/api/app/api/routes/auth.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "handler": "me",
+      "responseModel": "AuthUserResponse",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/auth.py"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/register",
+      "handler": "register",
+      "responseModel": "AuthUserResponse",
+      "statusCode": "201",
+      "source": "apps/api/app/api/routes/auth.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/categories",
+      "handler": "get_categories",
+      "responseModel": "list[CategorySummary]",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/catalog.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/categories/{slug}/tools",
+      "handler": "get_category_tools",
+      "responseModel": "list[ToolSummary]",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/catalog.py"
+    },
+    {
+      "method": "POST",
+      "path": "/api/crawl/jobs",
+      "handler": "create_crawl_job",
+      "responseModel": null,
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/crawl.py"
+    },
+    {
+      "method": "POST",
+      "path": "/api/extract",
+      "handler": "extract_tool_metadata",
+      "responseModel": "ParseToolResponse",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/parser.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/home",
+      "handler": "get_home_catalog",
+      "responseModel": "HomeCatalogResponse",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/catalog.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/rankings",
+      "handler": "get_rankings",
+      "responseModel": "list[RankingSection]",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/catalog.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/rankings/{slug}",
+      "handler": "get_ranking",
+      "responseModel": "RankingSection",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/catalog.py"
+    },
+    {
+      "method": "POST",
+      "path": "/api/recommend",
+      "handler": "recommend_tools",
+      "responseModel": "list[RecommendItem]",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/recommend.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scenarios",
+      "handler": "get_scenarios",
+      "responseModel": "list[ScenarioSummary]",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/catalog.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scenarios/{slug}",
+      "handler": "get_scenario",
+      "responseModel": "ScenarioSummary",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/catalog.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tools",
+      "handler": "get_tools",
+      "responseModel": "ToolsDirectoryResponse",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/catalog.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tools/{slug}",
+      "handler": "get_tool",
+      "responseModel": "ToolDetail",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/catalog.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tools/{tool_slug}/reviews",
+      "handler": "get_reviews",
+      "responseModel": "ToolReviewsResponse",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/reviews.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tools/{tool_slug}/reviews/me",
+      "handler": "get_my_review",
+      "responseModel": "ToolReviewItem | None",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/reviews.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/tools/{tool_slug}/reviews/me",
+      "handler": "put_my_review",
+      "responseModel": "ToolReviewItem",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/reviews.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tools/import-preview/validation",
+      "handler": "get_import_preview_validation",
+      "responseModel": null,
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/catalog.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tools/search-index",
+      "handler": "get_search_index",
+      "responseModel": "list[ToolSummary]",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/catalog.py"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "health_check",
+      "responseModel": null,
+      "statusCode": null,
+      "source": "apps/api/app/main.py"
+    },
+    {
+      "method": "GET",
+      "path": "/health/ready",
+      "handler": "readiness_check",
+      "responseModel": null,
+      "statusCode": "503 on failure",
+      "source": "apps/api/app/main.py"
+    }
+  ],
+  "dataModels": [
+    {
+      "className": "Category",
+      "tableName": "categories",
+      "fieldCount": 5,
+      "fieldsPreview": [
+        "id",
+        "slug",
+        "name",
+        "description",
+        "tools"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "CrawlJob",
+      "tableName": "crawl_jobs",
+      "fieldCount": 6,
+      "fieldsPreview": [
+        "id",
+        "source_name",
+        "status",
+        "started_at",
+        "finished_at",
+        "error_message"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "CrawlSnapshot",
+      "tableName": "crawl_snapshots",
+      "fieldCount": 6,
+      "fieldsPreview": [
+        "id",
+        "crawl_job_id",
+        "tool_slug",
+        "raw_payload",
+        "parsed_payload",
+        "diff_summary"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "RankingItem",
+      "tableName": "ranking_items",
+      "fieldCount": 6,
+      "fieldsPreview": [
+        "id",
+        "ranking_id",
+        "tool_id",
+        "rank_order",
+        "reason",
+        "tool"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "Ranking",
+      "tableName": "rankings",
+      "fieldCount": 4,
+      "fieldsPreview": [
+        "id",
+        "slug",
+        "title",
+        "description"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "ScenarioTool",
+      "tableName": "scenario_tools",
+      "fieldCount": 5,
+      "fieldsPreview": [
+        "id",
+        "scenario_id",
+        "tool_id",
+        "is_primary",
+        "tool"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "Scenario",
+      "tableName": "scenarios",
+      "fieldCount": 6,
+      "fieldsPreview": [
+        "id",
+        "slug",
+        "title",
+        "description",
+        "problem",
+        "tool_count"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "Source",
+      "tableName": "sources",
+      "fieldCount": 4,
+      "fieldsPreview": [
+        "id",
+        "tool_id",
+        "source_type",
+        "source_url"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "Tag",
+      "tableName": "tags",
+      "fieldCount": 3,
+      "fieldsPreview": [
+        "id",
+        "name",
+        "tools"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "ToolCategory",
+      "tableName": "tool_categories",
+      "fieldCount": 5,
+      "fieldsPreview": [
+        "id",
+        "tool_id",
+        "category_id",
+        "tool",
+        "category"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "ToolEmbedding",
+      "tableName": "tool_embeddings",
+      "fieldCount": 7,
+      "fieldsPreview": [
+        "id",
+        "tool_id",
+        "provider",
+        "model",
+        "content_hash",
+        "source_text",
+        "embedding_json"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "ToolReview",
+      "tableName": "tool_reviews",
+      "fieldCount": 15,
+      "fieldsPreview": [
+        "id",
+        "tool_id",
+        "user_id",
+        "source_type",
+        "status",
+        "rating",
+        "title",
+        "body"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "ToolTag",
+      "tableName": "tool_tags",
+      "fieldCount": 5,
+      "fieldsPreview": [
+        "id",
+        "tool_id",
+        "tag_id",
+        "tool",
+        "tag"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "ToolUpdate",
+      "tableName": "tool_updates",
+      "fieldCount": 5,
+      "fieldsPreview": [
+        "id",
+        "tool_id",
+        "status",
+        "proposed_payload",
+        "reviewer_note"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "Tool",
+      "tableName": "tools",
+      "fieldCount": 31,
+      "fieldsPreview": [
+        "id",
+        "slug",
+        "name",
+        "category_name",
+        "summary",
+        "description",
+        "editor_comment",
+        "developer"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "UserSession",
+      "tableName": "user_sessions",
+      "fieldCount": 8,
+      "fieldsPreview": [
+        "id",
+        "user_id",
+        "session_token_hash",
+        "expires_at",
+        "revoked_at",
+        "user_agent",
+        "ip_address",
+        "user"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "User",
+      "tableName": "users",
+      "fieldCount": 9,
+      "fieldsPreview": [
+        "id",
+        "username",
+        "email",
+        "password_hash",
+        "status",
+        "role",
+        "agreed_terms_at",
+        "last_login_at"
+      ],
+      "source": "apps/api/app/models/models.py"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Web unit/integration",
+      "count": 19,
+      "files": [
+        "apps/web/src/app/components/__tests__/BackToResultsLink.test.tsx",
+        "apps/web/src/app/components/__tests__/CommandPalette.test.tsx",
+        "apps/web/src/app/components/__tests__/CompareToolsGrid.test.tsx",
+        "apps/web/src/app/components/__tests__/Header.test.tsx",
+        "apps/web/src/app/components/__tests__/ToolCard.test.tsx",
+        "apps/web/src/app/components/__tests__/ToolLogo.test.tsx",
+        "apps/web/src/app/components/admin/__tests__/AdminAccessGate.test.tsx",
+        "apps/web/src/app/components/admin/__tests__/AdminOverviewDashboard.test.tsx",
+        "apps/web/src/app/components/auth/__tests__/AuthCard.test.tsx",
+        "apps/web/src/app/features/matches/components/__tests__/MatchFeed.test.tsx",
+        "apps/web/src/app/lib/__tests__/catalog-navigation.test.ts",
+        "apps/web/src/app/lib/__tests__/compare-utils.test.ts",
+        "apps/web/src/app/lib/__tests__/floating-chat-visibility.test.ts",
+        "apps/web/src/app/lib/__tests__/home-page-data.test.ts",
+        "apps/web/src/app/lib/__tests__/tool-display.test.ts",
+        "apps/web/src/app/pages/__tests__/HomePage.test.tsx",
+        "apps/web/src/app/pages/__tests__/ToolDetailPage.test.tsx",
+        "apps/web/src/app/pages/__tests__/ToolsPage.test.tsx",
+        "apps/web/src/app/utils/__tests__/nlu-agent.test.ts"
+      ]
+    },
+    {
+      "name": "Web e2e",
+      "count": 4,
+      "files": [
+        "apps/web/src/e2e/auth-checklist.spec.ts",
+        "apps/web/src/e2e/navigation-verify.spec.ts",
+        "apps/web/src/e2e/smoke.spec.ts",
+        "apps/web/src/e2e/visual.spec.ts"
+      ]
+    },
+    {
+      "name": "API pytest",
+      "count": 15,
+      "files": [
+        "apps/api/tests/test_ai_integration.py",
+        "apps/api/tests/test_api_hardening.py",
+        "apps/api/tests/test_api.py",
+        "apps/api/tests/test_auth_api.py",
+        "apps/api/tests/test_backfill_tool_embeddings.py",
+        "apps/api/tests/test_catalog_cases.py",
+        "apps/api/tests/test_catalog_view_seed.py",
+        "apps/api/tests/test_chat_api.py",
+        "apps/api/tests/test_chat_rag.py",
+        "apps/api/tests/test_import_preview_validation.py",
+        "apps/api/tests/test_logo_assets.py",
+        "apps/api/tests/test_organize_aitool_assets.py",
+        "apps/api/tests/test_published_visibility.py",
+        "apps/api/tests/test_reviews_admin_api.py",
+        "apps/api/tests/test_tool_parser.py"
+      ]
+    }
+  ],
+  "trackedSources": [
+    "apps/web/app/**/*/page.tsx",
+    "apps/api/app/api/routes/*.py",
+    "apps/api/app/main.py",
+    "apps/api/app/models/models.py",
+    "apps/web/src/app/**/__tests__/*",
+    "apps/web/src/e2e/*",
+    "apps/api/tests/*"
+  ]
+}

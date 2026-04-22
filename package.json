@@ -7,20 +7,31 @@
     "packages/contracts"
   ],
   "scripts": {
+    "prepare": "node scripts/install_git_hooks.js",
     "dev": "npm run dev --workspace @xingdianping/web --",
-    "dev:full": "powershell -ExecutionPolicy Bypass -File ./dev.ps1",
-    "start": "powershell -ExecutionPolicy Bypass -File ./dev.ps1",
-    "stop": "powershell -ExecutionPolicy Bypass -File ./dev-stop.ps1",
-    "restart": "powershell -ExecutionPolicy Bypass -File ./dev.ps1 -Restart",
+    "dev:full": "powershell -ExecutionPolicy Bypass -File ./scripts/dev.ps1",
+    "start": "powershell -ExecutionPolicy Bypass -File ./scripts/dev.ps1",
+    "stop": "powershell -ExecutionPolicy Bypass -File ./scripts/dev-stop.ps1",
+    "restart": "powershell -ExecutionPolicy Bypass -File ./scripts/dev.ps1 -Restart",
     "start:legacy": "python start.py",
     "dev:web": "npm run dev --workspace @xingdianping/web --",
     "organize:aitool": "python apps/api/app/scripts/organize_aitool_assets.py",
     "validate:aitool:preview": "python apps/api/app/scripts/validate_aitool_preview.py",
     "import:aitool:preview": "python apps/api/app/scripts/import_aitool_preview.py",
     "import:aitool:all": "python apps/api/app/scripts/import_aitool_preview.py --limit 0 --status-mode payload --featured-mode payload",
+    "export:data": "python apps/api/app/scripts/export_data.py",
+    "export:data:json": "python apps/api/app/scripts/export_data.py --format json",
+    "export:data:csv": "python apps/api/app/scripts/export_data.py --format csv",
+    "export:data:excel": "python apps/api/app/scripts/export_data.py --format excel",
+    "export:tools": "python apps/api/app/scripts/export_data.py --type tools",
+    "export:categories": "python apps/api/app/scripts/export_data.py --type categories",
+    "export:reviews": "python apps/api/app/scripts/export_data.py --type reviews",
+    "export:scenarios": "python apps/api/app/scripts/export_data.py --type scenarios",
     "build:web": "npm run build --workspace @xingdianping/web",
     "lint:web": "npm run lint --workspace @xingdianping/web",
-    "test:web": "npm run test --workspace @xingdianping/web"
+    "test:web": "npm run test --workspace @xingdianping/web",
+    "docs:sync": "node scripts/sync_current_docs.js",
+    "docs:check": "node scripts/sync_current_docs.js --check"
   },
   "dependencies": {
     "docx": "^9.6.1"

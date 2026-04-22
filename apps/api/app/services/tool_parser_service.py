@@ -1,13 +1,45 @@
 import json
+import ipaddress
+import logging
 import re
-from urllib import error, request
+from urllib.parse import urlparse
+from urllib import request
 
 from app.core.config import settings
 from app.services.ai_client import _call_ai_api, _extract_json_block, _normalize_chat_url
 
+logger = logging.getLogger(__name__)
+
+
+def validate_public_url(url: str) -> str:
+    parsed = urlparse(url.strip())
+    hostname = parsed.hostname.casefold() if parsed.hostname else ""
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError("只支持公开的 http(s) 地址")
+
+    if hostname in {"localhost", "0.0.0.0"} or hostname.endswith(".local"):
+        raise ValueError("不允许抓取本机或局域网地址")
+
+    try:
+        host_ip = ipaddress.ip_address(hostname)
+    except ValueError:
+        return parsed.geturl()
+
+    if (
+        host_ip.is_private
+        or host_ip.is_loopback
+        or host_ip.is_link_local
+        or host_ip.is_multicast
+        or host_ip.is_reserved
+        or host_ip.is_unspecified
+    ):
+        raise ValueError("不允许抓取本机或局域网地址")
+
+    return parsed.geturl()
+
 
 def fetch_webpage_text(url: str) -> str:
-    req = request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    req = request.Request(validate_public_url(url), headers={"User-Agent": "Mozilla/5.0"})
     try:
         with request.urlopen(req, timeout=10) as response:
             html = response.read().decode("utf-8", errors="ignore")
@@ -20,8 +52,10 @@ def fetch_webpage_text(url: str) -> str:
             )
             desc = meta_desc_match.group(1).strip() if meta_desc_match else ""
             return f"Title: {title}\nDescription: {desc}"
+    except ValueError:
+        raise
     except Exception as e:
-        print(f"[TOOL_PARSER] Failed to fetch {url}: {e}")
+        logger.warning("tool_parser_fetch_failed url=%s error=%s", url, type(e).__name__)
         return ""
 
 
@@ -29,10 +63,11 @@ def generate_tool_metadata(url: str, page_content_override: str | None = None) -
     """
     通过目标URL的内容提取工具的关键信息（支持依赖AI大模型处理）。
     """
+    safe_url = validate_public_url(url)
     if not settings.ai_api_key or not settings.ai_model or not settings.ai_openai_base_url:
         return {}
 
-    page_content = page_content_override or fetch_webpage_text(url)
+    page_content = page_content_override or fetch_webpage_text(safe_url)
     if not page_content:
         return {}
 
@@ -70,7 +105,7 @@ def generate_tool_metadata(url: str, page_content_override: str | None = None) -
     try:
         payload_data = _call_ai_api(api_request)
     except Exception as e:
-        print(f"[TOOL_PARSER] API call failed: {e}")
+        logger.exception("tool_parser_ai_call_failed url=%s error=%s", safe_url, type(e).__name__)
         return {}
 
     choices = payload_data.get("choices", [])

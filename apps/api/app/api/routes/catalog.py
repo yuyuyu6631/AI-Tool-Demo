@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.schemas.catalog import CategorySummary, RankingSection, ScenarioSummary, ToolsDirectoryResponse
+from app.schemas.catalog import CategorySummary, HomeCatalogResponse, RankingSection, ScenarioSummary, ToolsDirectoryResponse
 from app.schemas.tool import ToolDetail, ToolSummary
 from app.services import catalog_service
 from app.services.import_preview_service import load_import_preview_validation
@@ -71,6 +71,14 @@ def get_categories(
 @router.get("/categories/{slug}/tools", response_model=list[ToolSummary])
 def get_category_tools(slug: str, db: Session = Depends(get_db)):
     return catalog_service.list_tools_by_category(db=db, category_slug=slug)
+
+
+@router.get("/home", response_model=HomeCatalogResponse)
+def get_home_catalog(
+    section_size: int = Query(default=8, ge=4, le=12),
+    db: Session = Depends(get_db),
+):
+    return catalog_service.get_home_catalog(db=db, section_size=section_size)
 
 
 @router.get("/rankings", response_model=list[RankingSection])

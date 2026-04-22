@@ -42,6 +42,10 @@ export default function ToolLogo({
 }
 
 function resolveToolLogoPath(slug: string, value?: string | null) {
+  if (value === "") {
+    return null;
+  }
+
   const normalized = normalizeLogoPath(value);
   if (normalized) {
     return normalized;

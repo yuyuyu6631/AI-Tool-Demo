@@ -33,4 +33,5 @@ class AuthUserResponse(BaseModel):
     username: str
     email: str
     status: str
+    role: str = "user"
     createdAt: datetime

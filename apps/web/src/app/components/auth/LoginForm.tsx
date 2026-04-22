@@ -9,9 +9,10 @@ import SocialLoginButtons from "./SocialLoginButtons";
 
 interface LoginFormProps {
   onSuccess?: (user: AuthUser) => void;
+  submitLabel?: string;
 }
 
-export default function LoginForm({ onSuccess }: LoginFormProps) {
+export default function LoginForm({ onSuccess, submitLabel }: LoginFormProps) {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -106,7 +107,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             正在登录...
           </>
         ) : (
-          "登录"
+          submitLabel || "登录"
         )}
       </button>
 

@@ -2,37 +2,49 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import Fuse from "fuse.js";
-import type { ToolSummary } from "../lib/catalog-types";
-import { fetchSearchIndex } from "../lib/catalog-api";
+import type { CategorySummary, ToolSummary } from "../lib/catalog-types";
+import { fetchCategories, fetchSearchIndex } from "../lib/catalog-api";
 
 interface ClientSearchContextValue {
     tools: ToolSummary[];
+    categories: CategorySummary[];
     fuse: Fuse<ToolSummary> | null;
     isLoaded: boolean;
 }
 
 const ClientSearchContext = createContext<ClientSearchContextValue>({
     tools: [],
+    categories: [],
     fuse: null,
     isLoaded: false,
 });
 
 export function ClientSearchProvider({ children }: { children: React.ReactNode }) {
     const [tools, setTools] = useState<ToolSummary[]>([]);
+    const [categories, setCategories] = useState<CategorySummary[]>([]);
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
         let mounted = true;
-        fetchSearchIndex()
-            .then((data) => {
+        const loadClientSearchData = async () => {
+            try {
+                const [searchTools, categoryList] = await Promise.all([
+                    fetchSearchIndex().catch(() => []),
+                    fetchCategories().catch(() => []),
+                ]);
+
+                if (!mounted) return;
+
+                setTools(searchTools);
+                setCategories(categoryList);
+            } finally {
                 if (mounted) {
-                    setTools(data);
                     setIsLoaded(true);
                 }
-            })
-            .catch((error) => {
-                console.error("Failed to load search index", error);
-            });
+            }
+        };
+
+        void loadClientSearchData();
         return () => {
             mounted = false;
         };
@@ -53,8 +65,8 @@ export function ClientSearchProvider({ children }: { children: React.ReactNode }
     }, [tools]);
 
     const value = useMemo(
-        () => ({ tools, fuse, isLoaded }),
-        [tools, fuse, isLoaded]
+        () => ({ tools, categories, fuse, isLoaded }),
+        [tools, categories, fuse, isLoaded]
     );
 
     return (

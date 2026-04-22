@@ -1,31 +1,35 @@
 import Link from "next/link";
+import { TOOL_SUBMISSION_URL } from "../lib/catalog-utils";
 
 export default function Footer() {
   return (
-    <footer className="mt-20 border-t border-white/30 bg-white/40 py-10 backdrop-blur-xl">
-      <div className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">
+    <footer className="footer-shell mt-24 py-12">
+      <div className="mx-auto grid w-full max-w-[1440px] gap-10 px-4 sm:px-6 lg:grid-cols-[1.3fr_1fr_1fr] lg:px-8">
         <div>
-          <h3 className="text-sm font-semibold text-slate-900">关于星点评</h3>
-          <p className="mt-3 text-sm leading-7 text-slate-600">
-            星点评，帮你把 AI 工具看明白，再决定要不要用。面向真实任务的 AI 工具发现与决策平台，少一点信息堆砌，多一点实际判断。
+          <h3 className="text-sm font-semibold text-slate-950">星点评</h3>
+          <p className="mt-3 max-w-md text-sm leading-7 text-slate-600">
+            面向真实工作场景的 AI 工具发现入口。专注搜索、分类与高质量工具发现，不承载资讯流与运营内容。
           </p>
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-slate-900">使用说明</h3>
-          <p className="mt-3 text-sm leading-7 text-slate-600">
-            直接搜你想做的事，优先从别人验证过的高频工具开始，不仅发现新工具，更帮你减少试错成本。
-          </p>
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-slate-900">协作反馈</h3>
+          <h3 className="text-sm font-semibold text-slate-950">发现</h3>
           <div className="mt-3 space-y-2 text-sm text-slate-600">
-            <a
-              href="https://github.com/yuyuyu6631/Next.js-AI-Tool-Demo"
-              target="_blank"
-              rel="noreferrer"
-              className="block hover:text-slate-900"
-            >
-              项目仓库
+            <Link href="/" className="block hover:text-slate-900">
+              首页搜索
+            </Link>
+            <Link href="/?view=hot" className="block hover:text-slate-900">
+              热门推荐
+            </Link>
+            <Link href="/?view=latest" className="block hover:text-slate-900">
+              最新收录
+            </Link>
+          </div>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-slate-950">平台</h3>
+          <div className="mt-3 space-y-2 text-sm text-slate-600">
+            <a href={TOOL_SUBMISSION_URL} target="_blank" rel="noreferrer" className="block hover:text-slate-900">
+              提交工具
             </a>
             <a
               href="https://github.com/yuyuyu6631/Next.js-AI-Tool-Demo/issues"
@@ -35,9 +39,14 @@ export default function Footer() {
             >
               问题反馈
             </a>
-            <Link href="/tools" className="block hover:text-slate-900">
-              返回工具目录
-            </Link>
+            <a
+              href="https://github.com/yuyuyu6631/Next.js-AI-Tool-Demo"
+              target="_blank"
+              rel="noreferrer"
+              className="block hover:text-slate-900"
+            >
+              项目仓库
+            </a>
           </div>
         </div>
       </div>

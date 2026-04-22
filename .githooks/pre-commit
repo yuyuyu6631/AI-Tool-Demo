@@ -1,0 +1,11 @@
+#!/bin/sh
+
+node scripts/sync_current_docs.js >/dev/null
+STATUS=$?
+
+if [ "$STATUS" -ne 0 ]; then
+  echo "docs sync failed"
+  exit "$STATUS"
+fi
+
+git add docs/current-implementation-baseline.md docs/current-implementation-baseline.json

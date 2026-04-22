@@ -29,13 +29,13 @@ export default function HeaderMobileMenu({ currentPath, authHref }: HeaderMobile
     }
   }
 
-  const authLabel = mounted && currentUser ? `账户：${currentUser.username}` : "登录 / 注册";
+  const authLabel = mounted && currentUser ? `账户：${currentUser.username}` : "登录";
 
   return (
     <>
       <button
         type="button"
-        className="rounded-xl border border-white/40 bg-white/75 p-2 md:hidden"
+        className="header-utility-button rounded-full p-2 md:hidden"
         onClick={() => setOpen((value) => !value)}
         aria-label={open ? "关闭导航" : "打开导航"}
       >
@@ -43,14 +43,16 @@ export default function HeaderMobileMenu({ currentPath, authHref }: HeaderMobile
       </button>
 
       {open ? (
-        <div className="absolute inset-x-0 top-full border-t border-white/25 bg-white/85 shadow-lg md:hidden">
-          <div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-4 py-4 sm:px-6">
+        <div className="absolute inset-x-0 top-full border-t border-black/6 bg-white/92 shadow-[0_18px_44px_rgba(15,23,42,0.08)] backdrop-blur-xl md:hidden">
+          <div className="mx-auto flex max-w-[1440px] flex-col gap-2 px-4 py-4 sm:px-6">
             {headerNavItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
-                  isHeaderNavActive(currentPath, item.href) ? "bg-white text-slate-950 shadow-sm" : "text-slate-700 hover:bg-white"
+                className={`rounded-2xl px-3 py-2.5 text-sm font-medium transition ${
+                  isHeaderNavActive(currentPath, item.href)
+                    ? "bg-slate-900 text-white"
+                    : "text-slate-700 hover:bg-slate-100/90"
                 }`}
                 onClick={() => setOpen(false)}
               >
@@ -59,18 +61,27 @@ export default function HeaderMobileMenu({ currentPath, authHref }: HeaderMobile
             ))}
             <Link
               href={authHref}
-              className="rounded-xl border border-white/40 bg-white/70 px-3 py-2 text-sm font-medium text-slate-800 transition hover:bg-white"
+              className="rounded-2xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100/90"
               onClick={() => setOpen(false)}
             >
               {authLabel}
             </Link>
+            {mounted && currentUser?.role === "admin" ? (
+              <Link
+                href="/admin"
+                className="rounded-2xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100/90"
+                onClick={() => setOpen(false)}
+              >
+                后台
+              </Link>
+            ) : null}
             {mounted && currentUser ? (
               <button
                 type="button"
                 onClick={() => void handleLogout()}
-                className="rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-white"
+                className="rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100/90"
               >
-                退出登录
+                退出
               </button>
             ) : null}
           </div>

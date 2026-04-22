@@ -3,11 +3,37 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import CompareToolsGrid from "../CompareToolsGrid";
 import type { ToolSummary } from "../../lib/catalog-types";
 
+vi.mock("../ToolCard", () => ({
+  default: ({
+    name,
+    onCompareToggle,
+    onDetailClick,
+  }: {
+    name: string;
+    onCompareToggle?: () => void;
+    onDetailClick?: () => void;
+  }) => (
+    <div>
+      <div>{name}</div>
+      {onCompareToggle ? (
+        <button type="button" onClick={onCompareToggle}>
+          compare
+        </button>
+      ) : null}
+      {onDetailClick ? (
+        <button type="button" onClick={onDetailClick}>
+          detail
+        </button>
+      ) : null}
+    </div>
+  ),
+}));
+
 const makeTool = (id: number, slug: string, name: string): ToolSummary => ({
   id,
   slug,
   name,
-  category: "通用助手",
+  category: "Assistant",
   score: 9.1,
   summary: `${name} summary`,
   tags: ["assistant"],
@@ -25,41 +51,66 @@ const makeTool = (id: number, slug: string, name: string): ToolSummary => ({
 });
 
 describe("CompareToolsGrid", () => {
+  beforeEach(() => {
+    window.sessionStorage.clear();
+  });
+
   it("builds a compare link from tools selected across multiple sections", () => {
     render(
       <CompareToolsGrid
         sections={[
-          { id: "primary", title: "优先推荐工具", items: [makeTool(1, "chatgpt", "ChatGPT")] },
-          { id: "alternative", title: "备选工具", items: [makeTool(2, "gamma", "Gamma")] },
+          { id: "primary", title: "Primary", items: [makeTool(1, "chatgpt", "ChatGPT")] },
+          { id: "alternative", title: "Alternative", items: [makeTool(2, "gamma", "Gamma")] },
         ]}
       />,
     );
 
-    const compareButtons = screen.getAllByRole("button", { name: "加入对比" });
+    const compareButtons = screen.getAllByRole("button", { name: "compare" });
     fireEvent.click(compareButtons[0]);
     fireEvent.click(compareButtons[1]);
 
-    expect(screen.getByRole("link", { name: "开始对比" })).toHaveAttribute("href", "/compare/chatgpt-vs-gamma");
+    expect(screen.getByRole("link", { name: "\u5f00\u59cb\u5bf9\u6bd4" })).toHaveAttribute(
+      "href",
+      "/compare/chatgpt-vs-gamma",
+    );
   });
 
-  it("shows a guided empty state for empty sections", () => {
+  it("remembers the current route before opening a tool detail", () => {
+    window.history.pushState({}, "", "/scenarios/marketing?tab=primary");
+
+    render(
+      <CompareToolsGrid
+        rememberDetailNavigation
+        sections={[{ id: "primary", title: "Primary", items: [makeTool(1, "chatgpt", "ChatGPT")] }]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "detail" }));
+
+    expect(window.sessionStorage.getItem("catalog:return-route")).toBe("/scenarios/marketing?tab=primary");
+  });
+
+  it("shows a homepage-oriented empty state for empty sections", () => {
     render(
       <CompareToolsGrid
         sections={[
           {
             id: "empty",
-            title: "备选工具",
+            title: "Empty",
             items: [],
-            emptyTitle: "备选工具还没收齐",
-            emptyDescription: "先看主推工具也没问题。如果你有更顺手的替代品，欢迎直接提交给我们。",
+            emptyTitle: "Nothing here yet",
+            emptyDescription: "Use the hot list or submit another tool.",
           },
         ]}
       />,
     );
 
-    expect(screen.getByText("备选工具还没收齐")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "去最热榜单" })).toHaveAttribute("href", "/tools?view=hot");
-    expect(screen.getByRole("link", { name: "提交你喜欢的工具" })).toHaveAttribute(
+    expect(screen.getByText("Nothing here yet")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "\u53bb\u770b\u70ed\u95e8\u5de5\u5177" })).toHaveAttribute(
+      "href",
+      "/?view=hot",
+    );
+    expect(screen.getByRole("link", { name: "\u63d0\u4ea4\u4f60\u5e38\u7528\u7684\u5de5\u5177" })).toHaveAttribute(
       "href",
       "https://github.com/yuyuyu6631/Next.js-AI-Tool-Demo/issues",
     );

@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -23,11 +23,48 @@ class ReviewPreview(BaseModel):
     rating: float | None = None
 
 
+class ToolReviewAuthor(BaseModel):
+    id: int
+    username: str
+
+
+class ToolReviewItem(BaseModel):
+    id: int
+    toolId: int
+    userId: int | None = None
+    sourceType: str
+    title: str
+    body: str
+    rating: float | None = None
+    createdAt: datetime
+    updatedAt: datetime
+    author: ToolReviewAuthor | None = None
+
+
+class ToolRatingSummary(BaseModel):
+    average: float = 0.0
+    reviewCount: int = 0
+    ratingDistribution: dict[str, int] = Field(default_factory=dict)
+
+
+class ToolReviewsResponse(BaseModel):
+    summary: ToolRatingSummary
+    editorReviews: list[ToolReviewItem] = Field(default_factory=list)
+    userReviews: list[ToolReviewItem] = Field(default_factory=list)
+
+
+class UpsertToolReviewRequest(BaseModel):
+    rating: float | None = Field(default=None, ge=1, le=5)
+    title: str = Field(min_length=1, max_length=255)
+    body: str = Field(min_length=1)
+
+
 class ToolSummary(BaseModel):
     id: int
     slug: str
     name: str
     category: str
+    categorySlug: str | None = None
     score: float
     summary: str
     tags: list[str]
@@ -64,6 +101,7 @@ class ToolDetail(ToolSummary):
     scenarios: list[str] = Field(default_factory=list)
     scenarioRecommendations: list[ScenarioRecommendation] = Field(default_factory=list)
     reviewPreview: list[ReviewPreview] = Field(default_factory=list)
+    ratingSummary: ToolRatingSummary = Field(default_factory=ToolRatingSummary)
     alternatives: list[str] = Field(default_factory=list)
     lastVerifiedAt: date
 

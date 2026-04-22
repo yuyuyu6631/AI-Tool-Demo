@@ -1,5 +1,7 @@
 import hashlib
 import json
+import logging
+import time
 
 from redis import Redis
 from redis.connection import ConnectionPool
@@ -11,16 +13,38 @@ from app.core.config import settings
 # Global connection pool - created once at app startup
 _redis_pool: ConnectionPool | None = None
 _redis_client: Redis | None = None
+_redis_retry_after = 0.0
+_REDIS_RETRY_COOLDOWN_SECONDS = 30.0
+logger = logging.getLogger(__name__)
 
 
 def get_redis_client() -> Redis | None:
-    global _redis_pool, _redis_client
+    global _redis_pool, _redis_client, _redis_retry_after
+    now = time.monotonic()
+    if _redis_client is not None:
+        return _redis_client
+
+    if now < _redis_retry_after:
+        return None
+
     if _redis_client is None:
         try:
-            _redis_pool = ConnectionPool.from_url(settings.redis_url, decode_responses=True)
-            _redis_client = Redis(connection_pool=_redis_pool)
-        except RedisError:
+            _redis_pool = ConnectionPool.from_url(
+                settings.redis_url,
+                decode_responses=True,
+                socket_connect_timeout=0.5,
+                socket_timeout=0.5,
+                health_check_interval=30,
+                retry_on_timeout=False,
+            )
+            client = Redis(connection_pool=_redis_pool)
+            client.ping()
+            _redis_client = client
+        except (RedisError, OSError, ValueError) as error:
+            logger.warning("redis_unavailable error=%s", type(error).__name__)
+            _redis_pool = None
             _redis_client = None
+            _redis_retry_after = now + _REDIS_RETRY_COOLDOWN_SECONDS
     return _redis_client
 
 

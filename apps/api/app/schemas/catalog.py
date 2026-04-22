@@ -7,6 +7,9 @@ class CategorySummary(BaseModel):
     slug: str
     name: str
     description: str
+    toolCount: int = 0
+    canonicalSlug: str | None = None
+    legacySlugs: list[str] = Field(default_factory=list)
 
 
 class FacetOption(BaseModel):
@@ -35,6 +38,33 @@ class ToolsDirectoryResponse(BaseModel):
     accessFacets: list[FacetOption] = Field(default_factory=list)
     priceRangeFacets: list[FacetOption] = Field(default_factory=list)
     presets: list[PresetView] = Field(default_factory=list)
+
+
+class HomeSidebarCategory(BaseModel):
+    homeSlug: str
+    label: str
+    count: int
+    sectionId: str
+    description: str = ""
+    navigationType: str = "anchor"
+    href: str
+
+
+class HomeCategorySection(BaseModel):
+    homeSlug: str
+    label: str
+    description: str = ""
+    sectionId: str
+    browseCategorySlug: str
+    items: list[ToolSummary]
+    moreHref: str
+
+
+class HomeCatalogResponse(BaseModel):
+    hotTools: list[ToolSummary]
+    latestTools: list[ToolSummary]
+    sidebarCategories: list[HomeSidebarCategory]
+    categorySections: list[HomeCategorySection]
 
 
 class ScenarioSummary(BaseModel):

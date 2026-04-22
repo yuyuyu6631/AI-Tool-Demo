@@ -13,6 +13,16 @@
 - 一组与当前代码一致的文档更新
 - 一份明确区分“当前实现”和“未来规划”的文档口径
 - 一次可复查的差异扫描与完成检查
+- 一份由代码自动生成的当前实现基线：`docs/current-implementation-baseline.md`
+
+## 自动化入口
+
+- 手动刷新：`npm run docs:sync`
+- 只做校验：`npm run docs:check`
+- 默认情况下，`npm install` 会把 git hooks 指向仓库内 `.githooks/`
+- 提交代码时，`pre-commit` 会先执行 `npm run docs:sync`，并把生成结果一并加入提交
+
+如果本机不想自动安装 hooks，可在安装依赖前设置 `SKIP_GIT_HOOKS=1`。
 
 建议执行顺序：
 

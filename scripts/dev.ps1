@@ -4,7 +4,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$root = Split-Path -Parent $scriptDir
 $apiDir = Join-Path $root "apps/api"
 $webDir = Join-Path $root "apps/web"
 $outputDir = Join-Path $root "output"

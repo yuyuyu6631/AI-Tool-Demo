@@ -1,14 +1,35 @@
-export const headerNavItems = [
-  { href: "/", label: "首页" },
-  { href: "/tools", label: "工具目录" },
-  { href: "/rankings", label: "榜单" },
-  { href: "/scenarios", label: "场景" },
-] as const;
+export const headerNavItems = [{ href: "/", label: "首页" }] as const;
 
-export function isHeaderNavActive(currentPath: string, href: string) {
-  if (href === "/") {
-    return currentPath === "/";
+function normalizeHref(value: string) {
+  try {
+    const url = new URL(value, "https://example.com");
+    return {
+      pathname: url.pathname.replace(/\/+$/, "") || "/",
+      search: url.search,
+    };
+  } catch {
+    return {
+      pathname: value.replace(/\/+$/, "") || "/",
+      search: "",
+    };
+  }
+}
+
+export function isHeaderNavActive(currentRoute: string, href: string) {
+  const current = normalizeHref(currentRoute);
+  const target = normalizeHref(href);
+
+  if (target.pathname === "/") {
+    return current.pathname === "/";
   }
 
-  return currentPath === href || currentPath.startsWith(`${href}/`);
+  if (current.pathname !== target.pathname && !current.pathname.startsWith(`${target.pathname}/`)) {
+    return false;
+  }
+
+  if (!target.search) {
+    return true;
+  }
+
+  return current.search === target.search;
 }

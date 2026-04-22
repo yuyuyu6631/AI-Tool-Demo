@@ -3,6 +3,7 @@ export interface ToolSummary {
   slug: string;
   name: string;
   category: string;
+  categorySlug?: string;
   score: number;
   summary: string;
   tags: string[];
@@ -40,6 +41,7 @@ export interface ToolDetail extends ToolSummary {
   scenarios: string[];
   scenarioRecommendations?: ScenarioRecommendation[];
   reviewPreview?: ReviewPreview[];
+  ratingSummary?: ToolRatingSummary | null;
   alternatives: string[];
   lastVerifiedAt: string;
 }
@@ -149,4 +151,163 @@ export interface AiSearchResponse {
   results: ToolSummary[];
   directory: ToolsDirectoryResponse;
   meta: AiSearchMeta;
+}
+
+export interface ToolRatingSummary {
+  average: number;
+  count: number;
+  distribution: Record<string, number>;
+  reviewCount: number;
+  ratingDistribution: Record<string, number>;
+}
+
+export interface ToolReviewItem {
+  id: number;
+  title: string;
+  body: string;
+  rating: number;
+  sourceType: "editor" | "user" | string;
+  createdAt?: string | null;
+  authorName?: string | null;
+  author?: {
+    username?: string | null;
+  } | null;
+}
+
+export interface ToolReviewsResponse {
+  summary: ToolRatingSummary;
+  items: ToolReviewItem[];
+  editorReviews?: ToolReviewItem[];
+  userReviews?: ToolReviewItem[];
+}
+
+export interface CategorySummary {
+  slug: string;
+  name: string;
+  canonicalSlug?: string | null;
+  legacySlugs?: string[];
+}
+
+export interface HomeCatalogResponse {
+  featuredTools: ToolSummary[];
+  latestTools: ToolSummary[];
+  rankings: RankingSection[];
+  scenarios: ScenarioSummary[];
+  categories?: CategorySummary[];
+}
+
+export interface HomeQuickEntry {
+  label: string;
+  href: string;
+  description?: string;
+  icon?: string;
+}
+
+export interface HomeCategorySection {
+  homeSlug: string;
+  label: string;
+  description: string;
+  sectionId: string;
+  browseCategorySlug: string;
+  items: ToolSummary[];
+  moreHref: string;
+}
+
+export interface HomeSidebarCategory {
+  homeSlug: string;
+  label: string;
+  count: number;
+  sectionId: string;
+  description: string;
+  navigationType: "anchor" | "link";
+  href: string;
+}
+
+export interface AdminOverviewRecentTool {
+  id: number;
+  name: string;
+  slug: string;
+  status: ToolSummary["status"] | string;
+  updatedAt: string;
+}
+
+export interface AdminOverviewResponse {
+  toolCount: number;
+  draftToolCount: number;
+  publishedToolCount: number;
+  reviewCount: number;
+  rankingCount: number;
+  recentUpdatedTools: AdminOverviewRecentTool[];
+}
+
+export interface AdminToolListItem {
+  id: number;
+  name: string;
+  slug: string;
+  categoryName: string;
+  status: ToolSummary["status"] | string;
+  score: number;
+  reviewCount: number;
+}
+
+export interface AdminToolAccessFlagsPayload {
+  needs_vpn?: boolean | null;
+  cn_lang?: boolean | null;
+  cn_payment?: boolean | null;
+}
+
+export interface AdminToolPayload {
+  slug: string;
+  name: string;
+  categorySlug: string;
+  categoryName: string;
+  summary: string;
+  description: string;
+  editorComment: string;
+  developer: string;
+  country: string;
+  city: string;
+  price: string;
+  platforms: string;
+  officialUrl: string;
+  logoPath: string;
+  featured: boolean;
+  status: ToolSummary["status"] | string;
+  pricingType: string;
+  priceMinCny: number | null;
+  priceMaxCny: number | null;
+  freeAllowanceText: string;
+  accessFlags: AdminToolAccessFlagsPayload;
+  tags: string[];
+  createdOn: string | null;
+  lastVerifiedAt: string | null;
+}
+
+export interface AdminReviewListItem {
+  id: number;
+  toolName: string;
+  sourceType: string;
+  username?: string | null;
+  title: string;
+  body: string;
+}
+
+export interface AdminRankingListItem {
+  id: number;
+  slug: string;
+  title: string;
+  itemCount: number;
+}
+
+export interface AdminRankingPayloadItem {
+  toolSlug: string;
+  rank: number;
+  reason: string;
+}
+
+export interface AdminRankingPayload {
+  slug: string;
+  title: string;
+  description: string;
+  items: AdminRankingPayloadItem[];
 }

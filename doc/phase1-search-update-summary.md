@@ -4,6 +4,11 @@
 
 Stage 1 embedding search enhancement is now part of the current backend baseline.
 
+Current routing note:
+
+- Search state is now mainly carried by homepage `/`.
+- `/tools` is kept as a legacy redirect entry on the frontend.
+
 - `GET /api/tools` remains the only public search entry.
 - The internal search flow is now `lexical search + embedding recall`.
 - No frontend page structure was changed.

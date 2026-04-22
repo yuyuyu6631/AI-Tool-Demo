@@ -1,5 +1,23 @@
 export const TOOL_SUBMISSION_URL = "https://github.com/yuyuyu6631/Next.js-AI-Tool-Demo/issues";
 
+const GARBAGE_FACET_VALUES = new Set([
+  "",
+  "unknown",
+  "unknown-category",
+  "uncategorized",
+  "none",
+  "null",
+  "undefined",
+  "test",
+  "demo",
+  "sample",
+  "temp",
+  "placeholder",
+  "other",
+]);
+
+const GARBAGE_FACET_PATTERNS = [/^c\d+$/i, /^test(?:ing)?$/i, /^demo(?:-.+)?$/i, /^unknown(?:-.+)?$/i];
+
 export function slugifyLabel(value: string) {
   return value
     .normalize("NFKC")
@@ -16,24 +34,27 @@ export function buildToolsHref(
 ) {
   const params = new URLSearchParams();
   const next = { ...current };
+  const resolveKey = (key: string) => {
+    if (key === "priceRange") return "price_range";
+    if (key === "aiFocus") return "ai_focus";
+    return key;
+  };
 
-  Object.entries(updates).forEach(([key, value]) => {
+  for (const [key, value] of Object.entries(updates)) {
     if (value === null || value === undefined || value === "") {
       delete next[key];
-      return;
+      continue;
     }
     next[key] = String(value);
-  });
+  }
 
-  Object.entries(next).forEach(([key, value]) => {
-    if (!value) {
-      return;
-    }
-    params.set(key, value);
-  });
+  for (const [key, value] of Object.entries(next)) {
+    if (!value) continue;
+    params.set(resolveKey(key), value);
+  }
 
   const query = params.toString();
-  return query ? `/tools?${query}` : "/tools";
+  return query ? `/?${query}` : "/";
 }
 
 export interface DecisionBadgeSource {
@@ -55,21 +76,13 @@ export function buildDecisionBadges(source: DecisionBadgeSource) {
     }
   };
 
-  if (text.includes("免费") || text.includes("free")) {
-    push("免费");
-  }
-  if (text.includes("商用") || text.includes("commercial") || text.includes("企业")) {
-    push("可商用");
-  }
-  if (text.includes("ad-free") || text.includes("无广告")) {
-    push("无广告");
-  }
+  if (text.includes("免费") || text.includes("free")) push("免费");
+  if (text.includes("商用") || text.includes("commercial") || text.includes("企业")) push("可商用");
+  if (text.includes("ad-free") || text.includes("无广告")) push("无广告");
   if (text.includes("手机") || text.includes("mobile") || text.includes("ios") || text.includes("android") || text.includes("app")) {
-    push("手机可用");
+    push("移动端可用");
   }
-  if (text.includes("版权安全") || text.includes("无版权风险")) {
-    push("版权风险低");
-  }
+  if (text.includes("版权安全") || text.includes("无版权风险")) push("版权友好");
 
   return badges.slice(0, 4);
 }
@@ -79,23 +92,25 @@ export function derivePriceFacets(items: Array<{ price?: string; name: string; s
 
   const detect = (text: string) => {
     const normalized = text.toLowerCase();
-    if (normalized.includes("free") || normalized.includes("免费")) {
-      return "free";
-    }
-    if (normalized.includes("freemium") || normalized.includes("免费增值")) {
-      return "freemium";
-    }
+    if (normalized.includes("freemium") || normalized.includes("免费增值")) return "freemium";
+    if (normalized.includes("free") || normalized.includes("免费")) return "free";
     if (
       normalized.includes("subscription") ||
       normalized.includes("monthly") ||
       normalized.includes("yearly") ||
       normalized.includes("订阅") ||
-      normalized.includes("按月") ||
-      normalized.includes("按年")
+      normalized.includes("月付") ||
+      normalized.includes("年付")
     ) {
       return "subscription";
     }
-    if (normalized.includes("one-time") || normalized.includes("lifetime") || normalized.includes("一次性") || normalized.includes("终身")) {
+    if (
+      normalized.includes("one-time") ||
+      normalized.includes("lifetime") ||
+      normalized.includes("一次性") ||
+      normalized.includes("终身") ||
+      normalized.includes("付费")
+    ) {
       return "one-time";
     }
     return null;
@@ -112,6 +127,37 @@ export function derivePriceFacets(items: Array<{ price?: string; name: string; s
     .map(([slug, count]) => ({
       slug,
       count,
-      label: slug === "free" ? "免费" : slug === "freemium" ? "免费增值" : slug === "subscription" ? "订阅" : "一次性付费",
+      label:
+        slug === "free"
+          ? "免费"
+          : slug === "freemium"
+            ? "免费增值"
+            : slug === "subscription"
+              ? "订阅"
+              : "一次性付费",
     }));
+}
+
+export function hasValidOfficialUrl(value?: string | null) {
+  if (!value) return false;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+export function isDisplayableFacetValue(value?: string | null) {
+  if (!value) return false;
+
+  const normalized = value.normalize("NFKC").trim().toLowerCase();
+  if (!normalized) return false;
+  if (GARBAGE_FACET_VALUES.has(normalized)) return false;
+  return !GARBAGE_FACET_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+export function filterDisplayableFacets<T extends { slug: string; label: string }>(items: T[]) {
+  return items.filter((item) => isDisplayableFacetValue(item.slug) && isDisplayableFacetValue(item.label));
 }

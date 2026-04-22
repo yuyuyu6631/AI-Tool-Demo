@@ -85,6 +85,10 @@ export function getScoreBadge(reviewCount: number | undefined, score: number) {
   return { label: `\u2605 ${score.toFixed(1)}`, tone: "score" as const };
 }
 
+export function isTopPick(tool: Pick<ToolSummary, "featured" | "score" | "reviewCount">) {
+  return Boolean(tool.featured) || ((tool.reviewCount ?? 0) >= 10 && (tool.score ?? 0) >= 8);
+}
+
 export function formatPricingType(tool: Pick<ToolSummary, "pricingType" | "price">) {
   switch (tool.pricingType) {
     case "free":

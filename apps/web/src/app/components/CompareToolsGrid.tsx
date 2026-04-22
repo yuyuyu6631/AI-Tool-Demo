@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import type { ToolSummary } from "../lib/catalog-types";
 import { buildComparisonSlug } from "../lib/compare-utils";
 import { TOOL_SUBMISSION_URL, buildDecisionBadges } from "../lib/catalog-utils";
+import { rememberCatalogNavigation } from "../lib/catalog-navigation";
 import { detectPriceLabel } from "../lib/tool-display";
 import ToolCard from "./ToolCard";
 
@@ -20,9 +21,15 @@ interface CompareToolsGridProps {
   items?: ToolSummary[];
   sections?: CompareToolsSection[];
   onToolDetailClick?: ((tool: ToolSummary) => void) | undefined;
+  rememberDetailNavigation?: boolean;
 }
 
-export default function CompareToolsGrid({ items = [], sections, onToolDetailClick }: CompareToolsGridProps) {
+export default function CompareToolsGrid({
+  items = [],
+  sections,
+  onToolDetailClick,
+  rememberDetailNavigation = false,
+}: CompareToolsGridProps) {
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
   const resolvedSections = useMemo<CompareToolsSection[]>(
     () => (sections && sections.length > 0 ? sections : [{ id: "default", items }]),
@@ -54,7 +61,7 @@ export default function CompareToolsGrid({ items = [], sections, onToolDetailCli
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {section.items.map((tool) => {
                   const selected = selectedSlugs.includes(tool.slug);
-                  const compareDisabled = selectedSlugs.length >= 3;
+                  const compareDisabled = selectedSlugs.length >= 3 && !selected;
 
                   return (
                     <ToolCard
@@ -73,7 +80,12 @@ export default function CompareToolsGrid({ items = [], sections, onToolDetailCli
                       compareSelected={selected}
                       compareDisabled={compareDisabled}
                       onCompareToggle={() => toggleTool(tool.slug)}
-                      onDetailClick={onToolDetailClick ? () => onToolDetailClick(tool) : undefined}
+                      onDetailClick={() => {
+                        if (rememberDetailNavigation) {
+                          rememberCatalogNavigation();
+                        }
+                        onToolDetailClick?.(tool);
+                      }}
                       reason={tool.reason}
                     />
                   );
@@ -83,11 +95,11 @@ export default function CompareToolsGrid({ items = [], sections, onToolDetailCli
               <div className="panel-base rounded-[24px] p-6 text-center">
                 <h3 className="text-lg font-semibold text-slate-900">{section.emptyTitle || "该分组正在补充中"}</h3>
                 <p className="mt-3 text-sm leading-7 text-slate-600">
-                  {section.emptyDescription || "你可以先去最热榜单看看，或者把你常用的工具提交给我们补录。"}
+                  {section.emptyDescription || "你可以先去看热门工具，或者把你常用的工具提交给我们补录。"}
                 </p>
                 <div className="mt-5 flex flex-wrap justify-center gap-3">
-                  <Link href="/tools?view=hot" className="btn-primary rounded-full px-5 py-3 text-sm">
-                    去最热榜单
+                  <Link href="/?view=hot" className="btn-primary rounded-full px-5 py-3 text-sm">
+                    去看热门工具
                   </Link>
                   <a
                     href={TOOL_SUBMISSION_URL}
@@ -95,7 +107,7 @@ export default function CompareToolsGrid({ items = [], sections, onToolDetailCli
                     rel="noreferrer"
                     className="btn-secondary rounded-full px-5 py-3 text-sm"
                   >
-                    提交你喜欢的工具
+                    提交你常用的工具
                   </a>
                 </div>
               </div>
@@ -110,11 +122,16 @@ export default function CompareToolsGrid({ items = [], sections, onToolDetailCli
             <div>
               <p className="text-sm font-semibold text-slate-900">工具对比</p>
               <p className="mt-1 text-sm text-slate-600">
-                {selectedSlugs.length === 0 ? "先勾选 2-3 个工具，再进入横向对比。" : `已选 ${selectedSlugs.length} 个：${selectedSlugs.join("、")}`}
+                {selectedSlugs.length === 0
+                  ? "先勾选 2-3 个工具，再进入横向对比。"
+                  : `已选 ${selectedSlugs.length} 个：${selectedSlugs.join("、")}`}
               </p>
             </div>
             {comparisonSlug ? (
-              <Link href={`/compare/${comparisonSlug}`} className="btn-primary inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold">
+              <Link
+                href={`/compare/${comparisonSlug}`}
+                className="btn-primary inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold"
+              >
                 开始对比
               </Link>
             ) : (

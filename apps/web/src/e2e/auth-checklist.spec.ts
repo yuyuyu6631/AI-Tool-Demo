@@ -122,6 +122,7 @@ test.describe("/auth checklist", () => {
           username: "demo-user",
           email: "demo@example.com",
           status: "active",
+          role: "user",
           createdAt: "2026-03-31T00:00:00Z",
         }),
       });
@@ -152,6 +153,7 @@ test.describe("/auth checklist", () => {
           username: "demo-user",
           email: "demo@example.com",
           status: "active",
+          role: "user",
           createdAt: "2026-03-31T00:00:00Z",
         }),
       });

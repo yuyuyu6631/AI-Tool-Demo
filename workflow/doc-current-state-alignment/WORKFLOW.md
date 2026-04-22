@@ -52,6 +52,12 @@
 - 认证链路：`apps/api/app/api/routes/auth.py`、`apps/web/src/app/components/auth/*`
 - 测试资产：`apps/web/src/app/**/__tests__/*`、`apps/web/src/e2e/*`、`apps/api/tests/*`
 
+优先执行自动基线生成：
+
+- 运行 `npm run docs:sync`
+- 查看 `docs/current-implementation-baseline.md`
+- 如果只想确认文档是否过期，运行 `npm run docs:check`
+
 ### Step 2：扫描文档偏差
 
 在目标文档目录中搜索以下高风险关键词：
@@ -112,6 +118,7 @@
 - 当前统一后的基线是什么
 - 做过哪些校验
 - 哪些内容仍属于未来规划
+- 自动基线文件是否已刷新：`docs/current-implementation-baseline.md`
 
 ## 5. 推荐输出结构
 

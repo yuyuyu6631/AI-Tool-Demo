@@ -22,9 +22,39 @@ describe("ToolCard", () => {
     expect(screen.getByText("对话")).toBeInTheDocument();
     expect(screen.getByText("国内直连")).toBeInTheDocument();
     expect(screen.getByText("中文界面")).toBeInTheDocument();
-    expect(screen.queryByText("已发布")).not.toBeInTheDocument();
-    expect(screen.queryByText("搜索")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("price-tag")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /查看详情/ })).toHaveAttribute("href", "/tools/chatgpt");
+  });
+
+  it("exposes detail links without making the whole card clickable", () => {
+    render(
+      <ToolCard
+        slug="chatgpt"
+        name="ChatGPT"
+        summary="综合能力稳定，适合写作、分析和代码协作。"
+        tags={["对话"]}
+        url="https://chat.openai.com"
+        score={9.5}
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "ChatGPT" })).toHaveAttribute("href", "/tools/chatgpt");
+    expect(screen.getByRole("link", { name: /查看详情/ })).toHaveAttribute("href", "/tools/chatgpt");
+  });
+
+  it("keeps the official site link pointed at the external url", () => {
+    render(
+      <ToolCard
+        slug="chatgpt"
+        name="ChatGPT"
+        summary="综合能力稳定，适合写作、分析和代码协作。"
+        tags={["对话"]}
+        url="https://chat.openai.com"
+        score={9.5}
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: /访问官网/ })).toHaveAttribute("href", "https://chat.openai.com");
   });
 
   it("omits placeholder badges when access conditions are unknown", () => {

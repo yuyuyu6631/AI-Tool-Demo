@@ -1,6 +1,7 @@
+import json
 from pathlib import Path
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,6 +17,13 @@ class Settings(BaseSettings):
     session_cookie_name: str = "xingdianping_session"
     session_ttl_seconds: int = 604800
     cookie_secure: bool = False
+    cookie_samesite: str = "lax"
+    cors_allowed_origins: list[str] = Field(
+        default_factory=lambda: ["http://localhost:3000", "http://127.0.0.1:3000"]
+    )
+    cors_allowed_origin_regex: str | None = r"https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+    cors_allow_credentials: bool = True
+    log_level: str = "INFO"
     ai_provider: str = "stub"
     ai_api_key: str = ""
     ai_model: str = ""
@@ -38,6 +46,53 @@ class Settings(BaseSettings):
         if isinstance(value, str) and value.startswith(prefix):
             return f"sqlite:///{(ROOT_DIR / value.removeprefix(prefix)).as_posix()}"
         return value
+
+    @field_validator("cors_allowed_origins", mode="before")
+    @classmethod
+    def normalize_cors_origins(cls, value: str | list[str]) -> list[str]:
+        if isinstance(value, list):
+            return [item.strip() for item in value if isinstance(item, str) and item.strip()]
+
+        if not isinstance(value, str):
+            return value
+
+        stripped = value.strip()
+        if not stripped:
+            return []
+
+        if stripped.startswith("["):
+            try:
+                parsed = json.loads(stripped)
+            except json.JSONDecodeError:
+                parsed = None
+            if isinstance(parsed, list):
+                return [item.strip() for item in parsed if isinstance(item, str) and item.strip()]
+
+        return [item.strip() for item in stripped.split(",") if item.strip()]
+
+    @field_validator("cors_allowed_origin_regex", mode="before")
+    @classmethod
+    def normalize_origin_regex(cls, value: str | None) -> str | None:
+        if isinstance(value, str):
+            stripped = value.strip()
+            return stripped or None
+        return value
+
+    @field_validator("cookie_samesite", mode="before")
+    @classmethod
+    def normalize_cookie_samesite(cls, value: str) -> str:
+        normalized = value.strip().lower() if isinstance(value, str) else "lax"
+        if normalized not in {"lax", "strict", "none"}:
+            raise ValueError("COOKIE_SAMESITE must be one of: lax, strict, none")
+        return normalized
+
+    @field_validator("log_level", mode="before")
+    @classmethod
+    def normalize_log_level(cls, value: str) -> str:
+        normalized = value.strip().upper() if isinstance(value, str) else "INFO"
+        if normalized not in {"CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"}:
+            raise ValueError("LOG_LEVEL must be one of: CRITICAL, ERROR, WARNING, INFO, DEBUG")
+        return normalized
 
 
 settings = Settings()

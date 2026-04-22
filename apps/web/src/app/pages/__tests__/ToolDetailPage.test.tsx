@@ -23,6 +23,14 @@ vi.mock("../../components/ToolCard", () => ({
   default: ({ name }: { name: string }) => <div>{name}</div>,
 }));
 
+vi.mock("../../components/ToolReviewsPanel", () => ({
+  default: () => <div>ToolReviewsPanel</div>,
+}));
+
+vi.mock("../../components/BackToResultsLink", () => ({
+  default: ({ className = "" }: { className?: string }) => <a className={className}>返回结果列表</a>,
+}));
+
 const tool: ToolDetail = {
   id: 1,
   slug: "chatgpt",
@@ -63,13 +71,15 @@ const tool: ToolDetail = {
 };
 
 describe("ToolDetailPage", () => {
-  it("hides editor comments even when data exists", () => {
-    render(<ToolDetailPage tool={tool} relatedTools={[]} />);
+  it("renders the new directory-style detail layout and hides legacy editor comment content", () => {
+    render(<ToolDetailPage tool={tool} relatedTools={[]} reviews={null} />);
 
     expect(screen.getByText("详细介绍")).toBeInTheDocument();
-    expect(screen.getByText("避坑指南")).toBeInTheDocument();
-    expect(screen.getByText("场景推荐")).toBeInTheDocument();
-    expect(screen.queryByText("编辑点评")).not.toBeInTheDocument();
+    expect(screen.getByText("核心能力")).toBeInTheDocument();
+    expect(screen.getByText("适用场景")).toBeInTheDocument();
+    expect(screen.getByText("避坑提醒")).toBeInTheDocument();
+    expect(screen.getByText("编辑点评 / 用户反馈")).toBeInTheDocument();
+    expect(screen.queryByText("编辑评论")).not.toBeInTheDocument();
     expect(screen.queryByText("这段内容现在不该显示")).not.toBeInTheDocument();
   });
 });

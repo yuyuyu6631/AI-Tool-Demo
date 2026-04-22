@@ -1,5 +1,11 @@
 # Phase 1 Embedding Search Acceptance
 
+Current routing note:
+
+- This document describes backend acceptance only.
+- Current frontend search state is mainly carried by homepage `/`.
+- `/tools` is now a legacy redirect entry.
+
 ## Changed Files
 - `apps/api/tests/test_catalog_cases.py`
 - `apps/api/tests/test_backfill_tool_embeddings.py`

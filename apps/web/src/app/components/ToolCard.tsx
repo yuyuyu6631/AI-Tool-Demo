@@ -10,6 +10,7 @@ interface ToolCardProps {
   slug: string;
   name: string;
   summary: string;
+  category?: string;
   tags: string[];
   url: string;
   logoPath?: string | null;

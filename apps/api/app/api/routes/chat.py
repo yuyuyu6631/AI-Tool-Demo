@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -10,12 +10,25 @@ router = APIRouter()
 
 
 class ChatMessage(BaseModel):
-    role: str
-    content: str
+    role: str = Field(min_length=1, max_length=32)
+    content: str = Field(min_length=1)
+
+    @field_validator("role", mode="before")
+    @classmethod
+    def normalize_role(cls, value: str) -> str:
+        normalized = value.strip().lower() if isinstance(value, str) else value
+        if normalized not in {"user", "assistant", "system"}:
+            raise ValueError("role must be one of: user, assistant, system")
+        return normalized
+
+    @field_validator("content", mode="before")
+    @classmethod
+    def strip_content(cls, value: str) -> str:
+        return value.strip() if isinstance(value, str) else value
 
 
 class ChatRequest(BaseModel):
-    messages: list[ChatMessage]
+    messages: list[ChatMessage] = Field(min_length=1)
 
 
 @router.post("")

@@ -139,7 +139,7 @@ def set_auth_cookie(response: Response, session_token: str) -> None:
         value=session_token,
         httponly=True,
         secure=settings.cookie_secure,
-        samesite="lax",
+        samesite=settings.cookie_samesite,
         max_age=settings.session_ttl_seconds,
         path="/",
     )
@@ -150,7 +150,7 @@ def clear_auth_cookie(response: Response) -> None:
         key=settings.session_cookie_name,
         httponly=True,
         secure=settings.cookie_secure,
-        samesite="lax",
+        samesite=settings.cookie_samesite,
         path="/",
     )
 
@@ -161,6 +161,7 @@ def serialize_user(user: User) -> dict:
         "username": user.username,
         "email": user.email,
         "status": user.status,
+        "role": user.role,
         "createdAt": user.created_at,
     }
 
@@ -194,7 +195,7 @@ def _validate_register_payload(payload: AuthRegisterRequest) -> tuple[str, str]:
         next_errors["agreed"] = "注册前需要先勾选用户协议。"
 
     if next_errors:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=next_errors)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=next_errors)
 
     return username, email
 
@@ -210,7 +211,7 @@ def register_user(db: Session, payload: AuthRegisterRequest, request: Request) -
 
     existing_user = db.scalar(select(User).where(or_(User.username == username, User.email == email)))
     if existing_user:
-        logger.info("register_conflict username=%s email=%s", username, email)
+        logger.info("register_conflict username=%s", username)
         _raise_duplicate_conflict(existing_user, username)
 
     try:
@@ -226,18 +227,18 @@ def register_user(db: Session, payload: AuthRegisterRequest, request: Request) -
         session_token = _create_session(db, user, request)
         db.commit()
         db.refresh(user)
-        logger.info("register_success user_id=%s username=%s email=%s", user.id, user.username, user.email)
+        logger.info("register_success user_id=%s username=%s", user.id, user.username)
         return AuthResult(user=user, session_token=session_token)
     except IntegrityError as error:
         db.rollback()
-        logger.warning("register_integrity_error username=%s email=%s error=%s", username, email, error)
+        logger.warning("register_integrity_error username=%s error=%s", username, type(error).__name__)
         existing_user = db.scalar(select(User).where(or_(User.username == username, User.email == email)))
         if existing_user:
             _raise_duplicate_conflict(existing_user, username)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="注册信息冲突，请稍后重试。") from error
     except SQLAlchemyError as error:
         db.rollback()
-        logger.exception("register_database_error username=%s email=%s", username, email)
+        logger.exception("register_database_error username=%s", username)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="注册失败，请稍后重试。") from error
 
 
@@ -246,12 +247,12 @@ def login_user(db: Session, payload: AuthLoginRequest, request: Request) -> Auth
     normalized_identifier = _normalize_email(identifier)
 
     if not identifier or not payload.password:
-        logger.info("login_invalid_input identifier=%s", identifier)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail={"form": "请输入完整的登录信息。"})
+        logger.info("login_invalid_input")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail={"form": "请输入完整的登录信息。"})
 
     user = db.scalar(select(User).where(or_(User.username == identifier, User.email == normalized_identifier)))
     if not user or user.status != "active" or not _verify_password(payload.password, user.password_hash):
-        logger.info("login_invalid_credentials identifier=%s", identifier)
+        logger.info("login_invalid_credentials")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INVALID_CREDENTIALS_DETAIL)
 
     try:
@@ -263,7 +264,7 @@ def login_user(db: Session, payload: AuthLoginRequest, request: Request) -> Auth
         return AuthResult(user=user, session_token=session_token)
     except SQLAlchemyError as error:
         db.rollback()
-        logger.exception("login_database_error identifier=%s", identifier)
+        logger.exception("login_database_error")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="登录失败，请稍后重试。") from error
 
 
@@ -304,3 +305,13 @@ def current_user_dependency(
     db: Session = Depends(get_db),
 ) -> User:
     return get_authenticated_user(db, session_token)
+
+
+def current_admin_dependency(
+    session_token: str | None = Cookie(default=None, alias=settings.session_cookie_name),
+    db: Session = Depends(get_db),
+) -> User:
+    user = get_authenticated_user(db, session_token)
+    if user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="需要管理员权限")
+    return user

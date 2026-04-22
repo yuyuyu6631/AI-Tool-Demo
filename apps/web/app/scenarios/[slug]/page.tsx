@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Header from "@/src/app/components/Header";
 import Footer from "@/src/app/components/Footer";
 import Breadcrumbs from "@/src/app/components/Breadcrumbs";
+import CatalogScrollRestorer from "@/src/app/components/CatalogScrollRestorer";
 import CompareToolsGrid from "@/src/app/components/CompareToolsGrid";
 import { fetchScenarioDetail } from "@/src/app/lib/catalog-api";
 import type { CompareToolsSection } from "@/src/app/components/CompareToolsGrid";
@@ -37,6 +38,7 @@ export default async function Page({ params }: ScenarioRouteProps) {
 
   return (
     <div className="page-shell">
+      <CatalogScrollRestorer />
       <Header currentPath={`/scenarios/${slug}`} currentRoute={`/scenarios/${slug}`} />
 
       <main className="py-8 md:py-10">
@@ -71,7 +73,7 @@ export default async function Page({ params }: ScenarioRouteProps) {
           </section>
 
           <section className="mt-6">
-            <CompareToolsGrid sections={compareSections} />
+            <CompareToolsGrid sections={compareSections} rememberDetailNavigation />
           </section>
         </div>
       </main>

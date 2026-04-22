@@ -47,6 +47,13 @@ testagentfilespace/
 *.db
 秘钥.txt
 
+# Additional local tooling artifacts
+.codex/
+.codex-logs/
+.rollback-backup/
+aidianping/
+newfiel/
+
 # Non-code assets
 archive/
 apps/web/public/

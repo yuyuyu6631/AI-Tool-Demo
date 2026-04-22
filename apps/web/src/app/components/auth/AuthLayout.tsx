@@ -25,10 +25,10 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
             </Link>
 
             <Link
-              href="/tools"
+              href="/"
               className="hidden rounded-full border border-white/45 bg-white/75 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-white sm:inline-flex"
             >
-              先逛逛工具目录
+              先去首页找工具
             </Link>
           </header>
 

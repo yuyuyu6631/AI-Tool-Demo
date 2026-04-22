@@ -36,7 +36,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </Suspense>
             {children}
           </AppProviders>
-          <FloatingChatBot />
+          <Suspense fallback={null}>
+            <FloatingChatBot />
+          </Suspense>
         </body>
       </html>
     </ViewTransitions>

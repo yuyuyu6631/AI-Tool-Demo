@@ -5,6 +5,8 @@ import Breadcrumbs from "@/src/app/components/Breadcrumbs";
 import { fetchScenarios } from "@/src/app/lib/catalog-api";
 import { TOOL_SUBMISSION_URL } from "@/src/app/lib/catalog-utils";
 
+export const dynamic = "force-dynamic";
+
 export default async function Page() {
   const scenarios = await fetchScenarios().catch(() => []);
 
@@ -31,7 +33,7 @@ export default async function Page() {
                 该分类工具正在快马加鞭收录中，你可以先去最热榜单看看，或者把你常用的工具提交给我们。
               </p>
               <div className="mt-5 flex flex-wrap justify-center gap-3">
-                <Link href="/tools?view=hot" className="btn-primary rounded-full px-5 py-3 text-sm">
+                <Link href="/?view=hot" className="btn-primary rounded-full px-5 py-3 text-sm">
                   去最热榜单
                 </Link>
                 <a

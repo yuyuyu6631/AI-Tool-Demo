@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { deleteAdminReview, fetchAdminReviews } from "../../lib/catalog-api";
 import type { AdminReviewListItem } from "../../lib/catalog-types";
 
@@ -11,7 +11,7 @@ export default function AdminReviewsManager() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function load(nextToolSlug = toolSlug) {
+  const load = useCallback(async (nextToolSlug = toolSlug) => {
     setLoading(true);
     try {
       const reviews = await fetchAdminReviews(nextToolSlug || undefined);
@@ -22,11 +22,11 @@ export default function AdminReviewsManager() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [toolSlug]);
 
   useEffect(() => {
     void load("");
-  }, []);
+  }, [load]);
 
   async function handleDelete(reviewId: number) {
     try {

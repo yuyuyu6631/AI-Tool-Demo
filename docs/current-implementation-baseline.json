@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-04-22T02:49:39.089Z",
+  "generatedAt": "2026-04-22T03:37:40.152Z",
   "summary": {
     "frontendRouteCount": 15,
     "apiEndpointCount": 36,
     "dataModelCount": 17,
-    "testFileCount": 38
+    "testFileCount": 40
   },
   "frontendRoutes": [
     {
@@ -663,17 +663,19 @@
     },
     {
       "name": "API pytest",
-      "count": 15,
+      "count": 17,
       "files": [
         "apps/api/tests/test_ai_integration.py",
         "apps/api/tests/test_api_hardening.py",
         "apps/api/tests/test_api.py",
         "apps/api/tests/test_auth_api.py",
         "apps/api/tests/test_backfill_tool_embeddings.py",
+        "apps/api/tests/test_cache_service.py",
         "apps/api/tests/test_catalog_cases.py",
         "apps/api/tests/test_catalog_view_seed.py",
         "apps/api/tests/test_chat_api.py",
         "apps/api/tests/test_chat_rag.py",
+        "apps/api/tests/test_embedding_service.py",
         "apps/api/tests/test_import_preview_validation.py",
         "apps/api/tests/test_logo_assets.py",
         "apps/api/tests/test_organize_aitool_assets.py",

@@ -3,7 +3,7 @@ import json
 from app.core.config import settings
 from app.schemas.recommend import RecommendItem, RecommendRequest
 from app.services.ai_client import rank_with_ai
-from app.services.cache_service import build_recommendation_cache_key, get_redis_client
+from app.services.cache_service import build_recommendation_cache_key, get_redis_client, mark_redis_unavailable
 from app.services.candidate_selector import select_candidates
 
 
@@ -49,8 +49,8 @@ def recommend(*, db, payload: RecommendRequest) -> list[RecommendItem]:
                 cached_items = _coerce_cached_items(data)
                 if cached_items is not None:
                     return cached_items
-        except Exception:
-            pass
+        except Exception as error:
+            mark_redis_unavailable(error)
 
     candidates = select_candidates(db=db, payload=payload)
     ranked = sorted(candidates, key=lambda tool: score_tool(payload.query, tool), reverse=True)
@@ -83,7 +83,7 @@ def recommend(*, db, payload: RecommendRequest) -> list[RecommendItem]:
                 settings.recommendation_ttl_seconds,
                 json.dumps([item.model_dump() for item in items], ensure_ascii=False),
             )
-        except Exception:
-            pass
+        except Exception as error:
+            mark_redis_unavailable(error)
 
     return items

@@ -18,6 +18,22 @@ _REDIS_RETRY_COOLDOWN_SECONDS = 30.0
 logger = logging.getLogger(__name__)
 
 
+def mark_redis_unavailable(error: Exception | None = None) -> None:
+    global _redis_pool, _redis_client, _redis_retry_after
+    if error is not None:
+        logger.warning("redis_unavailable error=%s", type(error).__name__)
+
+    if _redis_pool is not None:
+        try:
+            _redis_pool.disconnect()
+        except Exception:
+            pass
+
+    _redis_pool = None
+    _redis_client = None
+    _redis_retry_after = time.monotonic() + _REDIS_RETRY_COOLDOWN_SECONDS
+
+
 def get_redis_client() -> Redis | None:
     global _redis_pool, _redis_client, _redis_retry_after
     now = time.monotonic()
@@ -41,10 +57,7 @@ def get_redis_client() -> Redis | None:
             client.ping()
             _redis_client = client
         except (RedisError, OSError, ValueError) as error:
-            logger.warning("redis_unavailable error=%s", type(error).__name__)
-            _redis_pool = None
-            _redis_client = None
-            _redis_retry_after = now + _REDIS_RETRY_COOLDOWN_SECONDS
+            mark_redis_unavailable(error)
     return _redis_client
 
 

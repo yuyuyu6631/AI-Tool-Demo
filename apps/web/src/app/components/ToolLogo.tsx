@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import BrandMark from "./BrandMark";
 
@@ -31,12 +32,22 @@ export default function ToolLogo({
       : size === "lg"
         ? "w-20 h-20 rounded-2xl"
         : "w-11 h-11 rounded-xl";
+  const sizeValue = size === "sm" ? 32 : size === "lg" ? 80 : 44;
 
   return (
     <div
       className={`overflow-hidden border border-white/50 bg-white/85 shadow-[0_10px_28px_rgba(15,23,42,0.08)] ${sizeClass} ${className}`}
     >
-      <img src={src} alt={`${name} logo`} className="h-full w-full object-contain p-2" loading="lazy" onError={() => setFailed(true)} />
+      <Image
+        src={src}
+        alt={`${name} logo`}
+        width={sizeValue}
+        height={sizeValue}
+        className="h-full w-full object-contain p-2"
+        loading="lazy"
+        unoptimized
+        onError={() => setFailed(true)}
+      />
     </div>
   );
 }

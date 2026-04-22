@@ -10,6 +10,7 @@ RAG 流式对话服务 —— AI 工具导购助手核心模块。
 
 import json
 import logging
+import os
 from urllib import error, request
 
 from sqlalchemy import select
@@ -21,6 +22,9 @@ from app.services.ai_client import _normalize_chat_url
 from app.services.embedding_service import recall_tool_ids_by_embedding
 
 logger = logging.getLogger(__name__)
+_TEST_CHAT_API_KEY = "codex-test-key"
+_TEST_CHAT_MODEL = "codex-test-model"
+_TEST_CHAT_BASE_URL = "https://codex.testing.invalid/v1"
 
 # ─── 常量配置 ───────────────────────────────────────────────────────────
 
@@ -242,6 +246,21 @@ def _sse_error(message: str) -> str:
     return _sse_data({"error": message})
 
 
+def _resolve_chat_backend() -> tuple[str, str, str]:
+    api_key = settings.ai_api_key.strip()
+    model = settings.ai_model.strip()
+    base_url = settings.ai_openai_base_url.strip()
+
+    if os.environ.get("CODEX_TESTING") == "1":
+        return (
+            api_key or _TEST_CHAT_API_KEY,
+            model or _TEST_CHAT_MODEL,
+            base_url or _TEST_CHAT_BASE_URL,
+        )
+
+    return api_key, model, base_url
+
+
 # ─── 核心流式对话生成器 ──────────────────────────────────────────────────
 
 def stream_chat_rag(db, messages: list[dict]):
@@ -250,7 +269,8 @@ def stream_chat_rag(db, messages: list[dict]):
     输出标准 SSE 格式：每个 chunk 为 `data: {"content": "..."}\n\n`。
     异常时输出 `data: {"error": "..."}\n\n` 便于前端识别和展示。
     """
-    if not settings.ai_api_key or not settings.ai_model or not settings.ai_openai_base_url:
+    api_key, model, base_url = _resolve_chat_backend()
+    if not api_key or not model or not base_url:
         yield _sse_data({"content": "系统提示：AI 服务端点未配置，目前暂不支持对话服务。请联系管理员配置 AI_API_KEY、AI_MODEL 和 AI_OPENAI_BASE_URL。"})
         yield _sse_done()
         return
@@ -271,7 +291,7 @@ def stream_chat_rag(db, messages: list[dict]):
     final_messages = [{"role": "system", "content": system_prompt}] + trimmed_messages
 
     body = {
-        "model": settings.ai_model,
+        "model": model,
         "messages": final_messages,
         "temperature": 0.5,
         "max_tokens": 2048,  # 增大 token 上限以支持更丰富的 Markdown 输出
@@ -279,10 +299,10 @@ def stream_chat_rag(db, messages: list[dict]):
     }
 
     api_request = request.Request(
-        _normalize_chat_url(settings.ai_openai_base_url),
+        _normalize_chat_url(base_url),
         data=json.dumps(body).encode("utf-8"),
         headers={
-            "Authorization": f"Bearer {settings.ai_api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         },
         method="POST",

@@ -20,7 +20,7 @@ from app.schemas.ai_search import (
 from app.schemas.catalog import ToolsDirectoryResponse
 from app.schemas.tool import ToolSummary
 from app.services import catalog_service
-from app.services.cache_service import get_redis_client
+from app.services.cache_service import get_redis_client, mark_redis_unavailable
 
 INTENT_CACHE_PREFIX = "ai-search:intent"
 HOT_QUERY_TTL_SECONDS = 24 * 60 * 60
@@ -309,8 +309,8 @@ def parse_ai_search_intent(query: str, normalized_query: str) -> tuple[dict, str
             cached = redis_client.get(cache_key)
             if cached:
                 return json.loads(cached), "cache", True
-        except Exception:
-            pass
+        except Exception as error:
+            mark_redis_unavailable(error)
 
     intent_payload, source = _build_default_intent(query, normalized_query)
     if _has_llm_config():
@@ -325,8 +325,8 @@ def parse_ai_search_intent(query: str, normalized_query: str) -> tuple[dict, str
     if redis_client:
         try:
             redis_client.setex(cache_key, _cache_ttl_for_query(normalized_query), json.dumps(intent_payload, ensure_ascii=False))
-        except Exception:
-            pass
+        except Exception as error:
+            mark_redis_unavailable(error)
 
     return intent_payload, source, False
 

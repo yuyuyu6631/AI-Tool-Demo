@@ -6,7 +6,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 import os
-_TEST_DB_PATH = os.path.join(os.path.dirname(__file__), "test_acceptance.db")
+_TEST_DB_PATH = os.path.join(os.path.dirname(__file__), "test_ai_integration.db")
 os.environ["DATABASE_URL"] = f"sqlite:///{_TEST_DB_PATH}"
 
 from app.main import create_app

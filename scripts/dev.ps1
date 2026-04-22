@@ -11,6 +11,7 @@ $webDir = Join-Path $root "apps/web"
 $outputDir = Join-Path $root "output"
 $stateFile = Join-Path $root ".dev-stack.json"
 $webCacheDir = Join-Path $webDir ".next-dev"
+$apiHealthUrl = "http://localhost:8000/health"
 $apiReadyUrl = "http://localhost:8000/health/ready"
 $webReadyUrl = "http://localhost:3000/matches"
 $apiPort = 8000
@@ -62,7 +63,7 @@ function Stop-ProcessTree {
     return
   }
 
-  & taskkill.exe /PID $ProcessId /T /F | Out-Null
+  & taskkill.exe /PID $ProcessId /T /F 2>$null | Out-Null
 }
 
 function Get-ListeningPids {
@@ -142,6 +143,36 @@ function Wait-HttpReady {
   throw "$Name did not become ready at $Url within ${TimeoutSeconds}s."
 }
 
+function Wait-ApiStartup {
+  param(
+    [int]$ProcessId,
+    [string]$HealthUrl,
+    [string]$ReadyUrl,
+    [int]$HealthTimeoutSeconds = 30,
+    [int]$ReadyTimeoutSeconds = 60
+  )
+
+  Wait-HttpReady -Url $HealthUrl -Name "API health" -TimeoutSeconds $HealthTimeoutSeconds
+
+  $deadline = (Get-Date).AddSeconds($ReadyTimeoutSeconds)
+
+  while ((Get-Date) -lt $deadline) {
+    if (-not (Test-ProcessRunning -ProcessId $ProcessId)) {
+      throw "API process exited before readiness checks completed."
+    }
+
+    if (Test-HttpOk -Url $ReadyUrl) {
+      Write-Output "API readiness is ready at $ReadyUrl"
+      return $true
+    }
+
+    Start-Sleep -Seconds 1
+  }
+
+  Write-Warning "API liveness is healthy, but readiness stayed unavailable at $ReadyUrl for ${ReadyTimeoutSeconds}s. Continuing in dev mode."
+  return $false
+}
+
 if ($Restart) {
   Write-Output "Restart requested. Stopping any existing dev stack first."
   Stop-DevProcesses
@@ -210,7 +241,7 @@ $state = [ordered]@{
 $state | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $stateFile -Encoding UTF8
 
 try {
-  Wait-HttpReady -Url $apiReadyUrl -Name "API readiness"
+  $apiReady = Wait-ApiStartup -ProcessId $apiProcess.Id -HealthUrl $apiHealthUrl -ReadyUrl $apiReadyUrl
   Wait-HttpReady -Url $webReadyUrl -Name "Web matches page"
 } catch {
   Write-Output $_.Exception.Message
@@ -221,6 +252,9 @@ try {
 }
 
 Write-Output "Dev stack started successfully."
+if (-not $apiReady) {
+  Write-Warning "API started with readiness warnings. Check $apiStdErr for details if some endpoints still fail."
+}
 Write-Output "Web: http://localhost:$webPort"
 Write-Output "API: http://localhost:$apiPort"
 Write-Output "Logs:"

@@ -29,7 +29,7 @@ from app.schemas.catalog import (
     ToolsDirectoryResponse,
 )
 from app.schemas.tool import AccessFlags, ReviewPreview, ScenarioRecommendation, ToolDetail, ToolRatingSummary, ToolSummary
-from app.services.cache_service import get_redis_client
+from app.services.cache_service import get_redis_client, mark_redis_unavailable
 from app.services.catalog_views_seed import (
     get_scenario_target_audience,
     sort_ranking_sections,
@@ -759,8 +759,8 @@ def list_categories(*, db, include_empty: bool = False) -> list[CategorySummary]
             if cached:
                 data = json.loads(cached)
                 return [CategorySummary(**item) for item in data]
-        except Exception:
-            pass  # fall through to DB
+        except Exception as error:
+            mark_redis_unavailable(error)
 
     rows = db.scalars(select(Category)).all()
     published_tools = _load_summaries(db)
@@ -785,8 +785,8 @@ def list_categories(*, db, include_empty: bool = False) -> list[CategorySummary]
             # Serialize for caching
             serialized = json.dumps([item.model_dump() for item in result], ensure_ascii=False)
             redis_client.setex(cache_key, cache_ttl, serialized)
-        except Exception:
-            pass  # ignore cache errors
+        except Exception as error:
+            mark_redis_unavailable(error)
 
     return result
 
@@ -889,8 +889,8 @@ def list_scenarios(*, db) -> list[ScenarioSummary]:
             if cached:
                 data = json.loads(cached)
                 return [ScenarioSummary(**item) for item in data]
-        except Exception:
-            pass  # fall through to DB
+        except Exception as error:
+            mark_redis_unavailable(error)
 
     rows = db.scalars(select(Scenario).order_by(Scenario.id)).all()
     scenarios = [_build_scenario_summary(row, db) for row in rows]
@@ -900,8 +900,8 @@ def list_scenarios(*, db) -> list[ScenarioSummary]:
         try:
             serialized = json.dumps([item.model_dump() for item in result], ensure_ascii=False)
             redis_client.setex(cache_key, cache_ttl, serialized)
-        except Exception:
-            pass  # ignore cache errors
+        except Exception as error:
+            mark_redis_unavailable(error)
 
     return result
 
@@ -964,8 +964,8 @@ def list_rankings(*, db) -> list[RankingSection]:
             if cached:
                 data = json.loads(cached)
                 return [RankingSection(**item) for item in data]
-        except Exception:
-            pass  # fall through to DB
+        except Exception as error:
+            mark_redis_unavailable(error)
 
     rows = db.scalars(select(Ranking).order_by(Ranking.id)).all()
     sections = [_build_ranking_section(row, db) for row in rows]
@@ -975,8 +975,8 @@ def list_rankings(*, db) -> list[RankingSection]:
         try:
             serialized = json.dumps([item.model_dump() for item in result], ensure_ascii=False)
             redis_client.setex(cache_key, cache_ttl, serialized)
-        except Exception:
-            pass  # ignore cache errors
+        except Exception as error:
+            mark_redis_unavailable(error)
 
     return result
 

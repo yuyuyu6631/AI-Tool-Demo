@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export default function PlatformLogo() {
   return (
     <div
@@ -8,9 +10,11 @@ export default function PlatformLogo() {
         className="pointer-events-none absolute inset-[1px] rounded-[18px] bg-radial-[at_30%_25%] from-white/60 via-white/8 to-transparent opacity-75"
         aria-hidden="true"
       />
-      <img
+      <Image
         src="/brand/logo.png"
         alt="星点评品牌标识"
+        width={48}
+        height={48}
         className="relative z-10 h-12 w-12 object-contain drop-shadow-[0_8px_18px_rgba(17,32,59,0.22)]"
       />
     </div>

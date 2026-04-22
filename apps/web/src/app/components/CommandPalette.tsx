@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Command } from "cmdk";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { useClientSearch } from "./ClientSearchProvider";
@@ -151,7 +152,7 @@ export default function CommandPalette() {
                   className="flex cursor-pointer items-center gap-4 rounded-2xl px-4 py-3 text-sm text-slate-900 transition-colors aria-selected:bg-slate-100"
                 >
                   {tool.logoPath ? (
-                    <img src={tool.logoPath} alt={tool.name} className="h-8 w-8 rounded-lg object-cover" />
+                    <Image src={tool.logoPath} alt={tool.name} width={32} height={32} className="h-8 w-8 rounded-lg object-cover" />
                   ) : (
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500">
                       {tool.name[0]}

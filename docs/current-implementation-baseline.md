@@ -5,11 +5,11 @@
 
 ## 摘要
 
-- 生成时间：2026-04-22T02:49:39.089Z
+- 生成时间：2026-04-22T03:37:40.152Z
 - 前端路由：15
 - API 端点：36
 - 数据模型：17
-- 测试文件：38
+- 测试文件：40
 
 ## 前端路由
 
@@ -129,16 +129,18 @@
 
 ### API pytest
 
-- 数量：15
+- 数量：17
 - `apps/api/tests/test_ai_integration.py`
 - `apps/api/tests/test_api_hardening.py`
 - `apps/api/tests/test_api.py`
 - `apps/api/tests/test_auth_api.py`
 - `apps/api/tests/test_backfill_tool_embeddings.py`
+- `apps/api/tests/test_cache_service.py`
 - `apps/api/tests/test_catalog_cases.py`
 - `apps/api/tests/test_catalog_view_seed.py`
 - `apps/api/tests/test_chat_api.py`
 - `apps/api/tests/test_chat_rag.py`
+- `apps/api/tests/test_embedding_service.py`
 - `apps/api/tests/test_import_preview_validation.py`
 - `apps/api/tests/test_logo_assets.py`
 - `apps/api/tests/test_organize_aitool_assets.py`

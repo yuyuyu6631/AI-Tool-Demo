@@ -1,6 +1,7 @@
 import json
 import ipaddress
 import logging
+import os
 import re
 from urllib.parse import urlparse
 from urllib import request
@@ -9,6 +10,9 @@ from app.core.config import settings
 from app.services.ai_client import _call_ai_api, _extract_json_block, _normalize_chat_url
 
 logger = logging.getLogger(__name__)
+_TEST_CHAT_API_KEY = "codex-test-key"
+_TEST_CHAT_MODEL = "codex-test-model"
+_TEST_CHAT_BASE_URL = "https://codex.testing.invalid/v1"
 
 
 def validate_public_url(url: str) -> str:
@@ -59,12 +63,28 @@ def fetch_webpage_text(url: str) -> str:
         return ""
 
 
+def _resolve_chat_backend() -> tuple[str, str, str]:
+    api_key = settings.ai_api_key.strip()
+    model = settings.ai_model.strip()
+    base_url = settings.ai_openai_base_url.strip()
+
+    if os.environ.get("CODEX_TESTING") == "1":
+        return (
+            api_key or _TEST_CHAT_API_KEY,
+            model or _TEST_CHAT_MODEL,
+            base_url or _TEST_CHAT_BASE_URL,
+        )
+
+    return api_key, model, base_url
+
+
 def generate_tool_metadata(url: str, page_content_override: str | None = None) -> dict:
     """
     通过目标URL的内容提取工具的关键信息（支持依赖AI大模型处理）。
     """
     safe_url = validate_public_url(url)
-    if not settings.ai_api_key or not settings.ai_model or not settings.ai_openai_base_url:
+    api_key, model, base_url = _resolve_chat_backend()
+    if not api_key or not model or not base_url:
         return {}
 
     page_content = page_content_override or fetch_webpage_text(safe_url)
@@ -83,7 +103,7 @@ def generate_tool_metadata(url: str, page_content_override: str | None = None) -
     )
 
     body = {
-        "model": settings.ai_model,
+        "model": model,
         "messages": [
             {"role": "system", "content": "You are a tool info extractor. Return JSON only."},
             {"role": "user", "content": prompt},
@@ -93,10 +113,10 @@ def generate_tool_metadata(url: str, page_content_override: str | None = None) -
     }
 
     api_request = request.Request(
-        _normalize_chat_url(settings.ai_openai_base_url),
+        _normalize_chat_url(base_url),
         data=json.dumps(body).encode("utf-8"),
         headers={
-            "Authorization": f"Bearer {settings.ai_api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         },
         method="POST",

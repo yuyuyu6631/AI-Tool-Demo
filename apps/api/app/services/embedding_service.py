@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import re
 import unicodedata
 from dataclasses import dataclass
@@ -43,6 +44,9 @@ def _normalize_text(value: str | None) -> str:
 
 
 def _get_backend() -> tuple[str, str, str, str]:
+    if os.environ.get("CODEX_TESTING") == "1":
+        return STUB_PROVIDER, "", STUB_MODEL, ""
+
     provider = (settings.embedding_provider or settings.ai_provider or STUB_PROVIDER).strip().lower()
     api_key = (settings.embedding_api_key or settings.ai_api_key).strip()
     model = (settings.embedding_model or "").strip()

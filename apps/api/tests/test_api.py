@@ -44,6 +44,7 @@ _ORIGINAL_SESSION_LOCAL = session_mod.SessionLocal
 @pytest.fixture(scope="module", autouse=True)
 def setup_test_db():
     session_mod.SessionLocal = _TestSession
+    Base.metadata.drop_all(bind=_test_engine)
     Base.metadata.create_all(bind=_test_engine)
     catalog_svc.SessionLocal = _TestSession
 

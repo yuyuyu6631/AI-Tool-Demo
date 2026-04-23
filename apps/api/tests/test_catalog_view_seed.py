@@ -107,6 +107,7 @@ def _seed_category_tools(db: Session) -> None:
 
 def setup_module():
     session_mod.SessionLocal = _TestSession
+    Base.metadata.drop_all(bind=_test_engine)
     Base.metadata.create_all(bind=_test_engine)
     catalog_svc.SessionLocal = _TestSession
     app.dependency_overrides[get_db] = _override_get_db

@@ -32,6 +32,7 @@ _ORIGINAL_BACKFILL_SESSION_LOCAL = backfill_tool_embeddings.SessionLocal
 def setup_module():
     session_mod.SessionLocal = _TestSession
     backfill_tool_embeddings.SessionLocal = _TestSession
+    Base.metadata.drop_all(bind=_test_engine)
     Base.metadata.create_all(bind=_test_engine)
 
     db = _TestSession()

@@ -8,8 +8,11 @@ from typing import Any
 from app.services.logo_assets import normalize_logo_path
 
 
+_SERVICE_PATH = Path(__file__).resolve()
+_WORKSPACE_ROOT = _SERVICE_PATH.parents[min(4, len(_SERVICE_PATH.parents) - 1)]
+
 MANIFESTS_DIR = (
-    Path(__file__).resolve().parents[4]
+    _WORKSPACE_ROOT
     / "archive"
     / "drawer"
     / "tooling-assets"

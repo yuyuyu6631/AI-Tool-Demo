@@ -1,12 +1,14 @@
 import json
 import os
 from pathlib import Path
+from typing import Annotated
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
-ROOT_DIR = Path(__file__).resolve().parents[4]
+_CONFIG_PATH = Path(__file__).resolve()
+ROOT_DIR = _CONFIG_PATH.parents[min(4, len(_CONFIG_PATH.parents) - 1)]
 
 
 class Settings(BaseSettings):
@@ -20,7 +22,7 @@ class Settings(BaseSettings):
     session_ttl_seconds: int = 604800
     cookie_secure: bool = False
     cookie_samesite: str = "lax"
-    cors_allowed_origins: list[str] = Field(
+    cors_allowed_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:3000", "http://127.0.0.1:3000"]
     )
     cors_allowed_origin_regex: str | None = r"https?://(localhost|127\.0\.0\.1)(:\d+)?$"

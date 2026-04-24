@@ -16,8 +16,11 @@ from app.services.logo_assets import LOGO_SOURCE_IMPORTED, normalize_logo_path, 
 
 
 IMPORT_MARKER = "[import-preview]"
+_SCRIPT_PATH = Path(__file__).resolve()
+_WORKSPACE_ROOT = _SCRIPT_PATH.parents[min(4, len(_SCRIPT_PATH.parents) - 1)]
+
 DEFAULT_PAYLOAD_PATH = (
-    Path(__file__).resolve().parents[4]
+    _WORKSPACE_ROOT
     / "archive"
     / "drawer"
     / "tooling-assets"

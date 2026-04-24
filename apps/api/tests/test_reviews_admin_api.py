@@ -301,3 +301,19 @@ def test_production_like_environment_rejects_in_memory_database():
         reload(config_module)
         reload(session_module)
         reload(main_module)
+
+
+def test_cors_origins_accept_comma_separated_env_values():
+    os.environ["CORS_ALLOWED_ORIGINS"] = "https://one.example.com, https://two.example.com"
+
+    import app.core.config as config_module
+
+    try:
+        reload(config_module)
+        assert config_module.settings.cors_allowed_origins == [
+            "https://one.example.com",
+            "https://two.example.com",
+        ]
+    finally:
+        os.environ.pop("CORS_ALLOWED_ORIGINS", None)
+        reload(config_module)

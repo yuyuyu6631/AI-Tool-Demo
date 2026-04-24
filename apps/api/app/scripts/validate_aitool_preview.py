@@ -11,8 +11,11 @@ from urllib import error, request
 from urllib.parse import urlparse
 
 
+_SCRIPT_PATH = Path(__file__).resolve()
+_WORKSPACE_ROOT = _SCRIPT_PATH.parents[min(4, len(_SCRIPT_PATH.parents) - 1)]
+
 DEFAULT_MANIFESTS_DIR = (
-    Path(__file__).resolve().parents[4]
+    _WORKSPACE_ROOT
     / "archive"
     / "drawer"
     / "tooling-assets"

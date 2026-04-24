@@ -11,7 +11,8 @@ LOGO_SOURCE_IMPORTED = "imported"
 LOGO_SOURCE_MANUAL = "manual"
 LOGO_SOURCE_FALLBACK = "fallback"
 
-_WORKSPACE_ROOT = Path(__file__).resolve().parents[4]
+_ASSET_PATH = Path(__file__).resolve()
+_WORKSPACE_ROOT = _ASSET_PATH.parents[min(4, len(_ASSET_PATH.parents) - 1)]
 LOGO_PUBLIC_DIR = _WORKSPACE_ROOT / "apps" / "web" / "public" / "logos"
 
 

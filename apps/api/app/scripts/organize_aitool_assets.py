@@ -16,8 +16,11 @@ from openpyxl import load_workbook
 from app.services.logo_assets import LOGO_SOURCE_IMPORTED, resolve_logo_status
 
 
+_SCRIPT_PATH = Path(__file__).resolve()
+_WORKSPACE_ROOT = _SCRIPT_PATH.parents[min(4, len(_SCRIPT_PATH.parents) - 1)]
+
 DEFAULT_TARGET_DIR = (
-    Path(__file__).resolve().parents[4]
+    _WORKSPACE_ROOT
     / "archive"
     / "drawer"
     / "tooling-assets"

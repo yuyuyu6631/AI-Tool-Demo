@@ -5,7 +5,7 @@
 
 ## 摘要
 
-- 生成时间：2026-04-27T08:48:22.906Z
+- 生成时间：2026-04-28T02:06:55.066Z
 - 前端路由：15
 - API 端点：36
 - 数据模型：17
@@ -35,7 +35,6 @@
 
 | Method | Path | Handler | Response | Status | Source |
 | --- | --- | --- | --- | --- | --- |
-| POST | /api | chat_stream | - | - | apps/api/app/api/routes/chat.py |
 | GET | /api/admin/overview | get_overview | AdminOverviewResponse | - | apps/api/app/api/routes/admin.py |
 | GET | /api/admin/rankings | list_rankings | list[AdminRankingListItem] | - | apps/api/app/api/routes/admin.py |
 | POST | /api/admin/rankings | create_ranking | AdminRankingPayload | 201 | apps/api/app/api/routes/admin.py |
@@ -54,9 +53,10 @@
 | POST | /api/auth/register | register | AuthUserResponse | 201 | apps/api/app/api/routes/auth.py |
 | GET | /api/categories | get_categories | list[CategorySummary] | - | apps/api/app/api/routes/catalog.py |
 | GET | /api/categories/{slug}/tools | get_category_tools | list[ToolSummary] | - | apps/api/app/api/routes/catalog.py |
+| POST | /api/chat | chat_stream | - | - | apps/api/app/api/routes/chat.py |
 | POST | /api/crawl/jobs | create_crawl_job | - | - | apps/api/app/api/routes/crawl.py |
-| POST | /api/extract | extract_tool_metadata | ParseToolResponse | - | apps/api/app/api/routes/parser.py |
 | GET | /api/home | get_home_catalog | HomeCatalogResponse | - | apps/api/app/api/routes/catalog.py |
+| POST | /api/parser/extract | extract_tool_metadata | ParseToolResponse | - | apps/api/app/api/routes/parser.py |
 | GET | /api/rankings | get_rankings | list[RankingSection] | - | apps/api/app/api/routes/catalog.py |
 | GET | /api/rankings/{slug} | get_ranking | RankingSection | - | apps/api/app/api/routes/catalog.py |
 | POST | /api/recommend | recommend_tools | list[RecommendItem] | - | apps/api/app/api/routes/recommend.py |
@@ -157,6 +157,7 @@
 ## 扫描来源
 
 - `apps/web/app/**/*/page.tsx`
+- `apps/api/app/api/router.py`
 - `apps/api/app/api/routes/*.py`
 - `apps/api/app/main.py`
 - `apps/api/app/models/models.py`

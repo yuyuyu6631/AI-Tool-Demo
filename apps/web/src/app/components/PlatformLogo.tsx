@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { withPublicPath } from "../lib/public-path";
 
 export default function PlatformLogo() {
   return (
@@ -11,10 +12,11 @@ export default function PlatformLogo() {
         aria-hidden="true"
       />
       <Image
-        src="/brand/logo.png"
+        src={withPublicPath("/brand/logo.png")}
         alt="星点评品牌标识"
         width={48}
         height={48}
+        unoptimized
         className="relative z-10 h-12 w-12 object-contain drop-shadow-[0_8px_18px_rgba(17,32,59,0.22)]"
       />
     </div>

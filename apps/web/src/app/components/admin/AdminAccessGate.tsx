@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { useAuth } from "../auth/AuthProvider";
+import { withPublicPath } from "../../lib/public-path";
 
 export default function AdminAccessGate({
   children,
@@ -17,7 +18,7 @@ export default function AdminAccessGate({
 
   useEffect(() => {
     if (status === "guest" && !currentUser) {
-      router.replace(`/auth?next=${encodeURIComponent(redirectPath)}`);
+      router.replace(withPublicPath(`/auth?next=${encodeURIComponent(withPublicPath(redirectPath))}`));
     }
   }, [currentUser, redirectPath, router, status]);
 
@@ -29,7 +30,7 @@ export default function AdminAccessGate({
     return (
       <div className="rounded-[28px] border border-slate-200 bg-white p-8 text-sm text-slate-600">
         正在跳转到登录页。若页面未自动跳转，可前往
-        <Link href={`/auth?next=${encodeURIComponent(redirectPath)}`} className="font-medium text-slate-900">
+        <Link href={withPublicPath(`/auth?next=${encodeURIComponent(withPublicPath(redirectPath))}`)} className="font-medium text-slate-900">
           登录后台
         </Link>
         。

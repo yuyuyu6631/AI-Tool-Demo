@@ -30,8 +30,17 @@ test.describe("Homepage-first navigation", () => {
     await expect(page).toHaveURL(/\/tools\/.+/);
   });
 
-  test("legacy tools path redirects back to homepage", async ({ page }) => {
+  test("tools path opens the full directory", async ({ page }) => {
     await page.goto("/tools", { waitUntil: "networkidle" });
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/tools/);
+    await expect(page.getByRole("heading", { name: "工具目录" })).toBeVisible();
+    await expect(page.getByRole("searchbox")).toBeVisible();
+  });
+
+  test("tools directory supports direct paginated browsing", async ({ page }) => {
+    await page.goto("/tools?page=2&page_size=24", { waitUntil: "networkidle" });
+    await expect(page).toHaveURL(/\/tools\?page=2&page_size=24/);
+    await expect(page.getByText(/当前页：2 \/ \d+/)).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "分页导航" })).toBeVisible();
   });
 });

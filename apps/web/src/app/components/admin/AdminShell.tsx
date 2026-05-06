@@ -4,12 +4,14 @@ import Header from "../Header";
 import Footer from "../Footer";
 import Breadcrumbs from "../Breadcrumbs";
 import AdminAccessGate from "./AdminAccessGate";
+import { withPublicPath } from "../../lib/public-path";
 
 const items = [
   { href: "/admin", label: "总览" },
   { href: "/admin/tools", label: "工具" },
   { href: "/admin/reviews", label: "评论" },
   { href: "/admin/rankings", label: "榜单" },
+  { href: "/admin/match-plans", label: "匹配策略" },
 ];
 
 export default function AdminShell({
@@ -40,7 +42,7 @@ export default function AdminShell({
                 {items.map((item) => (
                   <Link
                     key={item.href}
-                    href={item.href}
+                    href={withPublicPath(item.href)}
                     className={`rounded-full px-4 py-2 text-sm font-medium ${currentPath === item.href ? "bg-slate-900 text-white" : "border border-slate-200 bg-white text-slate-700"}`}
                   >
                     {item.label}

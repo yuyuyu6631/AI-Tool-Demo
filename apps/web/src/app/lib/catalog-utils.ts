@@ -1,4 +1,6 @@
-export const TOOL_SUBMISSION_URL = "/#submit-tool";
+import { withPublicPath } from "./public-path";
+
+export const TOOL_SUBMISSION_URL = withPublicPath("/#submit-tool");
 
 const GARBAGE_FACET_VALUES = new Set([
   "",
@@ -56,6 +58,7 @@ export function slugifyLabel(value: string) {
 export function buildToolsHref(
   current: Record<string, string | undefined>,
   updates: Record<string, string | number | null | undefined>,
+  basePath = "/",
 ) {
   const params = new URLSearchParams();
   const next = { ...current };
@@ -79,7 +82,7 @@ export function buildToolsHref(
   }
 
   const query = params.toString();
-  return query ? `/?${query}` : "/";
+  return query ? `${basePath}?${query}` : basePath;
 }
 
 export interface DecisionBadgeSource {

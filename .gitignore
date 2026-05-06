@@ -41,10 +41,16 @@ __pycache__/
 .agent/
 .claude/
 output/
+tmp/
 .dev-stack.json
 .tmp-*
 testagentfilespace/
 *.db
+*.7z
+*.zip
+*.tar
+*.tar.gz
+*.tgz
 秘钥.txt
 
 # Additional local tooling artifacts

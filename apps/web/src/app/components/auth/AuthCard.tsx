@@ -7,6 +7,7 @@ import { ArrowLeft, LoaderCircle, LogOut } from "lucide-react";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
 import { useAuth } from "./AuthProvider";
+import { withPublicPath, withoutPublicPath } from "../../lib/public-path";
 
 const tabs = [
   { id: "login", label: "登录" },
@@ -27,16 +28,17 @@ function hasSafeUriEncoding(value: string) {
 }
 
 export function resolveNextHref(nextHref?: string) {
-  if (!nextHref || !nextHref.startsWith("/") || nextHref.startsWith("//") || nextHref.startsWith("/auth")) {
+  const normalizedNextHref = nextHref ? withoutPublicPath(nextHref) : nextHref;
+  if (!normalizedNextHref || !normalizedNextHref.startsWith("/") || normalizedNextHref.startsWith("//") || normalizedNextHref.startsWith("/auth")) {
     return "/tools";
   }
 
-  if (!hasSafeUriEncoding(nextHref)) {
+  if (!hasSafeUriEncoding(normalizedNextHref)) {
     return "/tools";
   }
 
   try {
-    const normalized = new URL(nextHref, "http://localhost");
+    const normalized = new URL(normalizedNextHref, "http://localhost");
     return `${normalized.pathname}${normalized.search}${normalized.hash}`;
   } catch {
     return "/tools";
@@ -50,6 +52,7 @@ export default function AuthCard({ nextHref }: AuthCardProps) {
   const router = useRouter();
   const { currentUser, status, message, setCurrentUser, logout } = useAuth();
   const targetHref = useMemo(() => resolveNextHref(nextHref), [nextHref]);
+  const publicTargetHref = withPublicPath(targetHref);
 
   async function handleLogout() {
     setLogoutLoading(true);
@@ -68,7 +71,7 @@ export default function AuthCard({ nextHref }: AuthCardProps) {
   function handleSuccess(user: Parameters<typeof setCurrentUser>[0]) {
     if (!user) return;
     setCurrentUser(user);
-    router.push(targetHref);
+    router.push(publicTargetHref);
   }
 
   if (status === "loading") {
@@ -104,7 +107,7 @@ export default function AuthCard({ nextHref }: AuthCardProps) {
 
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
             <Link
-              href={targetHref}
+              href={publicTargetHref}
               className="btn-primary flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold"
             >
               {targetHref === "/tools" ? "进入工具目录" : "返回上一页"}

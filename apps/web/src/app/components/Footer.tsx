@@ -1,40 +1,36 @@
 import Link from "next/link";
 import { TOOL_SUBMISSION_URL } from "../lib/catalog-utils";
+import { withPublicPath } from "../lib/public-path";
+
+const footerLinks = [
+  { href: withPublicPath("/tools?view=hot&mode=search&page=1&page_size=24"), label: "热门榜" },
+  { href: withPublicPath("/tools?price=free&page=1&page_size=24"), label: "免费额度" },
+  { href: withPublicPath("/scenarios"), label: "任务场景" },
+  { href: TOOL_SUBMISSION_URL, label: "提交工具" },
+];
 
 export default function Footer() {
   return (
-    <footer className="footer-shell mt-24 py-12">
-      <div className="mx-auto grid w-full max-w-[1440px] gap-10 px-4 sm:px-6 lg:grid-cols-[1.3fr_1fr_1fr] lg:px-8">
-        <div>
-          <h3 className="text-sm font-semibold text-slate-950">星点评</h3>
-          <p className="mt-3 max-w-md text-sm leading-7 text-slate-600">
-            面向真实工作场景的 AI 工具发现入口。专注搜索、分类与高质量工具发现，不承载资讯流与运营内容。
-          </p>
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-slate-950">发现</h3>
-          <div className="mt-3 space-y-2 text-sm text-slate-600">
-            <Link href="/" className="block hover:text-slate-900">
-              首页搜索
-            </Link>
-            <Link href="/?view=hot" className="block hover:text-slate-900">
-              热门推荐
-            </Link>
-            <Link href="/?view=latest" className="block hover:text-slate-900">
-              最新收录
-            </Link>
+    <footer className="footer-shell mt-10 py-8">
+      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-5 px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-lg font-semibold text-slate-950">星点评</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+              独立运营的 AI 工具目录。收录、价格线索、适用场景和风险提示会持续修订，优先服务真实任务里的选型。
+            </p>
           </div>
+          <nav aria-label="页脚导航" className="flex flex-wrap gap-2">
+            {footerLinks.map((item) => (
+              <Link key={item.href} href={item.href} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950">
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         </div>
-        <div>
-          <h3 className="text-sm font-semibold text-slate-950">平台</h3>
-          <div className="mt-3 space-y-2 text-sm text-slate-600">
-            <Link href={TOOL_SUBMISSION_URL} className="block hover:text-slate-900">
-              提交工具
-            </Link>
-            <Link href="/#submit-tool" className="block hover:text-slate-900">
-              问题反馈
-            </Link>
-          </div>
+        <div className="flex flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+          <p>数据以官网、公开资料和站内维护记录为准；推荐结果只做选型参考。</p>
+          <p>AI Tool Directory · Review Notes · Ranking Signals</p>
         </div>
       </div>
     </footer>

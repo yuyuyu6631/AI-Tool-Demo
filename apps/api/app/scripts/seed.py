@@ -1,8 +1,11 @@
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.db.session import Base, SessionLocal, engine
 from app.models.models import Category, Tag, Tool, ToolCategory, ToolTag
 from app.services.catalog_views_seed import seed_catalog_views
+from app.services.dev_admin_seed import ensure_admin_user, ensure_dev_admin_user
 from app.services.logo_assets import LOGO_SOURCE_FALLBACK, normalize_logo_path, resolve_logo_status
 from app.services.seed_data import CATEGORIES, TOOLS
 
@@ -26,7 +29,7 @@ def run() -> None:
         session.flush()
 
         for tool in TOOLS:
-            row = session.query(Tool).filter(Tool.slug == tool.slug).first()
+            row = session.query(Tool).filter(or_(Tool.slug == tool.slug, Tool.name == tool.name)).first()
             if row is not None:
                 continue
 
@@ -82,10 +85,29 @@ def run() -> None:
 
         session.flush()
         ranking_count, scenario_count = seed_catalog_views(session)
+        if settings.is_production_like:
+            admin_user = (
+                ensure_admin_user(
+                    session,
+                    username=settings.admin_seed_username,
+                    password=settings.admin_seed_password,
+                    email=settings.admin_seed_email,
+                )
+                if settings.admin_seed_enabled
+                else None
+            )
+        else:
+            admin_user = ensure_dev_admin_user(session)
         session.commit()
+        admin_message = (
+            f" Admin ensured: {admin_user.username} (id={admin_user.id})."
+            if admin_user is not None
+            else " Admin seed skipped for production-like environment."
+        )
         print(
             f"Database tables and seed data ensured. "
             f"Catalog views refreshed: {ranking_count} rankings, {scenario_count} scenarios."
+            f"{admin_message}"
         )
     finally:
         session.close()

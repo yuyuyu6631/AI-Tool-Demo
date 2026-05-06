@@ -6,9 +6,18 @@
           <div className="h-5 w-24 animate-pulse rounded bg-slate-200" />
           <div className="mt-4 h-10 w-56 animate-pulse rounded bg-slate-200" />
           <div className="mt-4 h-4 w-full max-w-2xl animate-pulse rounded bg-slate-200" />
-          <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto]">
-            <div className="h-12 animate-pulse rounded-[18px] bg-slate-200" />
-            <div className="h-12 w-36 animate-pulse rounded-[18px] bg-slate-200" />
+          <div className="mt-6 w-full max-w-[520px] rounded-[24px] border border-slate-200/70 bg-slate-50/70 p-3 shadow-sm">
+            <div className="h-8 w-40 animate-pulse rounded-full bg-slate-200" />
+            <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_112px]">
+              <div className="h-11 animate-pulse rounded-2xl bg-slate-200" />
+              <div className="h-11 animate-pulse rounded-2xl bg-slate-200" />
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <div className="h-7 w-14 animate-pulse rounded-full bg-slate-200" />
+              <div className="h-7 w-14 animate-pulse rounded-full bg-slate-200" />
+              <div className="h-7 w-20 animate-pulse rounded-full bg-slate-200" />
+              <div className="h-7 w-20 animate-pulse rounded-full bg-slate-200" />
+            </div>
           </div>
         </section>
 

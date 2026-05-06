@@ -19,6 +19,7 @@ import ToolReviewsPanel from "../components/ToolReviewsPanel";
 import BackToResultsLink from "../components/BackToResultsLink";
 import type { ToolDetail, ToolMediaItem, ToolReviewsResponse, ToolSummary } from "../lib/catalog-types";
 import { buildDecisionBadges, buildToolsHref, hasValidOfficialUrl, slugifyLabel } from "../lib/catalog-utils";
+import { withPublicPath } from "../lib/public-path";
 import {
   buildAccessBadgeMeta,
   detectPriceLabel,
@@ -110,6 +111,8 @@ function ScoreBar({ score, reviewCount }: { score: number; reviewCount: number }
 function MediaPreview({ item, toolName }: { item: ToolMediaItem; toolName: string }) {
   const title = item.title?.trim() || `${toolName} 演示`;
   const isVideo = item.type === "video";
+  const mediaUrl = withPublicPath(item.url);
+  const thumbnailUrl = item.thumbnailUrl ? withPublicPath(item.thumbnailUrl) : null;
 
   return (
     <article className="overflow-hidden rounded-lg border border-slate-200 bg-white">
@@ -117,7 +120,7 @@ function MediaPreview({ item, toolName }: { item: ToolMediaItem; toolName: strin
         {item.type === "image" || item.thumbnailUrl ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element -- Reviewed media may be an arbitrary external URL. */}
-            <img src={item.thumbnailUrl || item.url} alt={title} className="h-full w-full object-cover" />
+            <img src={thumbnailUrl || mediaUrl} alt={title} className="h-full w-full object-cover" />
           </>
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-[#05070f] text-slate-300">
@@ -138,7 +141,7 @@ function MediaPreview({ item, toolName }: { item: ToolMediaItem; toolName: strin
             {item.sourceName ? <p className="mt-1 truncate text-xs text-slate-500">{item.sourceName}</p> : null}
           </div>
           <a
-            href={item.sourceUrl || item.url}
+            href={item.sourceUrl || mediaUrl}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1 rounded border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
@@ -167,7 +170,7 @@ export default function ToolDetailPage({ tool, relatedTools, reviews }: ToolDeta
     );
   }
 
-  const categoryHref = buildToolsHref({}, { category: tool.categorySlug || slugifyLabel(tool.category), page: 1 });
+  const categoryHref = withPublicPath(buildToolsHref({}, { category: tool.categorySlug || slugifyLabel(tool.category), page: 1 }, "/tools"));
   const scoreBadge = getScoreBadge(tool.reviewCount, tool.score);
   const accessBadges = buildAccessBadgeMeta(tool.accessFlags);
   const officialUrlAvailable = hasValidOfficialUrl(tool.officialUrl);

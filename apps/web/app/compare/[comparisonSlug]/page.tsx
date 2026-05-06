@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import ComparePage from "@/src/app/pages/ComparePage";
 import { fetchToolDetail } from "@/src/app/lib/catalog-api";
 import { buildComparisonSlug, parseComparisonSlug } from "@/src/app/lib/compare-utils";
+import { withPublicPath } from "@/src/app/lib/public-path";
 
 interface CompareRouteProps {
   params: Promise<{ comparisonSlug: string }>;
@@ -16,7 +17,7 @@ export default async function Page({ params }: CompareRouteProps) {
     notFound();
   }
   if (canonicalSlug !== comparisonSlug) {
-    redirect(`/compare/${canonicalSlug}`);
+    redirect(withPublicPath(`/compare/${canonicalSlug}`));
   }
 
   const tools = (await Promise.all(requestedSlugs.map((slug) => fetchToolDetail(slug)))).filter(Boolean);

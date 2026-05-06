@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { withPublicPath } from "../lib/public-path";
 
 interface BreadcrumbItem {
   label: string;
@@ -18,8 +19,12 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
           const isLast = index === items.length - 1;
           return (
             <li key={`${item.label}-${index}`} className="flex items-center gap-2">
-              {item.href && !isLast ? (
-                <Link href={item.href} className="hover:text-slate-900">
+              {item.href === "/" && !isLast ? (
+                <a href={withPublicPath(item.href)} className="hover:text-slate-900">
+                  {item.label}
+                </a>
+              ) : item.href && !isLast ? (
+                <Link href={withPublicPath(item.href)} className="hover:text-slate-900">
                   {item.label}
                 </Link>
               ) : (

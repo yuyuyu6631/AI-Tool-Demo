@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, GitBranch, RotateCcw, Search, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import Breadcrumbs from "../components/Breadcrumbs";
 import CatalogScrollRestorer from "../components/CatalogScrollRestorer";
 import CompareToolsGrid from "../components/CompareToolsGrid";
 import { Skeleton } from "../components/ui/skeleton";
-import type { AiQuickAction, AiSearchResponse, ToolsDirectoryResponse } from "../lib/catalog-types";
+import type { AiSearchResponse, ToolsDirectoryResponse } from "../lib/catalog-types";
 import { buildToolsHref, derivePriceFacets } from "../lib/catalog-utils";
+import { withPublicPath } from "../lib/public-path";
 import { trackEvent } from "../lib/analytics";
 
 const CATEGORY_LIMIT = 6;
@@ -38,31 +39,17 @@ interface ToolsPageProps {
     sort?: string;
     view?: string;
     page?: string;
+    pageSize?: string;
     source?: string;
   };
   loadState?: "idle" | "error" | "timeout";
 }
 
-function buildQuickActionHref(
-  action: AiQuickAction["action"],
-  state: Record<string, string | undefined>,
-  cnLangSlug: string,
+function buildToolsPageHref(
+  current: Record<string, string | undefined>,
+  updates: Record<string, string | number | null | undefined>,
 ) {
-  if (action.type === "set_filter" && action.key === "pricing" && action.value === "free") {
-    return buildToolsHref(state, { mode: "ai", price: "free", page: 1 });
-  }
-
-  if (action.type === "set_filter" && action.key === "language" && action.value === "zh") {
-    const values = new Set((state.access || "").split(",").filter(Boolean));
-    values.add(cnLangSlug);
-    return buildToolsHref(state, { mode: "ai", access: Array.from(values).sort().join(","), page: 1 });
-  }
-
-  if (action.type === "view_switch" && action.value === "filters") {
-    return buildToolsHref(state, { mode: "ai", aiFocus: "list", page: 1 });
-  }
-
-  return null;
+  return withPublicPath(buildToolsHref(current, updates, "/tools"));
 }
 
 function buildPagination(currentPage: number, totalPages: number) {
@@ -83,7 +70,75 @@ function buildPagination(currentPage: number, totalPages: number) {
   return tokens;
 }
 
-export default function ToolsPage({ directory, aiSearch = null, state, loadState = "idle" }: ToolsPageProps) {
+function AgentRecommendationSummary({ aiSearch }: { aiSearch?: AiSearchResponse | null }) {
+  const agent = aiSearch?.agent_recommendation;
+  if (!agent) return null;
+  const topPlan = agent.toolPlan[0];
+  const confidenceLabel = agent.confidence === "high" ? "高置信" : agent.confidence === "low" ? "低置信" : "中置信";
+
+  return (
+    <section data-testid="tools-agent-recommendation" className="panel-base mt-6 overflow-hidden rounded-[28px] border border-slate-900 bg-slate-950 p-5 text-white md:p-6">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="max-w-3xl">
+          <p className="inline-flex items-center gap-2 rounded-full border border-sky-300/20 bg-sky-300/10 px-3 py-1 text-xs font-semibold text-sky-100">
+            <GitBranch className="h-3.5 w-3.5" />
+            Agent 推荐报告 · {confidenceLabel}
+          </p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight">{agent.intent.task}</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-300">{agent.intent.summary}</p>
+          {agent.intent.constraints.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {agent.intent.constraints.map((item) => (
+                <span key={item} className="rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-xs text-slate-200">
+                  {item}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        {topPlan ? (
+          <div className="rounded-2xl border border-[#f6c768]/35 bg-[#f6c768]/10 p-4 lg:w-[320px]">
+            <p className="text-xs font-semibold text-[#ffe6a6]">主推荐</p>
+            <p className="mt-2 text-lg font-semibold">{topPlan.tool_name}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-200">{topPlan.fit_reason}</p>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-5">
+        {agent.trace.map((step, index) => (
+          <div key={step.id} className="rounded-2xl border border-white/10 bg-white/[0.055] p-3">
+            <div className="flex items-center gap-2 text-xs font-semibold text-sky-100">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-300/15">{index + 1}</span>
+              {step.title}
+            </div>
+            <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-400">{step.description}</p>
+          </div>
+        ))}
+      </div>
+
+      {agent.toolPlan.length > 0 ? (
+        <div className="mt-5 grid gap-3 lg:grid-cols-3">
+          {agent.toolPlan.slice(0, 3).map((item) => (
+            <div key={item.tool_slug} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-semibold">{item.tool_name}</p>
+                <span className="rounded-full bg-white/10 px-2 py-1 text-xs text-slate-300">{item.role}</span>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-slate-300">{item.fit_reason}</p>
+              <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-amber-100">
+                <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#f6c768]" />
+                {item.limitation_risk}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+export default function ToolsPage({ directory, aiSearch, state, loadState = "idle" }: ToolsPageProps) {
   const [aiPending, setAiPending] = useState(false);
   const activeMode = state.mode === "ai" ? "ai" : "search";
   const activeView = state.view || "hot";
@@ -105,7 +160,6 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
     .map((slug) => accessFacets.find((item) => item.slug === slug)?.label)
     .filter((label): label is string => Boolean(label));
   const showEmpty = directory.items.length === 0;
-  const cnLangSlug = accessFacets.find((item) => item.slug === "cn-lang")?.slug || "cn-lang";
   const current = {
     mode: activeMode,
     aiFocus: state.aiFocus,
@@ -118,6 +172,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
     sort: state.sort,
     view: state.view,
     page: state.page,
+    page_size: state.pageSize,
   };
   const sourceTitleMap: Record<string, string> = {
     home_hot: "首页热门工具",
@@ -129,14 +184,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
   const currentPage = Number(state.page || directory.page || 1);
   const totalPages = Math.max(1, Math.ceil(directory.total / Math.max(1, directory.pageSize || 9)));
   const pagination = buildPagination(currentPage, totalPages);
-  const currentRoute = buildToolsHref(current, {});
-  const aiPanel = aiSearch?.ai_panel;
-  const aiQuickActions = aiPanel?.quick_actions ?? [
-    { label: "只看免费", action: { type: "set_filter", key: "pricing", value: "free" } },
-    { label: "只看中文", action: { type: "set_filter", key: "language", value: "zh" } },
-    { label: "进入筛选列表", action: { type: "view_switch", value: "filters" } },
-  ];
-  const aiActiveLogic = aiPanel?.active_logic ?? [];
+  const currentRoute = buildToolsPageHref(current, {});
   const isFiltered = Boolean(
     state.q || state.category || state.tag || state.price || state.access || state.priceRange || activeView !== "hot" || activeSort !== "featured" || activeMode !== "search",
   );
@@ -148,7 +196,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
 
   useEffect(() => {
     setAiPending(false);
-  }, [state.mode, state.aiFocus, state.q, state.category, state.tag, state.price, state.access, state.priceRange, state.sort, state.view, state.page]);
+  }, [state.mode, state.aiFocus, state.q, state.category, state.tag, state.price, state.access, state.priceRange, state.sort, state.view, state.page, state.pageSize]);
 
   return (
     <div className="page-shell">
@@ -170,33 +218,33 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
               </div>
 
               <form
-                action="/tools"
+                action={withPublicPath("/tools")}
                 method="get"
-                className="w-full lg:max-w-xl"
+                className="w-full rounded-[24px] border border-slate-200/70 bg-slate-50/70 p-3 shadow-sm lg:max-w-[520px]"
                 onSubmit={() => {
                   if (activeMode === "ai") {
                     setAiPending(true);
                   }
                 }}
               >
-                <div className="mb-3 flex flex-wrap gap-2">
+                <div className="mb-3 inline-flex rounded-full border border-slate-200 bg-white p-1 shadow-sm">
                   <Link
-                    href={buildToolsHref(current, { mode: "search", page: 1 })}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                    href={buildToolsPageHref(current, { mode: "search", page: 1 })}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                       activeMode === "search"
                         ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
-                        : "border border-white/45 bg-white/70 text-slate-700 hover:bg-white"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                     onClick={() => trackEvent("home_mode_switch", { mode: "search", source: "tools" })}
                   >
                     直接搜索
                   </Link>
                   <Link
-                    href={buildToolsHref(current, { mode: "ai", page: 1 })}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                    href={buildToolsPageHref(current, { mode: "ai", page: 1 })}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                       activeMode === "ai"
                         ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
-                        : "border border-white/45 bg-white/70 text-slate-700 hover:bg-white"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                     onClick={() => {
                       setAiPending(true);
@@ -206,9 +254,9 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                     AI 帮找
                   </Link>
                 </div>
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <div className="relative flex-1">
-                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="relative min-w-0 flex-1">
+                    <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
                       id="tools-search"
                       type="search"
@@ -216,7 +264,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                       defaultValue={state.q || ""}
                       placeholder="想写文案、做海报、写代码？告诉我你的任务。"
                       data-global-search-target="tools"
-                      className="w-full rounded-[18px] border border-white/50 bg-white/80 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white"
+                      className="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(148,163,184,0.16)]"
                     />
                     <input type="hidden" name="mode" value={activeMode} />
                     {state.view ? <input type="hidden" name="view" value={state.view} /> : null}
@@ -226,8 +274,13 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                     {state.access ? <input type="hidden" name="access" value={state.access} /> : null}
                     {state.priceRange ? <input type="hidden" name="price_range" value={state.priceRange} /> : null}
                     {state.sort ? <input type="hidden" name="sort" value={state.sort} /> : null}
+                    {state.pageSize ? <input type="hidden" name="page_size" value={state.pageSize} /> : null}
                   </div>
-                  <button type="submit" className="btn-primary rounded-[18px] px-5 py-3 text-sm font-semibold" disabled={activeMode === "ai" && aiPending}>
+                  <button
+                    type="submit"
+                    className="btn-primary inline-flex h-11 w-full items-center justify-center rounded-2xl px-5 text-sm font-semibold sm:w-28"
+                    disabled={activeMode === "ai" && aiPending}
+                  >
                     {activeMode === "ai" ? (aiPending ? "正在匹配..." : "开始推荐") : "开始筛选"}
                   </button>
                 </div>
@@ -236,11 +289,11 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                   {DECISION_SHORTCUTS.map((item) => (
                     <Link
                       key={item.id}
-                      href={buildToolsHref(current, { [item.hrefKey]: item.value, page: 1 })}
+                      href={buildToolsPageHref(current, { [item.hrefKey]: item.value, page: 1 })}
                       className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
                         (item.hrefKey === "view" ? activeView === item.value : state.price === item.value)
                           ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
-                          : "border border-white/45 bg-white/70 text-slate-700 hover:bg-white"
+                          : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-900"
                       }`}
                       onClick={startAiPending}
                     >
@@ -251,15 +304,11 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
               </form>
             </div>
 
-            <div className="mt-6 rounded-[28px] border border-white/40 bg-white/50 px-4 py-3 text-sm text-slate-600">
-              先说需求，再看工具。你也可以按热门预设、分类、标签和价格继续缩小范围。
-            </div>
-
-            <div className="mt-6 flex flex-wrap gap-2">
+            <div className="mt-5 flex flex-wrap gap-2">
               {directory.presets.map((preset) => (
                 <Link
                   key={preset.id}
-                  href={buildToolsHref(current, {
+                  href={buildToolsPageHref(current, {
                     view: preset.id,
                     page: 1,
                     category: null,
@@ -289,62 +338,10 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
             </section>
           ) : null}
 
-          {activeMode === "ai" ? (
-            <section className={`panel-base mt-6 rounded-[28px] p-5 md:p-6 ${state.aiFocus === "list" ? "opacity-90" : "ring-1 ring-slate-300/70"}`}>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{aiPanel?.title || "AI 理解面板"}</p>
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                <div className="rounded-2xl bg-white/80 p-4">
-                  <p className="text-xs font-semibold text-slate-500">你的需求</p>
-                  <p className="mt-2 text-sm text-slate-800">{aiPanel?.user_need || state.q?.trim() || "未输入需求"}</p>
-                </div>
-                <div className="rounded-2xl bg-white/80 p-4">
-                  <p className="text-xs font-semibold text-slate-500">系统理解</p>
-                  <p className="mt-2 text-sm text-slate-800">{aiPanel?.system_understanding || "根据你的输入先为你展示相关工具。"}</p>
-                </div>
-                <div className="rounded-2xl bg-white/80 p-4 md:col-span-2">
-                  <p className="text-xs font-semibold text-slate-500">当前优先筛选逻辑</p>
-                  <p className="mt-2 text-sm text-slate-800">
-                    {aiActiveLogic.length > 0 ? aiActiveLogic.join(" / ") : "当前筛选逻辑：未附加筛选条件"}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-white/80 p-4 md:col-span-2">
-                  <p className="text-xs font-semibold text-slate-500">可执行快捷动作</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {aiQuickActions.map((quickAction, index) => {
-                      const href = buildQuickActionHref(quickAction.action, state as Record<string, string | undefined>, cnLangSlug);
-                      if (!href) return null;
-                      const emphasized = index === 0;
-                      return (
-                        <Link
-                          key={`${quickAction.label}-${index}`}
-                          href={href}
-                          className={
-                            emphasized
-                              ? "rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white"
-                              : "rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700"
-                          }
-                          onClick={() => {
-                            startAiPending();
-                            trackEvent("tools_ai_quick_action_click", {
-                              action: quickAction.action.type,
-                              key: quickAction.action.key || "",
-                              value: quickAction.action.value || "",
-                              mode: "ai",
-                            });
-                          }}
-                        >
-                          {quickAction.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </section>
-          ) : null}
+          <AgentRecommendationSummary aiSearch={aiSearch} />
 
           <section className="mt-6 grid items-start gap-6 xl:grid-cols-[288px_minmax(0,1fr)]">
-            <aside className="xl:sticky xl:top-24 xl:self-start">
+            <aside className="hidden xl:sticky xl:top-24 xl:block xl:self-start">
               <div className="panel-base rounded-[28px] p-5">
                 <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                   <SlidersHorizontal className="h-4 w-4" />
@@ -357,7 +354,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                     {DECISION_SHORTCUTS.map((item) => (
                       <Link
                         key={`sidebar-${item.id}`}
-                        href={buildToolsHref(current, { [item.hrefKey]: item.value, page: 1 })}
+                        href={buildToolsPageHref(current, { [item.hrefKey]: item.value, page: 1 })}
                         className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
                           (item.hrefKey === "view" ? activeView === item.value : state.price === item.value)
                             ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
@@ -381,7 +378,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                     ].map((sortOption) => (
                       <Link
                         key={sortOption.id}
-                        href={buildToolsHref(current, { sort: sortOption.id, page: 1 })}
+                        href={buildToolsPageHref(current, { sort: sortOption.id, page: 1 })}
                         className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
                           activeSort === sortOption.id
                             ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
@@ -398,7 +395,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">分类</p>
                     {state.category ? (
-                      <Link href={buildToolsHref(current, { category: null, page: 1 })} className="text-xs text-slate-500 hover:text-slate-900">
+                      <Link href={buildToolsPageHref(current, { category: null, page: 1 })} className="text-xs text-slate-500 hover:text-slate-900">
                         清除分类
                       </Link>
                     ) : null}
@@ -407,7 +404,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                     {visibleCategories.map((category) => (
                       <Link
                         key={category.slug}
-                        href={buildToolsHref(current, { category: category.slug, page: 1 })}
+                        href={buildToolsPageHref(current, { category: category.slug, page: 1 })}
                         className={`aside-item flex items-center justify-between rounded-2xl px-3 py-2 text-sm ${
                           state.category === category.slug ? "bg-slate-900 text-white" : "bg-white/70 text-slate-700 hover:bg-white"
                         }`}
@@ -423,7 +420,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                           {overflowCategories.map((category) => (
                             <Link
                               key={category.slug}
-                              href={buildToolsHref(current, { category: category.slug, page: 1 })}
+                              href={buildToolsPageHref(current, { category: category.slug, page: 1 })}
                               className="aside-item flex items-center justify-between rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-white"
                             >
                               <span>{category.label}</span>
@@ -441,7 +438,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">价格</p>
                       {state.price ? (
-                        <Link href={buildToolsHref(current, { price: null, page: 1 })} className="text-xs text-slate-500 hover:text-slate-900">
+                        <Link href={buildToolsPageHref(current, { price: null, page: 1 })} className="text-xs text-slate-500 hover:text-slate-900">
                           清除价格
                         </Link>
                       ) : null}
@@ -450,7 +447,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                       {priceFacets.map((price) => (
                         <Link
                           key={price.slug}
-                          href={buildToolsHref(current, { price: price.slug, page: 1 })}
+                          href={buildToolsPageHref(current, { price: price.slug, page: 1 })}
                           className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
                             state.price === price.slug
                               ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
@@ -469,7 +466,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">价格区间</p>
                       {state.priceRange ? (
-                        <Link href={buildToolsHref(current, { price_range: null, page: 1 })} className="text-xs text-slate-500 hover:text-slate-900">
+                        <Link href={buildToolsPageHref(current, { price_range: null, page: 1 })} className="text-xs text-slate-500 hover:text-slate-900">
                           清除区间
                         </Link>
                       ) : null}
@@ -478,7 +475,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                       {priceRangeFacets.map((priceRange) => (
                         <Link
                           key={priceRange.slug}
-                          href={buildToolsHref(current, { price_range: priceRange.slug, page: 1 })}
+                          href={buildToolsPageHref(current, { price_range: priceRange.slug, page: 1 })}
                           className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
                             state.priceRange === priceRange.slug
                               ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
@@ -497,7 +494,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">访问条件</p>
                       {state.access ? (
-                        <Link href={buildToolsHref(current, { access: null, page: 1 })} className="text-xs text-slate-500 hover:text-slate-900">
+                        <Link href={buildToolsPageHref(current, { access: null, page: 1 })} className="text-xs text-slate-500 hover:text-slate-900">
                           清除条件
                         </Link>
                       ) : null}
@@ -511,7 +508,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                         return (
                           <Link
                             key={accessFacet.slug}
-                            href={buildToolsHref(current, { access: Array.from(values).sort().join(",") || null, page: 1 })}
+                            href={buildToolsPageHref(current, { access: Array.from(values).sort().join(",") || null, page: 1 })}
                             className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
                               active ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" : "bg-white/70 text-slate-700 hover:bg-white"
                             }`}
@@ -528,7 +525,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">标签</p>
                     {state.tag ? (
-                      <Link href={buildToolsHref(current, { tag: null, page: 1 })} className="text-xs text-slate-500 hover:text-slate-900">
+                      <Link href={buildToolsPageHref(current, { tag: null, page: 1 })} className="text-xs text-slate-500 hover:text-slate-900">
                         清除标签
                       </Link>
                     ) : null}
@@ -537,7 +534,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                     {visibleTags.map((tag) => (
                       <Link
                         key={tag.slug}
-                        href={buildToolsHref(current, { tag: tag.slug, page: 1 })}
+                        href={buildToolsPageHref(current, { tag: tag.slug, page: 1 })}
                         className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
                           state.tag === tag.slug
                             ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
@@ -557,7 +554,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                         {overflowTags.map((tag) => (
                           <Link
                             key={tag.slug}
-                            href={buildToolsHref(current, { tag: tag.slug, page: 1 })}
+                            href={buildToolsPageHref(current, { tag: tag.slug, page: 1 })}
                             className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
                               state.tag === tag.slug
                                 ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
@@ -574,7 +571,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
 
                 {isFiltered ? (
                   <div className="mt-6">
-                    <Link href="/tools?mode=search" className="inline-flex items-center gap-2 text-sm font-medium text-slate-900 hover:underline">
+                    <Link href={withPublicPath("/tools?mode=search")} className="inline-flex items-center gap-2 text-sm font-medium text-slate-900 hover:underline">
                       <RotateCcw className="h-4 w-4" />
                       重置筛选
                     </Link>
@@ -589,10 +586,10 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                   <h2 className="text-lg font-semibold text-slate-900">{loadState === "timeout" ? "目录加载超时" : "目录加载失败"}</h2>
                   <p className="mt-2 text-sm leading-7 text-slate-600">当前未能完整获取工具目录数据。你可以刷新重试，或稍后再访问。</p>
                   <div className="mt-4 flex flex-wrap gap-3">
-                    <Link href={buildToolsHref(current, {})} className="btn-primary rounded-full px-4 py-2 text-sm">
+                    <Link href={buildToolsPageHref(current, {})} className="btn-primary rounded-full px-4 py-2 text-sm">
                       重新加载
                     </Link>
-                    <Link href="/tools?mode=search" className="btn-secondary rounded-full px-4 py-2 text-sm">
+                    <Link href={withPublicPath("/tools?mode=search")} className="btn-secondary rounded-full px-4 py-2 text-sm">
                       返回目录
                     </Link>
                   </div>
@@ -621,10 +618,10 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                   <h2 className="text-xl font-semibold text-slate-900">暂无匹配工具</h2>
                   <p className="mt-3 text-sm leading-7 text-slate-600">当前筛选条件下没有找到结果。你可以换一个关键词，或清除分类、价格和标签后再试。</p>
                   <div className="mt-5 flex flex-wrap justify-center gap-3">
-                    <Link href="/tools?mode=search" className="btn-primary rounded-full px-5 py-3 text-sm">
+                    <Link href={withPublicPath("/tools?mode=search")} className="btn-primary rounded-full px-5 py-3 text-sm">
                       重置筛选
                     </Link>
-                    <Link href="/tools?view=hot&mode=search" className="btn-secondary rounded-full px-5 py-3 text-sm">
+                    <Link href={withPublicPath("/tools?view=hot&mode=search")} className="btn-secondary rounded-full px-5 py-3 text-sm">
                       返回最热
                     </Link>
                   </div>
@@ -647,7 +644,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
               {!showEmpty && totalPages > 1 ? (
                 <nav aria-label="分页导航" className="mt-8 flex flex-wrap items-center justify-center gap-2">
                   <Link
-                    href={buildToolsHref(current, { page: Math.max(1, currentPage - 1) })}
+                    href={buildToolsPageHref(current, { page: Math.max(1, currentPage - 1) })}
                     aria-disabled={currentPage <= 1}
                     className={`pagination-chip inline-flex min-w-10 items-center justify-center gap-1 rounded-full px-4 py-2 text-sm font-medium ${
                       currentPage <= 1 ? "pointer-events-none opacity-50" : ""
@@ -664,7 +661,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                     ) : (
                       <Link
                         key={token}
-                        href={buildToolsHref(current, { page: token })}
+                        href={buildToolsPageHref(current, { page: token })}
                         aria-current={token === currentPage ? "page" : undefined}
                         className={`pagination-chip inline-flex h-10 min-w-10 items-center justify-center rounded-full px-3 text-sm font-semibold ${
                           token === currentPage ? "is-active bg-slate-900 text-white" : ""
@@ -675,7 +672,7 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
                     ),
                   )}
                   <Link
-                    href={buildToolsHref(current, { page: Math.min(totalPages, currentPage + 1) })}
+                    href={buildToolsPageHref(current, { page: Math.min(totalPages, currentPage + 1) })}
                     aria-disabled={currentPage >= totalPages}
                     className={`pagination-chip inline-flex min-w-10 items-center justify-center gap-1 rounded-full px-4 py-2 text-sm font-medium ${
                       currentPage >= totalPages ? "pointer-events-none opacity-50" : ""
@@ -695,6 +692,3 @@ export default function ToolsPage({ directory, aiSearch = null, state, loadState
     </div>
   );
 }
-
-
-

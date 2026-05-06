@@ -15,11 +15,14 @@ vi.mock("../PlatformLogo", () => ({
 }));
 
 describe("Header", () => {
-  it("does not render a visible search trigger in the navigation area", () => {
+  it("renders the main route navigation without an inline search trigger", () => {
     render(<Header currentPath="/" currentRoute="/" />);
 
     expect(screen.getByText("提交工具")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "首页" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "首页" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "按任务找" })).toHaveAttribute("href", "/search");
+    expect(screen.getByRole("link", { name: "免费福利" })).toHaveAttribute("href", "/deals");
+    expect(screen.getByRole("link", { name: "工具库" })).toHaveAttribute("href", "/tools?mode=search&page=1&page_size=24");
     expect(screen.queryByText("搜索工具")).not.toBeInTheDocument();
     expect(screen.queryByText("Ctrl+G")).not.toBeInTheDocument();
   });

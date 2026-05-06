@@ -21,6 +21,7 @@ from app.schemas.admin import (
 )
 from app.schemas.tool import ToolDetail
 from app.services import catalog_service
+from app.services import match_plan_service
 
 
 VALID_TOOL_STATUSES = {"published", "draft", "archived"}
@@ -170,6 +171,7 @@ def get_overview(db: Session) -> AdminOverviewResponse:
     review_count = int(db.scalar(select(func.count()).select_from(ToolReview)) or 0)
     ranking_count = int(db.scalar(select(func.count()).select_from(Ranking)) or 0)
     recent_tools = db.scalars(select(Tool).order_by(Tool.updated_at.desc()).limit(5)).all()
+    match_plan_count, published_match_plan_count, recent_match_plans = match_plan_service.count_match_plans(db)
 
     return AdminOverviewResponse(
         toolCount=tool_count,
@@ -187,6 +189,9 @@ def get_overview(db: Session) -> AdminOverviewResponse:
             )
             for row in recent_tools
         ],
+        matchPlanCount=match_plan_count,
+        publishedMatchPlanCount=published_match_plan_count,
+        recentPublishedMatchPlans=recent_match_plans,
     )
 
 

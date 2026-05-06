@@ -3,15 +3,16 @@ import { Suspense, type ReactNode } from "react";
 import AppProviders from "@/src/app/components/AppProviders";
 import RouteFeedback from "@/src/app/components/RouteFeedback";
 import FloatingChatBot from "@/src/app/components/chat/FloatingChatBot";
+import { withPublicPath } from "@/src/app/lib/public-path";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "星点评",
   description: "帮助用户发现、比较和选择 AI 工具的点评与发现平台。",
   icons: {
-    icon: "/brand/logo.png",
-    shortcut: "/brand/logo.png",
-    apple: "/brand/logo.png",
+    icon: withPublicPath("/brand/logo.png"),
+    shortcut: withPublicPath("/brand/logo.png"),
+    apple: withPublicPath("/brand/logo.png"),
   },
 };
 

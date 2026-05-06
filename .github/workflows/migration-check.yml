@@ -1,0 +1,51 @@
+name: Migration Check
+
+on:
+  pull_request:
+    paths:
+      - "apps/api/alembic/versions/**"
+
+jobs:
+  migration-dry-run:
+    name: Migration Dry Run
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: xingdianping_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        working-directory: apps/api
+        run: pip install ".[dev]"
+
+      - name: Apply all migrations
+        working-directory: apps/api
+        env:
+          DATABASE_URL: "mysql+pymysql://root:root@127.0.0.1:3306/xingdianping_test"
+          AI_PROVIDER: stub
+          SECRET_KEY: test-secret-key-for-ci
+        run: python -m alembic upgrade head
+
+      - name: Verify migration state
+        working-directory: apps/api
+        env:
+          DATABASE_URL: "mysql+pymysql://root:root@127.0.0.1:3306/xingdianping_test"
+          AI_PROVIDER: stub
+          SECRET_KEY: test-secret-key-for-ci
+        run: python -m alembic check

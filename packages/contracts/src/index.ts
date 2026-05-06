@@ -101,6 +101,56 @@ export interface AdminToolPayload {
   lastVerifiedAt: string | null;
 }
 
+export interface AdminMatchPlanToolPayload {
+  toolSlug: string;
+  reason: string;
+  sortOrder: number;
+  weight: number;
+}
+
+export interface AdminMatchPlanPayload {
+  slug: string;
+  title: string;
+  description: string;
+  persona: string;
+  scenario: string;
+  triggerKeywords: string[];
+  status: ToolStatus | string;
+  sortOrder: number;
+  tools: AdminMatchPlanToolPayload[];
+}
+
+export interface AdminMatchPlanListItem {
+  id: number;
+  slug: string;
+  title: string;
+  status: ToolStatus | string;
+  persona: string;
+  scenario: string;
+  triggerKeywords: string[];
+  toolCount: number;
+  sortOrder: number;
+  updatedAt: string;
+  publishedAt?: string | null;
+}
+
+export interface AdminMatchPlanPreviewResponse {
+  planId?: number | null;
+  matched: boolean;
+  matchedKeywords: string[];
+  tools: Array<{
+    toolSlug: string;
+    toolName: string;
+    reason: string;
+    sortOrder: number;
+    weight: number;
+    status: ToolStatus | string;
+    available: boolean;
+    issue?: string | null;
+  }>;
+  warnings: string[];
+}
+
 export interface AccessFlags {
   needsVpn?: boolean | null;
   cnLang?: boolean | null;

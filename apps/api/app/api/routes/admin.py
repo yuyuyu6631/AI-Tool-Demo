@@ -3,6 +3,10 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.schemas.admin import (
+    AdminMatchPlanListItem,
+    AdminMatchPlanPayload,
+    AdminMatchPlanPreviewRequest,
+    AdminMatchPlanPreviewResponse,
     AdminOverviewResponse,
     AdminRankingListItem,
     AdminRankingPayload,
@@ -11,7 +15,7 @@ from app.schemas.admin import (
     AdminToolPayload,
 )
 from app.schemas.tool import ToolDetail
-from app.services import admin_service, auth_service
+from app.services import admin_service, auth_service, match_plan_service
 
 
 router = APIRouter(prefix="/admin", dependencies=[Depends(auth_service.current_admin_dependency)])
@@ -71,3 +75,37 @@ def get_ranking(ranking_id: int, db: Session = Depends(get_db)):
 @router.put("/rankings/{ranking_id}", response_model=AdminRankingPayload)
 def update_ranking(ranking_id: int, payload: AdminRankingPayload, db: Session = Depends(get_db)):
     return admin_service.upsert_ranking(db, payload, ranking_id=ranking_id)
+
+
+@router.get("/match-plans", response_model=list[AdminMatchPlanListItem])
+def list_match_plans(db: Session = Depends(get_db)):
+    return match_plan_service.list_match_plans(db)
+
+
+@router.post("/match-plans", response_model=AdminMatchPlanPayload, status_code=201)
+def create_match_plan(payload: AdminMatchPlanPayload, db: Session = Depends(get_db)):
+    return match_plan_service.upsert_match_plan(db, payload)
+
+
+@router.get("/match-plans/{plan_id}", response_model=AdminMatchPlanPayload)
+def get_match_plan(plan_id: int, db: Session = Depends(get_db)):
+    return match_plan_service.get_match_plan_payload(db, plan_id)
+
+
+@router.put("/match-plans/{plan_id}", response_model=AdminMatchPlanPayload)
+def update_match_plan(plan_id: int, payload: AdminMatchPlanPayload, db: Session = Depends(get_db)):
+    return match_plan_service.upsert_match_plan(db, payload, plan_id=plan_id)
+
+
+@router.post("/match-plans/{plan_id}/publish", response_model=AdminMatchPlanPayload)
+def publish_match_plan(plan_id: int, db: Session = Depends(get_db)):
+    return match_plan_service.publish_match_plan(db, plan_id)
+
+
+@router.post("/match-plans/{plan_id}/preview", response_model=AdminMatchPlanPreviewResponse)
+def preview_match_plan(
+    plan_id: int,
+    payload: AdminMatchPlanPreviewRequest | None = None,
+    db: Session = Depends(get_db),
+):
+    return match_plan_service.preview_match_plan(db, plan_id, payload or AdminMatchPlanPreviewRequest())

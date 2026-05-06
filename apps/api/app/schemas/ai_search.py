@@ -40,6 +40,43 @@ class AiSearchMeta(BaseModel):
     intent_source: str = "fallback"
 
 
+class AgentIntent(BaseModel):
+    summary: str
+    task: str
+    constraints: list[str] = Field(default_factory=list)
+
+
+class AgentTraceStep(BaseModel):
+    id: str
+    title: str
+    description: str
+    status: str = "done"
+
+
+class AgentToolPlanItem(BaseModel):
+    tool_slug: str
+    tool_name: str
+    role: str
+    fit_reason: str
+    free_signal: str
+    limitation_risk: str
+    next_step: str
+
+
+class AgentAlternative(BaseModel):
+    tool_slug: str
+    tool_name: str
+    reason: str
+
+
+class AgentRecommendation(BaseModel):
+    intent: AgentIntent
+    trace: list[AgentTraceStep] = Field(default_factory=list)
+    toolPlan: list[AgentToolPlanItem] = Field(default_factory=list)
+    alternatives: list[AgentAlternative] = Field(default_factory=list)
+    confidence: str = "medium"
+
+
 class AiSearchResponse(BaseModel):
     mode: str = "ai"
     query: str
@@ -48,3 +85,4 @@ class AiSearchResponse(BaseModel):
     results: list[AiSearchResult]
     directory: ToolsDirectoryResponse
     meta: AiSearchMeta
+    agent_recommendation: AgentRecommendation | None = None

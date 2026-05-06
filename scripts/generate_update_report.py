@@ -9,9 +9,10 @@ from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 
 
-OUTPUT = Path(r"D:\codespace\workfile\output\doc\星点评-网站迭代更新报告-2026-04-22.docx")
-DESKTOP_SCREENSHOT = Path(r"D:\codespace\workfile\apps\web\src\e2e\visual.spec.ts-snapshots\home-1920-win32.png")
-MOBILE_SCREENSHOT = Path(r"D:\codespace\workfile\apps\web\src\e2e\visual.spec.ts-snapshots\home-search-390-win32.png")
+REPO_ROOT = Path(__file__).resolve().parents[1]
+OUTPUT = REPO_ROOT / "output" / "doc" / "星点评-网站迭代更新报告-2026-04-22.docx"
+DESKTOP_SCREENSHOT = REPO_ROOT / "apps" / "web" / "src" / "e2e" / "visual.spec.ts-snapshots" / "home-1920-win32.png"
+MOBILE_SCREENSHOT = REPO_ROOT / "apps" / "web" / "src" / "e2e" / "visual.spec.ts-snapshots" / "home-search-390-win32.png"
 
 
 def set_cell_shading(cell, fill):

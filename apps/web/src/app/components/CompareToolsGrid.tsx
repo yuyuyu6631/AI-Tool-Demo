@@ -7,6 +7,7 @@ import { buildComparisonSlug } from "../lib/compare-utils";
 import { TOOL_SUBMISSION_URL, buildDecisionBadges } from "../lib/catalog-utils";
 import { rememberCatalogNavigation } from "../lib/catalog-navigation";
 import { detectPriceLabel } from "../lib/tool-display";
+import { withPublicPath } from "../lib/public-path";
 import ToolCard from "./ToolCard";
 
 export interface CompareToolsSection {
@@ -84,9 +85,14 @@ export default function CompareToolsGrid({
                         if (rememberDetailNavigation) {
                           rememberCatalogNavigation();
                         }
-                        onToolDetailClick?.(tool);
+                      onToolDetailClick?.(tool);
                       }}
                       reason={tool.reason}
+                      features={tool.features}
+                      limitations={tool.limitations}
+                      bestFor={tool.bestFor}
+                      dealSummary={tool.dealSummary || tool.freeAllowanceText}
+                      primaryMedia={tool.primaryMedia}
                     />
                   );
                 })}
@@ -98,7 +104,7 @@ export default function CompareToolsGrid({
                   {section.emptyDescription || "你可以先去看热门工具，或者把你常用的工具提交给我们补录。"}
                 </p>
                 <div className="mt-5 flex flex-wrap justify-center gap-3">
-                  <Link href="/?view=hot" className="btn-primary rounded-full px-5 py-3 text-sm">
+                  <Link href={withPublicPath("/?view=hot")} className="btn-primary rounded-full px-5 py-3 text-sm">
                     去看热门工具
                   </Link>
                   <Link
@@ -115,7 +121,7 @@ export default function CompareToolsGrid({
       </div>
 
       {hasAnyItems ? (
-        <div className="sticky bottom-4 mt-6">
+        <div className="sticky bottom-4 z-20 mt-6 hidden sm:block">
           <div className="panel-base flex flex-col gap-3 rounded-[24px] px-5 py-4 shadow-[0_20px_40px_rgba(15,23,42,0.12)] md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-sm font-semibold text-slate-900">工具对比</p>
@@ -127,7 +133,7 @@ export default function CompareToolsGrid({
             </div>
             {comparisonSlug ? (
               <Link
-                href={`/compare/${comparisonSlug}`}
+                href={withPublicPath(`/compare/${comparisonSlug}`)}
                 className="btn-primary inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold"
               >
                 开始对比

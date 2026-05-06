@@ -136,6 +136,7 @@ export default async function Page({ searchParams }: HomeRouteProps) {
       state={state}
       aiPanel={aiSearch?.ai_panel ?? null}
       aiMeta={aiSearch?.meta ?? null}
+      agentRecommendation={aiSearch?.agent_recommendation ?? null}
     />
   );
 }

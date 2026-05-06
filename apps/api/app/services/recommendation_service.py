@@ -5,6 +5,7 @@ from app.schemas.recommend import RecommendItem, RecommendRequest
 from app.services.ai_client import rank_with_ai
 from app.services.cache_service import build_recommendation_cache_key, get_redis_client, mark_redis_unavailable
 from app.services.candidate_selector import select_candidates
+from app.services.match_plan_service import apply_match_plan_boost
 
 
 def score_tool(lowered_query: str, tool) -> float:
@@ -59,6 +60,14 @@ def recommend(*, db, payload: RecommendRequest) -> list[RecommendItem]:
     if settings.ai_provider != "stub" and settings.ai_api_key:
         ranked, ai_reasons = rank_with_ai(payload, ranked)
 
+    ranked, plan_reasons = apply_match_plan_boost(
+        db,
+        query=payload.query,
+        scenario=payload.scenario,
+        tags=payload.tags,
+        items=ranked,
+    )
+    ai_reasons = {**ai_reasons, **plan_reasons}
     ranked = ranked[:3]
 
     items = [

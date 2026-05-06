@@ -1,0 +1,40 @@
+name: Health Check
+
+on:
+  schedule:
+    - cron: "42 */6 * * *"  # Every 6 hours at :42
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Production Health
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check API health
+        run: |
+          # Replace with your actual deployment URL
+          API_URL="${{ secrets.HEALTH_CHECK_URL }}"
+          if [ -z "$API_URL" ]; then
+            echo "::notice::HEALTH_CHECK_URL secret not configured — skipping"
+            exit 0
+          fi
+          HTTP_STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "$API_URL/health" || echo "000")
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "::error::API health check failed with HTTP $HTTP_STATUS"
+            exit 1
+          fi
+          echo "API health: OK (HTTP $HTTP_STATUS)"
+
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const now = new Date().toISOString();
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Health check failed at ${now}`,
+              body: `Production health check failed.\n\n[View workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
+              labels: ['bug', 'production']
+            })

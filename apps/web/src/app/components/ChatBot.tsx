@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { buildApiUrl } from "../lib/api-base";
 
 // ─── 类型定义 ──────────────────────────────────────────────────────────
 
@@ -186,8 +187,7 @@ export default function ChatBot() {
     setIsLoading(true);
 
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-      const response = await fetch(`${apiBaseUrl}/api/chat`, {
+      const response = await fetch(buildApiUrl("/api/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: newMessages.map(m => ({ role: m.role, content: m.content })) }),

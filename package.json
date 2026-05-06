@@ -27,6 +27,7 @@
     "export:categories": "python apps/api/app/scripts/export_data.py --type categories",
     "export:reviews": "python apps/api/app/scripts/export_data.py --type reviews",
     "export:scenarios": "python apps/api/app/scripts/export_data.py --type scenarios",
+    "tree:check": "node scripts/check_code_tree.mjs",
     "sync:home-tools": "cd apps/api && python app/scripts/sync_curated_home_tools.py",
     "build:web": "npm run build --workspace @xingdianping/web",
     "lint:web": "npm run lint --workspace @xingdianping/web",
@@ -34,7 +35,16 @@
     "docs:sync": "node scripts/sync_current_docs.js",
     "docs:check": "node scripts/sync_current_docs.js --check"
   },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": ["eslint --fix --no-error-on-unmatched-pattern"],
+    "*.{ts,tsx,js,jsx,json,css,md}": ["prettier --write"],
+    "*.py": ["ruff check --fix", "ruff format"]
+  },
   "dependencies": {
     "docx": "^9.6.1"
+  },
+  "devDependencies": {
+    "lint-staged": "^15.5.0",
+    "prettier": "^3.5.0"
   }
 }

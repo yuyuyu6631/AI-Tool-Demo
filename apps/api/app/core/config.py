@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     session_ttl_seconds: int = 604800
     cookie_secure: bool = False
     cookie_samesite: str = "lax"
+    admin_seed_enabled: bool = False
+    admin_seed_username: str = "admin"
+    admin_seed_password: str = ""
+    admin_seed_email: str = "admin@xingdianping.local"
     cors_allowed_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:3000", "http://127.0.0.1:3000"]
     )

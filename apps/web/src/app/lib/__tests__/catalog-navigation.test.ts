@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getCatalogReturnLabel,
   getRememberedCatalogRoute,
+  getRememberedCatalogSnapshot,
   markCatalogScrollRestore,
   rememberCatalogNavigation,
+  rememberCatalogSnapshot,
   restoreCatalogScroll,
 } from "../catalog-navigation";
 
@@ -14,6 +16,7 @@ describe("catalog-navigation", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
@@ -54,5 +57,18 @@ describe("catalog-navigation", () => {
 
     expect(scrollToMock).toHaveBeenCalledWith({ top: 368, behavior: "auto" });
     expect(window.sessionStorage.getItem("catalog:restore-scroll")).toBeNull();
+  });
+
+  it("remembers route snapshots and drops expired entries", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-28T08:00:00Z"));
+
+    rememberCatalogSnapshot("/?mode=ai&q=ppt&page=1", { total: 2 });
+
+    expect(getRememberedCatalogSnapshot<{ total: number }>("/?mode=ai&q=ppt&page=1")).toEqual({ total: 2 });
+
+    vi.setSystemTime(new Date("2026-04-28T08:11:00Z"));
+
+    expect(getRememberedCatalogSnapshot<{ total: number }>("/?mode=ai&q=ppt&page=1")).toBeNull();
   });
 });

@@ -158,6 +158,43 @@ export interface AiSearchMeta {
   intent_source: string;
 }
 
+export interface AgentIntent {
+  summary: string;
+  task: string;
+  constraints: string[];
+}
+
+export interface AgentTraceStep {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+}
+
+export interface AgentToolPlanItem {
+  tool_slug: string;
+  tool_name: string;
+  role: string;
+  fit_reason: string;
+  free_signal: string;
+  limitation_risk: string;
+  next_step: string;
+}
+
+export interface AgentAlternative {
+  tool_slug: string;
+  tool_name: string;
+  reason: string;
+}
+
+export interface AgentRecommendation {
+  intent: AgentIntent;
+  trace: AgentTraceStep[];
+  toolPlan: AgentToolPlanItem[];
+  alternatives: AgentAlternative[];
+  confidence: "high" | "medium" | "low" | string;
+}
+
 export interface AiSearchResponse {
   mode: "ai";
   query: string;
@@ -166,6 +203,7 @@ export interface AiSearchResponse {
   results: ToolSummary[];
   directory: ToolsDirectoryResponse;
   meta: AiSearchMeta;
+  agent_recommendation?: AgentRecommendation | null;
 }
 
 export interface ToolRatingSummary {
@@ -246,6 +284,13 @@ export interface AdminOverviewRecentTool {
   updatedAt: string;
 }
 
+export interface AdminOverviewRecentMatchPlan {
+  id: number;
+  slug: string;
+  title: string;
+  publishedAt?: string | null;
+}
+
 export interface AdminOverviewResponse {
   toolCount: number;
   draftToolCount: number;
@@ -253,6 +298,9 @@ export interface AdminOverviewResponse {
   reviewCount: number;
   rankingCount: number;
   recentUpdatedTools: AdminOverviewRecentTool[];
+  matchPlanCount?: number;
+  publishedMatchPlanCount?: number;
+  recentPublishedMatchPlans?: AdminOverviewRecentMatchPlan[];
 }
 
 export interface AdminToolListItem {
@@ -331,4 +379,56 @@ export interface AdminRankingPayload {
   title: string;
   description: string;
   items: AdminRankingPayloadItem[];
+}
+
+export interface AdminMatchPlanToolPayload {
+  toolSlug: string;
+  reason: string;
+  sortOrder: number;
+  weight: number;
+}
+
+export interface AdminMatchPlanPayload {
+  slug: string;
+  title: string;
+  description: string;
+  persona: string;
+  scenario: string;
+  triggerKeywords: string[];
+  status: string;
+  sortOrder: number;
+  tools: AdminMatchPlanToolPayload[];
+}
+
+export interface AdminMatchPlanListItem {
+  id: number;
+  slug: string;
+  title: string;
+  status: string;
+  persona: string;
+  scenario: string;
+  triggerKeywords: string[];
+  toolCount: number;
+  sortOrder: number;
+  updatedAt: string;
+  publishedAt?: string | null;
+}
+
+export interface AdminMatchPlanToolPreviewItem {
+  toolSlug: string;
+  toolName: string;
+  reason: string;
+  sortOrder: number;
+  weight: number;
+  status: string;
+  available: boolean;
+  issue?: string | null;
+}
+
+export interface AdminMatchPlanPreviewResponse {
+  planId?: number | null;
+  matched: boolean;
+  matchedKeywords: string[];
+  tools: AdminMatchPlanToolPreviewItem[];
+  warnings: string[];
 }

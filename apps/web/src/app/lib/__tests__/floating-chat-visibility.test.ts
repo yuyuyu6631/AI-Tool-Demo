@@ -11,6 +11,8 @@ describe("shouldHideFloatingChatBot", () => {
     expect(shouldHideFloatingChatBot("/")).toBe(true);
     expect(shouldHideFloatingChatBot("/tools")).toBe(true);
     expect(shouldHideFloatingChatBot("/tools/chatgpt")).toBe(true);
+    expect(shouldHideFloatingChatBot("/xingdp/tools")).toBe(true);
+    expect(shouldHideFloatingChatBot("/xingdp/tools/chatgpt")).toBe(true);
     expect(shouldHideFloatingChatBot("/matches")).toBe(true);
     expect(shouldHideFloatingChatBot("/admin")).toBe(true);
     expect(shouldHideFloatingChatBot("/admin/tools")).toBe(true);

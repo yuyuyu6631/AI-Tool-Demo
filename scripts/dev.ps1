@@ -204,6 +204,23 @@ if (Test-Path -LiteralPath $webCacheDir) {
 $apiPython = Get-ApiPython
 $nodeExe = Get-NodeExecutable
 
+Push-Location -LiteralPath $apiDir
+try {
+  Write-Output "Applying API database migrations..."
+  & $apiPython -m alembic upgrade head
+  if ($LASTEXITCODE -ne 0) {
+    throw "API database migrations failed with exit code $LASTEXITCODE."
+  }
+
+  Write-Output "Ensuring API seed data and local admin account..."
+  & $apiPython -m app.scripts.seed
+  if ($LASTEXITCODE -ne 0) {
+    throw "API seed failed with exit code $LASTEXITCODE."
+  }
+} finally {
+  Pop-Location
+}
+
 $apiProcess = Start-Process `
   -FilePath $apiPython `
   -ArgumentList @("-m", "uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "$apiPort") `

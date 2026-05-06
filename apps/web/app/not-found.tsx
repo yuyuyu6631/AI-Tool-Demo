@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { withPublicPath } from "@/src/app/lib/public-path";
 
 export default function NotFound() {
   return (
@@ -10,9 +10,9 @@ export default function NotFound() {
           <p className="glass-copy max-w-2xl mx-auto mb-6">
             你访问的页面可能已经移动，或者当前链接无效。
           </p>
-          <Link href="/" className="inline-flex items-center px-5 py-3 btn-primary rounded-full transition">
+          <a href={withPublicPath("/")} className="inline-flex items-center px-5 py-3 btn-primary rounded-full transition">
             返回首页
-          </Link>
+          </a>
         </div>
       </div>
     </div>

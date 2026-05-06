@@ -5,6 +5,7 @@ import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "./auth/AuthProvider";
 import { headerNavItems, isHeaderNavActive } from "./header-nav";
+import { withPublicPath } from "../lib/public-path";
 
 interface HeaderMobileMenuProps {
   currentPath: string;
@@ -35,7 +36,7 @@ export default function HeaderMobileMenu({ currentPath, authHref }: HeaderMobile
     <>
       <button
         type="button"
-        className="header-utility-button rounded-full p-2 md:hidden"
+        className="header-utility-button relative z-[70] grid h-11 w-11 place-items-center rounded-full md:hidden"
         onClick={() => setOpen((value) => !value)}
         aria-label={open ? "关闭导航" : "打开导航"}
       >
@@ -43,21 +44,36 @@ export default function HeaderMobileMenu({ currentPath, authHref }: HeaderMobile
       </button>
 
       {open ? (
-        <div className="absolute inset-x-0 top-full border-t border-black/6 bg-white/92 shadow-[0_18px_44px_rgba(15,23,42,0.08)] backdrop-blur-xl md:hidden">
+        <div className="fixed inset-x-0 top-[68px] z-[60] border-t border-black/6 bg-white/95 shadow-[0_18px_44px_rgba(15,23,42,0.08)] backdrop-blur-xl md:hidden">
           <div className="mx-auto flex max-w-[1440px] flex-col gap-2 px-4 py-4 sm:px-6">
             {headerNavItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`rounded-2xl px-3 py-2.5 text-sm font-medium transition ${
-                  isHeaderNavActive(currentPath, item.href)
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-700 hover:bg-slate-100/90"
-                }`}
-                onClick={() => setOpen(false)}
-              >
-                {item.label}
-              </Link>
+              item.href === "/" ? (
+                <a
+                  key={item.href}
+                  href={withPublicPath(item.href)}
+                  className={`rounded-2xl px-3 py-2.5 text-sm font-medium transition ${
+                    isHeaderNavActive(currentPath, item.href)
+                      ? "bg-slate-900 text-white"
+                      : "text-slate-700 hover:bg-slate-100/90"
+                  }`}
+                  onClick={() => setOpen(false)}
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <Link
+                  key={item.href}
+                  href={withPublicPath(item.href)}
+                  className={`rounded-2xl px-3 py-2.5 text-sm font-medium transition ${
+                    isHeaderNavActive(currentPath, item.href)
+                      ? "bg-slate-900 text-white"
+                      : "text-slate-700 hover:bg-slate-100/90"
+                  }`}
+                  onClick={() => setOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              )
             ))}
             <Link
               href={authHref}
@@ -68,7 +84,7 @@ export default function HeaderMobileMenu({ currentPath, authHref }: HeaderMobile
             </Link>
             {mounted && currentUser?.role === "admin" ? (
               <Link
-                href="/admin"
+                href={withPublicPath("/admin")}
                 className="rounded-2xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100/90"
                 onClick={() => setOpen(false)}
               >

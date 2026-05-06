@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { fetchAdminTool, saveAdminTool } from "../../lib/catalog-api";
 import type { AdminToolPayload, ToolDetail, ToolMediaItem } from "../../lib/catalog-types";
+import { withPublicPath } from "../../lib/public-path";
 
 type MediaDraft = ToolMediaItem & { id: string };
 
@@ -248,7 +249,7 @@ export default function AdminToolEditor({ toolId }: { toolId?: number }) {
       const saved = await saveAdminTool(payload, toolId);
       setMessage("保存成功，前台刷新后即可读取最新数据。");
       if (!toolId) {
-        router.push(`/admin/tools/${saved.id}`);
+        router.push(withPublicPath(`/admin/tools/${saved.id}`));
       }
     } catch {
       setMessage("保存失败，请检查输入后重试。");

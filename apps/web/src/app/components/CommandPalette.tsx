@@ -9,6 +9,7 @@ import { Search } from "lucide-react";
 import { useClientSearch } from "./ClientSearchProvider";
 import { parseSearchIntent } from "../utils/nlu-agent";
 import type { CategorySummary } from "../lib/catalog-types";
+import { withPublicPath } from "../lib/public-path";
 
 const PRICE_LABELS: Record<string, string> = {
   free: "免费",
@@ -75,7 +76,7 @@ export default function CommandPalette() {
   const handleSelect = (slug: string) => {
     setOpen(false);
     setSearch("");
-    router.push(`/tools/${slug}`);
+    router.push(withPublicPath(`/tools/${slug}`));
   };
 
   const nluIntent = useMemo(() => parseSearchIntent(search, categories), [search, categories]);
@@ -90,8 +91,13 @@ export default function CommandPalette() {
     if (nluIntent.category) params.set("category", nluIntent.category);
     if (nluIntent.price) params.set("price", nluIntent.price);
 
-    const query = params.toString();
-    router.push(query ? `/?${query}` : "/");
+    if (nluIntent.category || nluIntent.price) {
+      const query = params.toString();
+      router.push(withPublicPath(query ? `/tools?mode=search&${query}` : "/tools?mode=search"));
+      return;
+    }
+
+    router.push(withPublicPath(nluIntent.q ? `/search?task=${encodeURIComponent(nluIntent.q)}` : "/search"));
   };
 
   return (
@@ -152,7 +158,7 @@ export default function CommandPalette() {
                   className="flex cursor-pointer items-center gap-4 rounded-2xl px-4 py-3 text-sm text-slate-900 transition-colors aria-selected:bg-slate-100"
                 >
                   {tool.logoPath ? (
-                    <Image src={tool.logoPath} alt={tool.name} width={32} height={32} className="h-8 w-8 rounded-lg object-cover" />
+                    <Image src={withPublicPath(tool.logoPath)} alt={tool.name} width={32} height={32} className="h-8 w-8 rounded-lg object-cover" />
                   ) : (
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500">
                       {tool.name[0]}

@@ -1,6 +1,8 @@
 const RETURN_ROUTE_KEY = "catalog:return-route";
 const RETURN_SCROLL_KEY = "catalog:return-scroll";
 const RESTORE_MARKER_KEY = "catalog:restore-scroll";
+const SNAPSHOT_KEY_PREFIX = "catalog:route-snapshot:";
+const SNAPSHOT_TTL_MS = 10 * 60 * 1000;
 
 const RETURN_LABELS = {
   previous: "\u8fd4\u56de\u4e0a\u4e00\u9875",
@@ -35,6 +37,45 @@ export function rememberCatalogNavigation(route?: string) {
   const nextRoute = route || `${window.location.pathname}${window.location.search}`;
   window.sessionStorage.setItem(RETURN_ROUTE_KEY, nextRoute);
   window.sessionStorage.setItem(RETURN_SCROLL_KEY, String(window.scrollY));
+}
+
+function getSnapshotKey(route: string) {
+  return `${SNAPSHOT_KEY_PREFIX}${encodeURIComponent(route)}`;
+}
+
+export function rememberCatalogSnapshot<T>(route: string, snapshot: T) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.setItem(
+      getSnapshotKey(route),
+      JSON.stringify({
+        savedAt: Date.now(),
+        snapshot,
+      }),
+    );
+  } catch {
+    // Session storage can be unavailable or full; navigation should still work.
+  }
+}
+
+export function getRememberedCatalogSnapshot<T>(route: string, maxAgeMs = SNAPSHOT_TTL_MS): T | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.sessionStorage.getItem(getSnapshotKey(route));
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as { savedAt?: number; snapshot?: T };
+    if (!parsed.savedAt || Date.now() - parsed.savedAt > maxAgeMs) {
+      window.sessionStorage.removeItem(getSnapshotKey(route));
+      return null;
+    }
+
+    return parsed.snapshot ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export function getRememberedCatalogRoute(fallback = "/") {

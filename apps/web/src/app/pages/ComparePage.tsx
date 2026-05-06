@@ -3,6 +3,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import Breadcrumbs from "../components/Breadcrumbs";
 import ToolLogo from "../components/ToolLogo";
+import { withPublicPath } from "../lib/public-path";
 import type { ToolDetail } from "../lib/catalog-types";
 import {
   buildCompareValue,
@@ -80,9 +81,9 @@ export default function ComparePage({ tools, comparisonSlug }: ComparePageProps)
                   对比不是看谁功能多，而是看谁更适合你现在的任务。价格、功能、适用人群、上手门槛，摆在一起看，差别会清晰很多。
                 </p>
               </div>
-              <Link href="/" className="btn-secondary inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-medium">
+              <a href={withPublicPath("/")} className="btn-secondary inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-medium">
                 返回首页继续找工具
-              </Link>
+              </a>
             </div>
           </section>
 

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { withPublicPath } from "../lib/public-path";
 import BrandMark from "./BrandMark";
 
 interface ToolLogoProps {
@@ -59,10 +60,10 @@ function resolveToolLogoPath(slug: string, value?: string | null) {
 
   const normalized = normalizeLogoPath(value);
   if (normalized) {
-    return normalized;
+    return withPublicPath(normalized);
   }
 
-  return encodePath(`/logos/${slug}.png`);
+  return withPublicPath(encodePath(`/logos/${slug}.png`));
 }
 
 function normalizeLogoPath(value?: string | null) {

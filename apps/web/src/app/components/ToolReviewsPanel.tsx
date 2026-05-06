@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "./auth/AuthProvider";
 import { fetchMyToolReview, fetchToolReviews, saveMyToolReview } from "../lib/catalog-api";
 import type { ToolRatingSummary, ToolReviewItem, ToolReviewsResponse } from "../lib/catalog-types";
+import { withPublicPath } from "../lib/public-path";
 
 interface ToolReviewsPanelProps {
   toolSlug: string;
@@ -229,7 +230,7 @@ export default function ToolReviewsPanel({ toolSlug, reviews, summary }: ToolRev
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 py-8">
               <p className="text-sm text-slate-600">需要登录后才能分享评价</p>
               <Link
-                href={`/auth?next=${encodeURIComponent(`/tools/${toolSlug}`)}`}
+                href={withPublicPath(`/auth?next=${encodeURIComponent(withPublicPath(`/tools/${toolSlug}`))}`)}
                 className="mt-4 rounded-full bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700"
               >
                 立即登录

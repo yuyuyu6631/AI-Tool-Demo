@@ -1,3 +1,5 @@
+import { withoutPublicPath } from "./public-path";
+
 const HIDDEN_EXACT_PATHS = new Set<string>(["/", "/tools", "/matches", "/auth", "/admin"]);
 
 const HIDDEN_PREFIX_PATHS = ["/tools/", "/matches/", "/auth/", "/admin/"];
@@ -15,7 +17,10 @@ export function shouldHideFloatingChatBot(pathname: string, modeQueryValue?: str
     return false;
   }
 
-  if (isHiddenPath(pathname)) {
+  const normalizedPathname = withoutPublicPath(pathname);
+  const deploymentAliasPathname = normalizedPathname.replace(/^\/xingdp(?=\/|$)/, "") || "/";
+
+  if (isHiddenPath(normalizedPathname) || isHiddenPath(deploymentAliasPathname)) {
     return true;
   }
 

@@ -1,4 +1,7 @@
 import type {
+  AdminMatchPlanListItem,
+  AdminMatchPlanPayload,
+  AdminMatchPlanPreviewResponse,
   AdminRankingListItem,
   AdminRankingPayload,
   AdminOverviewResponse,
@@ -27,8 +30,8 @@ import {
   getFallbackSearchIndex,
   getFallbackToolDetail,
 } from "./fallback-catalog";
+import { buildApiUrl } from "./api-base";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 export const CATALOG_CACHE_TAG = "catalog";
 export const CATALOG_REVALIDATE_SECONDS = 60;
 const CATALOG_FETCH_TIMEOUT_MS = 8000;
@@ -64,7 +67,7 @@ function withCatalogCache(options?: CatalogFetchOptions): CatalogFetchOptions {
 async function fetchJson<T>(path: string, options?: CatalogFetchOptions): Promise<T> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}${path}`,
+      buildApiUrl(path),
       withCatalogCache({
         ...options,
         signal: withTimeoutSignal(options?.signal ?? undefined),
@@ -102,7 +105,7 @@ function withTimeoutSignal(signal?: AbortSignal, timeoutMs = CATALOG_FETCH_TIMEO
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
+    const response = await fetch(buildApiUrl(path), {
       ...init,
       signal: withTimeoutSignal(init?.signal ?? undefined, 6000),
       credentials: "include",
@@ -235,6 +238,35 @@ export async function fetchAdminRanking(rankingId: number): Promise<AdminRanking
 export async function saveAdminRanking(payload: object, rankingId?: number): Promise<AdminRankingPayload> {
   return requestJson<AdminRankingPayload>(rankingId ? `/api/admin/rankings/${rankingId}` : "/api/admin/rankings", {
     method: rankingId ? "PUT" : "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchAdminMatchPlans(): Promise<AdminMatchPlanListItem[]> {
+  return requestJson<AdminMatchPlanListItem[]>("/api/admin/match-plans", { method: "GET", cache: "no-store" });
+}
+
+export async function fetchAdminMatchPlan(planId: number): Promise<AdminMatchPlanPayload> {
+  return requestJson<AdminMatchPlanPayload>(`/api/admin/match-plans/${planId}`, { method: "GET", cache: "no-store" });
+}
+
+export async function saveAdminMatchPlan(payload: object, planId?: number): Promise<AdminMatchPlanPayload> {
+  return requestJson<AdminMatchPlanPayload>(planId ? `/api/admin/match-plans/${planId}` : "/api/admin/match-plans", {
+    method: planId ? "PUT" : "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function publishAdminMatchPlan(planId: number): Promise<AdminMatchPlanPayload> {
+  return requestJson<AdminMatchPlanPayload>(`/api/admin/match-plans/${planId}/publish`, { method: "POST" });
+}
+
+export async function previewAdminMatchPlan(
+  planId: number,
+  payload: { query: string; scenario?: string | null; tags?: string[] },
+): Promise<AdminMatchPlanPreviewResponse> {
+  return requestJson<AdminMatchPlanPreviewResponse>(`/api/admin/match-plans/${planId}/preview`, {
+    method: "POST",
     body: JSON.stringify(payload),
   });
 }

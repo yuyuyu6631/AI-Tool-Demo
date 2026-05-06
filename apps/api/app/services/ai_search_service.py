@@ -10,6 +10,11 @@ from urllib import error as url_error, request
 
 from app.core.config import settings
 from app.schemas.ai_search import (
+    AgentAlternative,
+    AgentIntent,
+    AgentRecommendation,
+    AgentToolPlanItem,
+    AgentTraceStep,
     AiPanel,
     AiQuickAction,
     AiQuickActionPayload,
@@ -21,6 +26,7 @@ from app.schemas.catalog import ToolsDirectoryResponse
 from app.schemas.tool import ToolSummary
 from app.services import catalog_service
 from app.services.cache_service import get_redis_client, mark_redis_unavailable
+from app.services.match_plan_service import apply_match_plan_boost
 
 INTENT_CACHE_PREFIX = "ai-search:intent"
 HOT_QUERY_TTL_SECONDS = 24 * 60 * 60
@@ -547,6 +553,156 @@ def _build_ai_panel(query: str, intent_payload: dict) -> AiPanel:
     )
 
 
+TASK_LABELS = {
+    "academic-writing": "论文与文档处理",
+    "presentation": "PPT / 演示成稿",
+    "coding": "代码开发与测试",
+    "image-video": "图片视频创作",
+    "office-productivity": "办公提效",
+    "data-analysis": "数据分析",
+    "agent": "智能体与工作流",
+    "report-writing": "报告写作",
+    "video-editing": "视频剪辑",
+    "general": "通用工具选择",
+}
+
+
+def _constraint_labels(intent_constraints: dict[str, str]) -> list[str]:
+    labels: list[str] = []
+    if intent_constraints.get("pricing") in {"free", "free_preferred"}:
+        labels.append("免费或低成本优先")
+    if intent_constraints.get("language") in {"zh", "zh_preferred"}:
+        labels.append("中文体验优先")
+    if intent_constraints.get("difficulty") == "beginner":
+        labels.append("新手友好")
+    if intent_constraints.get("access") == "domestic_preferred":
+        labels.append("国内可访问优先")
+    if intent_constraints.get("platform"):
+        labels.append(f"平台偏好: {intent_constraints['platform']}")
+    return labels[:4]
+
+
+def _tool_free_signal(tool: ToolSummary) -> str:
+    if tool.dealSummary:
+        return tool.dealSummary
+    if tool.freeAllowanceText:
+        return tool.freeAllowanceText
+    if tool.pricingType == "free":
+        return "标记为免费工具，具体额度建议进入详情和官网核验"
+    if tool.pricingType == "freemium":
+        return "有免费层或试用入口，额度和导出限制建议进详情核验"
+    if tool.price:
+        return f"价格线索: {tool.price}"
+    return "免费线索暂未补齐，建议进入详情查看官网信息"
+
+
+def _tool_limitation_risk(tool: ToolSummary, intent_constraints: dict[str, str]) -> str:
+    if tool.limitations:
+        return tool.limitations[0]
+    if intent_constraints.get("access") == "domestic_preferred" and tool.accessFlags and tool.accessFlags.needsVpn is not False:
+        return "国内访问状态不明确，正式使用前需要先验证可访问性"
+    if tool.pricingType in {"subscription", "contact"}:
+        return "付费或企业报价可能影响落地成本，需要先确认预算"
+    return "公开资料未记录明确限制，关键价格和能力仍建议进详情核验"
+
+
+def _tool_next_step(tool: ToolSummary, task: str) -> str:
+    label = TASK_LABELS.get(task, TASK_LABELS["general"])
+    if tool.bestFor:
+        return f"先用一个小样本验证{tool.bestFor[0]}场景，再决定是否进入完整流程"
+    if tool.officialUrl:
+        return f"打开官网或详情页，用当前{label}任务做一次最小可行测试"
+    return f"先进入详情页核验资料，再用当前{label}任务试跑"
+
+
+def _tool_role(index: int, task: str) -> str:
+    if index == 0:
+        return "主推荐"
+    if task in {"academic-writing", "presentation", "data-analysis", "coding"} and index == 1:
+        return "执行补位"
+    return "备选补充"
+
+
+def _build_agent_recommendation(
+    *,
+    query: str,
+    normalized_query: str,
+    intent_payload: dict,
+    constraints: dict[str, str],
+    task: str,
+    results: list[AiSearchResult],
+    ranked_items: list[ToolSummary],
+) -> AgentRecommendation:
+    task_label = TASK_LABELS.get(task, TASK_LABELS["general"])
+    summary = str(intent_payload.get("intent_summary") or f"按{task_label}任务推荐工具")[:60]
+    constraint_labels = _constraint_labels(constraints)
+
+    top_results = results[:3]
+    top_names = "、".join(item.name for item in top_results) if top_results else "暂无候选工具"
+    risk_count = sum(1 for item in top_results if item.limitations or item.pricingType in {"subscription", "contact"})
+    confidence = "high" if len(top_results) >= 3 and any(item.reason for item in top_results) else "medium" if top_results else "low"
+
+    trace = [
+        AgentTraceStep(
+            id="intent",
+            title="识别需求",
+            description=f"用户输入: {query.strip() or normalized_query}",
+        ),
+        AgentTraceStep(
+            id="scene",
+            title="确认场景",
+            description=f"归入「{task_label}」场景，并保留{('、'.join(constraint_labels) if constraint_labels else '基础可落地')}约束。",
+        ),
+        AgentTraceStep(
+            id="recall",
+            title="检索候选",
+            description=f"从站内工具库按关键词、标签、适用场景和价格字段召回，当前候选: {top_names}。",
+        ),
+        AgentTraceStep(
+            id="verify",
+            title="核验风险",
+            description=f"检查免费额度、访问条件、定价和能力限制，发现 {risk_count} 个需要进详情复核的风险点。",
+        ),
+        AgentTraceStep(
+            id="recommend",
+            title="生成下一步",
+            description="输出主推荐、补位工具、备选替代和最小可行试用步骤。",
+        ),
+    ]
+
+    tool_plan = [
+        AgentToolPlanItem(
+            tool_slug=tool.slug,
+            tool_name=tool.name,
+            role=_tool_role(index, task),
+            fit_reason=tool.reason or _build_reason(tool, constraints, task, normalized_query),
+            free_signal=_tool_free_signal(tool),
+            limitation_risk=_tool_limitation_risk(tool, constraints),
+            next_step=_tool_next_step(tool, task),
+        )
+        for index, tool in enumerate(top_results)
+    ]
+
+    planned_slugs = {item.tool_slug for item in tool_plan}
+    alternatives = [
+        AgentAlternative(
+            tool_slug=tool.slug,
+            tool_name=tool.name,
+            reason=f"可作为「{task_label}」的替代候选，适合继续比较价格、限制和访问条件",
+        )
+        for tool in ranked_items
+        if tool.slug not in planned_slugs
+    ][:3]
+
+    return AgentRecommendation(
+        intent=AgentIntent(summary=summary, task=task_label, constraints=constraint_labels),
+        trace=trace,
+        toolPlan=tool_plan,
+        alternatives=alternatives,
+        confidence=confidence,
+    )
+
+
 def search_with_ai(
     *,
     db,
@@ -601,16 +757,25 @@ def search_with_ai(
     scored_items = [(_score_tool(item, normalized_query, constraints, task), item) for item in directory.items]
     if any(score > 0 for score, _ in scored_items):
         scored_items.sort(key=lambda pair: (-pair[0], -float(pair[1].score), not pair[1].featured, pair[1].name.lower()))
-        ranked_items = [item for score, item in scored_items if score > 0]
+        ranked_items = [item for _, item in scored_items]
     else:
         ranked_items = [item for _, item in scored_items]
+
+    category_hint = str(intent_payload.get("category_hint") or "")
+    ranked_items, plan_reasons = apply_match_plan_boost(
+        db,
+        query=f"{query} {normalized_query}",
+        scenario=category_hint or None,
+        tags=[],
+        items=ranked_items,
+    )
 
     start = max(page - 1, 0) * page_size
     end = start + page_size
     paged_items = ranked_items[start:end]
 
     results = [
-        AiSearchResult(**{**item.model_dump(), "reason": _build_reason(item, constraints, task, normalized_query)})
+        AiSearchResult(**{**item.model_dump(), "reason": plan_reasons.get(item.slug) or _build_reason(item, constraints, task, normalized_query)})
         for item in paged_items
     ]
 
@@ -637,5 +802,14 @@ def search_with_ai(
             latency_ms=latency_ms,
             cache_hit=cache_hit,
             intent_source=intent_source,
+        ),
+        agent_recommendation=_build_agent_recommendation(
+            query=query,
+            normalized_query=normalized_query,
+            intent_payload=intent_payload,
+            constraints=constraints,
+            task=task,
+            results=results,
+            ranked_items=ranked_items,
         ),
     )

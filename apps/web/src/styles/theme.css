@@ -215,7 +215,7 @@
 
   .site-header {
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     background: rgba(255, 255, 255, 0.96);
     border-bottom: 1px solid rgba(226, 232, 240, 0.86);
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.028);
@@ -973,6 +973,20 @@
 @media (max-width: 1023px) {
   .auth-brand-panel {
     min-height: auto;
+  }
+}
+
+@keyframes agentReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
   }
 }
 

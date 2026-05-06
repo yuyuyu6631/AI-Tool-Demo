@@ -548,5 +548,8 @@ export function getFallbackAdminOverview(): AdminOverviewResponse {
       status: tool.status,
       updatedAt: tool.lastVerifiedAt,
     })),
+    matchPlanCount: 0,
+    publishedMatchPlanCount: 0,
+    recentPublishedMatchPlans: [],
   };
 }

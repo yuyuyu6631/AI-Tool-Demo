@@ -27,7 +27,7 @@ def upgrade() -> None:
         sa.Column("status", sa.String(length=32), nullable=False, server_default="draft"),
         sa.Column("rating", sa.Float(), nullable=True),
         sa.Column("title", sa.String(length=255), nullable=False, server_default=""),
-        sa.Column("body", sa.Text(), nullable=False, server_default=""),
+        sa.Column("body", sa.Text(), nullable=False),
         sa.Column("pitfalls_json", sa.JSON(), nullable=True),
         sa.Column("pros_json", sa.JSON(), nullable=True),
         sa.Column("cons_json", sa.JSON(), nullable=True),

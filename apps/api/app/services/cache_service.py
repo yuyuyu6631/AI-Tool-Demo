@@ -74,3 +74,15 @@ def build_recommendation_cache_key(query: str, scenario: str | None, tags: list[
     )
     digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
     return f"recommend:{digest}"
+
+
+def clear_recommendation_caches() -> None:
+    redis_client = get_redis_client()
+    if not redis_client:
+        return
+    try:
+        for pattern in ("recommend:*", "ai-search:intent:*"):
+            for key in redis_client.scan_iter(match=pattern, count=100):
+                redis_client.delete(key)
+    except Exception as error:
+        mark_redis_unavailable(error)

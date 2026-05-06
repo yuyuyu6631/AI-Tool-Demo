@@ -2,11 +2,20 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY pyproject.toml ./
-RUN pip install --no-cache-dir .
+# Install dependencies first (layer cache)
+COPY apps/api/pyproject.toml ./
+RUN pip install --no-cache-dir . && \
+    pip install --no-cache-dir gunicorn
 
-COPY app ./app
-COPY alembic.ini ./
-COPY alembic ./alembic
+# Copy application code
+COPY apps/api/app ./app
+COPY apps/api/alembic.ini ./
+COPY apps/api/alembic ./alembic
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Create non-root user
+RUN useradd --system --uid 1001 appuser
+USER appuser
+
+EXPOSE 8000
+
+CMD ["gunicorn", "app.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000"]

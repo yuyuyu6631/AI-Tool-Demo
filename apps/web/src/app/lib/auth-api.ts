@@ -1,3 +1,5 @@
+import { buildApiUrl } from "./api-base";
+
 export type AuthUser = {
   id: number;
   username: string;
@@ -25,8 +27,6 @@ export interface BackendReadiness {
   message: string | null;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-
 export class AuthApiError extends Error {
   status: number;
   detail: ErrorDetail;
@@ -40,7 +40,7 @@ export class AuthApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(buildApiUrl(path), {
     ...init,
     credentials: "include",
     headers: {
@@ -85,7 +85,7 @@ function readinessMessage(reason: ReadinessReason): string | null {
 
 export async function fetchBackendReadiness(): Promise<BackendReadiness> {
   try {
-    const response = await fetch(`${API_BASE_URL}/health/ready`, {
+    const response = await fetch(buildApiUrl("/health/ready"), {
       method: "GET",
       credentials: "include",
       headers: {

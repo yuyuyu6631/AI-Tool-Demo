@@ -6,6 +6,7 @@ import { Bot, FileUp, Plus, Search, Sparkles } from "lucide-react";
 import { fetchAdminTools } from "../../lib/catalog-api";
 import type { AdminToolListItem } from "../../lib/catalog-types";
 import { repairDisplayText } from "../../lib/catalog-utils";
+import { withPublicPath } from "../../lib/public-path";
 
 const STATUS_LABELS: Record<string, string> = {
   published: "已发布",
@@ -88,7 +89,7 @@ export default function AdminToolsList() {
             <FileUp className="h-4 w-4" />
             批量导入
           </button>
-          <Link href="/admin/tools/new" className="inline-flex h-10 items-center gap-2 rounded bg-slate-950 px-3 text-sm font-semibold text-white">
+          <Link href={withPublicPath("/admin/tools/new")} className="inline-flex h-10 items-center gap-2 rounded bg-slate-950 px-3 text-sm font-semibold text-white">
             <Plus className="h-4 w-4" />
             新增工具
           </Link>
@@ -158,7 +159,7 @@ export default function AdminToolsList() {
                   <td className="px-3 py-3 text-slate-700">{Number.isFinite(item.reviewCount) ? item.reviewCount : 0}</td>
                   <td className="px-3 py-3 text-slate-700">{formatDate(item.updatedAt)}</td>
                   <td className="px-3 py-3 text-right">
-                    <Link href={`/admin/tools/${item.id}`} className="font-medium text-slate-950 underline-offset-4 hover:underline">
+                    <Link href={withPublicPath(`/admin/tools/${item.id}`)} className="font-medium text-slate-950 underline-offset-4 hover:underline">
                       编辑
                     </Link>
                   </td>

@@ -160,6 +160,38 @@ class RankingItem(Base):
     tool: Mapped["Tool"] = relationship()
 
 
+class MatchPlan(Base, TimestampMixin):
+    __tablename__ = "match_plans"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    slug: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    title: Mapped[str] = mapped_column(String(160))
+    description: Mapped[str] = mapped_column(String(512), default="")
+    persona: Mapped[str] = mapped_column(String(120), default="", index=True)
+    scenario: Mapped[str] = mapped_column(String(160), default="", index=True)
+    trigger_keywords_json: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="draft", index=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    tools: Mapped[list["MatchPlanTool"]] = relationship(back_populates="plan", cascade="all, delete-orphan")
+
+
+class MatchPlanTool(Base):
+    __tablename__ = "match_plan_tools"
+    __table_args__ = (UniqueConstraint("match_plan_id", "tool_id", name="uq_match_plan_tool"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    match_plan_id: Mapped[int] = mapped_column(ForeignKey("match_plans.id", ondelete="CASCADE"), index=True)
+    tool_id: Mapped[int] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"), index=True)
+    reason: Mapped[str] = mapped_column(String(255), default="")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    weight: Mapped[int] = mapped_column(Integer, default=100)
+
+    plan: Mapped["MatchPlan"] = relationship(back_populates="tools")
+    tool: Mapped["Tool"] = relationship()
+
+
 class Source(Base, TimestampMixin):
     __tablename__ = "sources"
 

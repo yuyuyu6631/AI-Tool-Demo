@@ -79,6 +79,13 @@ class AdminOverviewRecentToolItem(BaseModel):
     updatedAt: datetime
 
 
+class AdminOverviewRecentMatchPlanItem(BaseModel):
+    id: int
+    slug: str
+    title: str
+    publishedAt: datetime | None = None
+
+
 class AdminOverviewResponse(BaseModel):
     toolCount: int
     draftToolCount: int
@@ -86,6 +93,9 @@ class AdminOverviewResponse(BaseModel):
     reviewCount: int
     rankingCount: int
     recentUpdatedTools: list[AdminOverviewRecentToolItem]
+    matchPlanCount: int = 0
+    publishedMatchPlanCount: int = 0
+    recentPublishedMatchPlans: list[AdminOverviewRecentMatchPlanItem] = Field(default_factory=list)
 
 
 class AdminReviewListItem(BaseModel):
@@ -131,3 +141,76 @@ class AdminRankingListItem(BaseModel):
     title: str
     description: str
     itemCount: int
+
+
+class AdminMatchPlanToolPayload(BaseModel):
+    toolSlug: str = Field(min_length=1, max_length=120)
+    reason: str = Field(default="", max_length=255)
+    sortOrder: int = Field(default=0, ge=0)
+    weight: int = Field(default=100, ge=0, le=1000)
+
+    @field_validator("toolSlug", "reason", mode="before")
+    @classmethod
+    def strip_match_plan_tool_text(cls, value: str) -> str:
+        return value.strip() if isinstance(value, str) else value
+
+
+class AdminMatchPlanPayload(BaseModel):
+    slug: str = Field(min_length=1, max_length=120)
+    title: str = Field(min_length=1, max_length=160)
+    description: str = Field(default="", max_length=512)
+    persona: str = Field(default="", max_length=120)
+    scenario: str = Field(default="", max_length=160)
+    triggerKeywords: list[str] = Field(default_factory=list)
+    status: str = Field(default="draft")
+    sortOrder: int = Field(default=0, ge=0)
+    tools: list[AdminMatchPlanToolPayload] = Field(default_factory=list)
+
+    @field_validator("slug", "title", "description", "persona", "scenario", "status", mode="before")
+    @classmethod
+    def strip_match_plan_text(cls, value: str) -> str:
+        return value.strip() if isinstance(value, str) else value
+
+
+class AdminMatchPlanListItem(BaseModel):
+    id: int
+    slug: str
+    title: str
+    status: str
+    persona: str
+    scenario: str
+    triggerKeywords: list[str]
+    toolCount: int
+    sortOrder: int
+    updatedAt: datetime
+    publishedAt: datetime | None = None
+
+
+class AdminMatchPlanToolPreviewItem(BaseModel):
+    toolSlug: str
+    toolName: str
+    reason: str
+    sortOrder: int
+    weight: int
+    status: str
+    available: bool
+    issue: str | None = None
+
+
+class AdminMatchPlanPreviewResponse(BaseModel):
+    planId: int | None = None
+    matched: bool
+    matchedKeywords: list[str] = Field(default_factory=list)
+    tools: list[AdminMatchPlanToolPreviewItem] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+
+class AdminMatchPlanPreviewRequest(BaseModel):
+    query: str = ""
+    scenario: str | None = None
+    tags: list[str] = Field(default_factory=list)
+
+    @field_validator("query", "scenario", mode="before")
+    @classmethod
+    def strip_preview_text(cls, value: str | None) -> str | None:
+        return value.strip() if isinstance(value, str) else value

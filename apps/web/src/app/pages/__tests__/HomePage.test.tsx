@@ -1,5 +1,5 @@
 import React from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import HomePage from "../HomePage";
 import type { ScenarioSummary, ToolSummary, ToolsDirectoryResponse } from "../../lib/catalog-types";
 
@@ -14,17 +14,11 @@ vi.mock("../../components/Footer", () => ({
 }));
 
 vi.mock("../../components/ToolCard", () => ({
-  default: ({ name, dealSummary, onDetailClick }: { name: string; dealSummary?: string; onDetailClick?: () => void }) => (
-    <div>
-      <div>{name}</div>
-      {dealSummary ? <div>{dealSummary}</div> : null}
-      {onDetailClick ? (
-        <button type="button" onClick={onDetailClick}>
-          detail
-        </button>
-      ) : null}
-    </div>
-  ),
+  default: ({ name }: { name: string }) => <div>{name}</div>,
+}));
+
+vi.mock("../../components/ToolLogo", () => ({
+  default: ({ name }: { name: string }) => <div aria-label={`${name} logo`}>{name.slice(0, 1)}</div>,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -59,11 +53,6 @@ const toolA: ToolSummary = {
   limitations: ["复杂工作流需要二次编排"],
   bestFor: ["内容团队"],
   dealSummary: "有免费额度",
-  primaryMedia: {
-    type: "video",
-    url: "https://example.com/demo.mp4",
-    title: "演示",
-  },
 };
 
 const toolB: ToolSummary = {
@@ -86,38 +75,20 @@ const directory: ToolsDirectoryResponse = {
   page: 1,
   pageSize: 24,
   hasMore: false,
-  categories: [
-    { slug: "chatbot", label: "General Assistant", count: 12 },
-    { slug: "writing", label: "AI Writing", count: 8 },
-    { slug: "coding", label: "AI Coding", count: 5 },
-    { slug: "image", label: "AI Image", count: 4 },
-    { slug: "office", label: "AI Office", count: 6 },
-    { slug: "agent", label: "AI Agent", count: 3 },
-  ],
+  categories: [{ slug: "chatbot", label: "General Assistant", count: 12 }],
   tags: [{ slug: "chat", label: "Chat", count: 1 }],
   statuses: [],
   priceFacets: [{ slug: "free", label: "Free", count: 1 }],
-  accessFacets: [
-    { slug: "no-vpn", label: "Direct Access", count: 1 },
-    { slug: "cn-lang", label: "Chinese UI", count: 1 },
-  ],
+  accessFacets: [],
   priceRangeFacets: [],
   presets: [],
 };
 
-const scenarios: ScenarioSummary[] = [
-  {
-    id: 1,
-    slug: "student",
-    title: "Student Learning",
-    description: "Homework, notes, and research.",
-    problem: "Study efficiency",
-    toolCount: 1,
-    primaryTools: [],
-    alternativeTools: [],
-    targetAudience: ["Students", "Beginners"],
-  },
-];
+const scenarios: ScenarioSummary[] = [];
+
+function renderHome(state: React.ComponentProps<typeof HomePage>["state"] = { page: "1" }) {
+  return render(<HomePage directory={directory} hotTools={[toolA, toolB]} latestTools={[toolB]} scenarios={scenarios} state={state} />);
+}
 
 describe("HomePage", () => {
   beforeEach(() => {
@@ -125,108 +96,56 @@ describe("HomePage", () => {
     window.sessionStorage.clear();
   });
 
-  it("renders the demo home shell and key entry points", () => {
-    render(<HomePage directory={directory} hotTools={[toolA, toolB]} latestTools={[toolB]} scenarios={scenarios} state={{ page: "1" }} />);
+  it("renders the entry hall with three clear paths", () => {
+    renderHome();
 
     expect(screen.getByText("Header")).toBeInTheDocument();
-    expect(screen.getByText("Footer")).toBeInTheDocument();
-    expect(screen.getByText("3 秒找到能用的 AI 工具")).toBeInTheDocument();
+    expect(screen.queryByText("Footer")).not.toBeInTheDocument();
     expect(screen.getByTestId("hero-particle-scene")).toBeInTheDocument();
-    expect(screen.getByTestId("compact-hero-search")).toHaveClass("sm:max-w-[460px]");
-    expect(screen.getByTestId("compact-hero-search").className).not.toContain("max-w-[68%]");
-    expect(screen.queryByText(/直接输入你要完成的任务/)).not.toBeInTheDocument();
-    expect(screen.getByTestId("search-recommendation-flow")).toBeInTheDocument();
-    expect(screen.getByText("搜索后生成使用流程推荐")).toBeInTheDocument();
-    expect(screen.getByText("Docx 文档处理使用流程推荐")).toBeInTheDocument();
-    expect(screen.queryByText("搜索会如何判断")).not.toBeInTheDocument();
-    expect(screen.getByRole("searchbox")).toHaveAttribute("data-global-search-target", "tools");
-    expect(screen.getByRole("button", { name: "智能匹配" })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /写论文排版/ })[0]).toBeInTheDocument();
-    expect(screen.getAllByText("ChatGPT").length).toBeGreaterThan(0);
-    expect(screen.getByText("推荐场景")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /做 PPT 用什么 AI/ })).toBeInTheDocument();
-    expect(screen.getByText("快速筛选工具卡")).toBeInTheDocument();
-    expect(screen.queryByText("先看坑")).not.toBeInTheDocument();
+    expect(screen.getByText("3 秒找到能用的 AI 工具")).toBeInTheDocument();
+    expect(screen.getByText("说任务、看福利、逛工具库。别在一堆工具名里硬猜，先选你现在最想走的路。")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /按任务找/ })).toHaveAttribute("href", "/search");
+    expect(screen.getByRole("link", { name: /看免费福利/ })).toHaveAttribute("href", "/deals");
+    expect(screen.getByRole("link", { name: /逛工具库/ })).toHaveAttribute("href", "/tools?mode=search&page=1&page_size=24");
+    expect(screen.getByTestId("home-signal-radar")).toBeInTheDocument();
+    expect(screen.queryByText("ChatGPT")).not.toBeInTheDocument();
   });
 
-  it("submits search to semantic AI search mode", () => {
-    render(<HomePage directory={directory} hotTools={[toolA, toolB]} latestTools={[toolB]} scenarios={scenarios} state={{ page: "1" }} />);
+  it("submits task input to the search page", async () => {
+    renderHome();
 
-    const searchbox = screen.getByRole("searchbox");
-    fireEvent.change(searchbox, { target: { value: "free PPT" } });
-    fireEvent.submit(searchbox.closest("form")!);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "free PPT" } });
+    fireEvent.submit(screen.getByRole("searchbox").closest("form")!);
 
-    const href = pushMock.mock.calls[0][0] as string;
-    expect(href).toContain("mode=ai");
-    expect(href).toContain("q=free+PPT");
-    expect(href).toContain("page=1");
+    await waitFor(() => expect(pushMock).toHaveBeenCalled());
+    expect(pushMock.mock.calls[0][0]).toBe("/search?task=free%20PPT");
   });
 
-  it("fills and submits a semantic search example", () => {
-    render(<HomePage directory={directory} hotTools={[toolA, toolB]} latestTools={[toolB]} scenarios={scenarios} state={{ page: "1" }} />);
+  it("quick task entries point to scene pages", () => {
+    renderHome();
 
-    fireEvent.click(screen.getAllByRole("button", { name: /分析 Excel 数据/ })[0]);
-
-    const href = pushMock.mock.calls[0][0] as string;
-    expect(href).toContain("mode=ai");
-    expect(href).toContain("q=%E5%88%86%E6%9E%90+Excel+%E6%95%B0%E6%8D%AE");
+    expect(screen.getByRole("link", { name: "论文快交了" })).toHaveAttribute("href", "/scene/paper");
+    expect(screen.getByRole("link", { name: "PPT 没思路" })).toHaveAttribute("href", "/scene/ppt");
+    expect(screen.getByRole("link", { name: "表格看不懂" })).toHaveAttribute("href", "/scene/data");
+    expect(screen.getByRole("link", { name: "想做张图" })).toHaveAttribute("href", "/scene/design");
+    expect(screen.getByRole("link", { name: "代码跑不通" })).toHaveAttribute("href", "/scene/code");
+    expect(screen.getByRole("link", { name: "视频来不及剪" })).toHaveAttribute("href", "/scene/video");
   });
 
-  it("remembers the current homepage route before opening detail", () => {
-    render(<HomePage directory={directory} hotTools={[toolA, toolB]} latestTools={[toolB]} scenarios={scenarios} state={{ page: "2", q: "writing" }} />);
+  it("switches the radar copy on quick task hover", () => {
+    renderHome();
 
-    fireEvent.click(screen.getAllByRole("button", { name: "detail" })[0]);
+    fireEvent.mouseEnter(screen.getByRole("link", { name: "论文快交了" }));
+    expect(screen.getByText("论文这件事，别一上来就让 AI 写全文")).toBeInTheDocument();
 
-    const rememberedRoute = window.sessionStorage.getItem("catalog:return-route");
-    expect(rememberedRoute).toContain("q=writing");
-    expect(rememberedRoute).toContain("page=2");
+    fireEvent.mouseEnter(screen.getByRole("link", { name: "表格看不懂" }));
+    expect(screen.getByText("表格问题一般不是单纯丢给 AI 就完事")).toBeInTheDocument();
   });
 
-  it("shows active filters and reset entry when filtered", () => {
-    render(
-      <HomePage
-        directory={directory}
-        hotTools={[toolA, toolB]}
-        latestTools={[toolB]}
-        scenarios={scenarios}
-        state={{ tab: "latest", view: "latest", page: "1", q: "coding", category: "chatbot", access: "no-vpn,cn-lang" }}
-      />,
-    );
+  it("focuses the task input from the radar action", () => {
+    renderHome();
 
-    expect(screen.getAllByText((content) => content.includes("coding")).length).toBeGreaterThan(0);
-    expect(screen.getAllByText((content) => content.includes("General Assistant")).length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: /重置/ })).toBeInTheDocument();
-  });
-
-  it("shows immediate pending feedback when a search example is clicked", () => {
-    render(<HomePage directory={directory} hotTools={[toolA, toolB]} latestTools={[toolB]} scenarios={scenarios} state={{ page: "1" }} />);
-
-    fireEvent.click(screen.getByRole("button", { name: /生成测试用例/ }));
-
-    expect(screen.getAllByText((content) => content.includes("正在理解你的需求：生成测试用例")).length).toBeGreaterThan(0);
-    expect(screen.getByRole("main")).toHaveAttribute("aria-busy", "true");
-  });
-
-  it("opens a local submission dialog instead of linking to an external repo", () => {
-    render(<HomePage directory={directory} hotTools={[toolA, toolB]} latestTools={[toolB]} scenarios={scenarios} state={{ page: "1" }} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "去提交" }));
-
-    expect(screen.getByRole("dialog", { name: "提交 AI 工具到待审核队列" })).toBeInTheDocument();
-    expect(screen.queryByText("项目仓库")).not.toBeInTheDocument();
-  });
-
-  it("falls back to recommended tools instead of showing an empty directory", () => {
-    render(
-      <HomePage
-        directory={{ ...directory, items: [], total: 0 }}
-        hotTools={[toolA, toolB]}
-        latestTools={[toolB]}
-        scenarios={scenarios}
-        state={{ tab: "free", price: "free", page: "1" }}
-      />,
-    );
-
-    expect(screen.getAllByText("ChatGPT").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: /聚焦任务输入/ }));
+    expect(document.activeElement).toBe(screen.getByRole("searchbox"));
   });
 });

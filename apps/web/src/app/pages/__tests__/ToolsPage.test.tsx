@@ -75,7 +75,7 @@ const directory: ToolsDirectoryResponse = {
 
 describe("ToolsPage", () => {
   it("renders search mode with filters and pagination", () => {
-    render(<ToolsPage directory={directory} state={{ mode: "search", view: "hot", page: "2" }} />);
+    render(<ToolsPage directory={directory} state={{ mode: "search", view: "hot", page: "2", pageSize: "24" }} />);
 
     expect(screen.getByRole("heading", { name: "工具目录" })).toBeInTheDocument();
     expect(screen.getByText("决策筛选")).toBeInTheDocument();
@@ -83,9 +83,17 @@ describe("ToolsPage", () => {
     expect(screen.getByRole("navigation", { name: "分页导航" })).toBeInTheDocument();
     expect(screen.getByText("模式：直接搜索")).toBeInTheDocument();
     expect(screen.getByRole("searchbox")).toHaveAttribute("data-global-search-target", "tools");
+    expect(screen.getByRole("link", { name: "上一页" })).toHaveAttribute(
+      "href",
+      "/tools?mode=search&view=hot&page=1&page_size=24",
+    );
+    expect(screen.getByRole("link", { name: "下一页" })).toHaveAttribute(
+      "href",
+      "/tools?mode=search&view=hot&page=3&page_size=24",
+    );
   });
 
-  it("renders ai mode panel", () => {
+  it("keeps ai mode results without rendering the old ai panel", () => {
     render(
       <ToolsPage
         directory={directory}
@@ -93,12 +101,15 @@ describe("ToolsPage", () => {
       />,
     );
 
-    expect(screen.getByText("AI 理解面板")).toBeInTheDocument();
-    expect(screen.getByText("你的需求")).toBeInTheDocument();
-    expect(screen.getByText("系统理解")).toBeInTheDocument();
-    expect(screen.getByText("当前优先筛选逻辑")).toBeInTheDocument();
-    expect(screen.getByText("可执行快捷动作")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "只看免费" })).toBeInTheDocument();
+    expect(screen.queryByText("AI 理解面板")).not.toBeInTheDocument();
+    expect(screen.getByText("模式：AI 帮找")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "开始推荐" })).toBeInTheDocument();
+  });
+
+  it("keeps reset links on the tools route", () => {
+    render(<ToolsPage directory={directory} state={{ mode: "search", view: "latest", page: "1" }} />);
+
+    expect(screen.getByRole("link", { name: "重置筛选" })).toHaveAttribute("href", "/tools?mode=search");
   });
 
   it("clears the ai pending state after switching ai focus", () => {
@@ -109,7 +120,7 @@ describe("ToolsPage", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("link", { name: "进入筛选列表" }));
+    fireEvent.submit(screen.getByRole("searchbox").closest("form") as HTMLFormElement);
 
     expect(screen.getByRole("status")).toHaveTextContent("AI 正在匹配工具，请稍候...");
 

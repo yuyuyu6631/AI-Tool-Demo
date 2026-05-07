@@ -102,40 +102,44 @@ describe("HomePage", () => {
     expect(screen.getByText("Header")).toBeInTheDocument();
     expect(screen.queryByText("Footer")).not.toBeInTheDocument();
     expect(screen.getByTestId("hero-particle-scene")).toBeInTheDocument();
-    expect(screen.getByText("3 秒找到能用的 AI 工具")).toBeInTheDocument();
-    expect(screen.getByText("说任务、看福利、逛工具库。别在一堆工具名里硬猜，先选你现在最想走的路。")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /按任务找/ })).toHaveAttribute("href", "/search");
+    expect(screen.getByText("同一个任务，看看哪个 AI 真能做好")).toBeInTheDocument();
+    expect(screen.getByText("先看统一输入、原始输出、缺陷标注和免费/付费建议，再决定要不要试、要不要买。")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /看本周实测/ })).toHaveAttribute("href", "/scenarios");
     expect(screen.getByRole("link", { name: /看免费福利/ })).toHaveAttribute("href", "/deals");
     expect(screen.getByRole("link", { name: /逛工具库/ })).toHaveAttribute("href", "/tools?mode=search&page=1&page_size=24");
+    expect(screen.getByText("原始输出可复查")).toBeInTheDocument();
+    expect(screen.getByText("缺陷和避坑前置")).toBeInTheDocument();
     expect(screen.getByTestId("home-signal-radar")).toBeInTheDocument();
     expect(screen.queryByText("ChatGPT")).not.toBeInTheDocument();
   });
 
-  it("submits task input to the search page", async () => {
+  it("submits task input to the unified tools search page", async () => {
     renderHome();
 
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "free PPT" } });
     fireEvent.submit(screen.getByRole("searchbox").closest("form")!);
 
     await waitFor(() => expect(pushMock).toHaveBeenCalled());
-    expect(pushMock.mock.calls[0][0]).toBe("/search?task=free%20PPT");
+    expect(pushMock.mock.calls[0][0]).toBe("/tools?mode=ai&q=free%20PPT&page=1&page_size=24");
   });
 
   it("quick task entries point to scene pages", () => {
     renderHome();
 
-    expect(screen.getByRole("link", { name: "论文快交了" })).toHaveAttribute("href", "/scene/paper");
-    expect(screen.getByRole("link", { name: "PPT 没思路" })).toHaveAttribute("href", "/scene/ppt");
+    expect(screen.getByRole("link", { name: "论文改文" })).toHaveAttribute("href", "/scene/paper");
+    expect(screen.getByRole("link", { name: "PPT 润思路" })).toHaveAttribute("href", "/scene/ppt");
     expect(screen.getByRole("link", { name: "表格看不懂" })).toHaveAttribute("href", "/scene/data");
-    expect(screen.getByRole("link", { name: "想做张图" })).toHaveAttribute("href", "/scene/design");
-    expect(screen.getByRole("link", { name: "代码跑不通" })).toHaveAttribute("href", "/scene/code");
+    expect(screen.getByRole("link", { name: "想做长图" })).toHaveAttribute("href", "/scene/design");
+    expect(screen.getByRole("link", { name: "代码快速修复" })).toHaveAttribute("href", "/scene/code");
     expect(screen.getByRole("link", { name: "视频来不及剪" })).toHaveAttribute("href", "/scene/video");
+    expect(screen.getByRole("link", { name: "简历优化" })).toHaveAttribute("href", "/scene/resume");
+    expect(screen.getByRole("link", { name: "报告生成" })).toHaveAttribute("href", "/scene/report");
   });
 
   it("switches the radar copy on quick task hover", () => {
     renderHome();
 
-    fireEvent.mouseEnter(screen.getByRole("link", { name: "论文快交了" }));
+    fireEvent.mouseEnter(screen.getByRole("link", { name: "论文改文" }));
     expect(screen.getByText("论文这件事，别一上来就让 AI 写全文")).toBeInTheDocument();
 
     fireEvent.mouseEnter(screen.getByRole("link", { name: "表格看不懂" }));

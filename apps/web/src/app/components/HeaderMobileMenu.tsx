@@ -5,6 +5,7 @@ import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "./auth/AuthProvider";
 import { headerNavItems, isHeaderNavActive } from "./header-nav";
+import ThemeToggle from "./ThemeToggle";
 import { withPublicPath } from "../lib/public-path";
 
 interface HeaderMobileMenuProps {
@@ -44,8 +45,11 @@ export default function HeaderMobileMenu({ currentPath, authHref }: HeaderMobile
       </button>
 
       {open ? (
-        <div className="fixed inset-x-0 top-[68px] z-[60] border-t border-black/6 bg-white/95 shadow-[0_18px_44px_rgba(15,23,42,0.08)] backdrop-blur-xl md:hidden">
+        <div className="fixed inset-x-0 top-[68px] z-[60] border-t border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-glass)] backdrop-blur-xl md:hidden">
           <div className="mx-auto flex max-w-[1440px] flex-col gap-2 px-4 py-4 sm:px-6">
+            <div className="mb-1 flex justify-end">
+              <ThemeToggle />
+            </div>
             {headerNavItems.map((item) => (
               item.href === "/" ? (
                 <a

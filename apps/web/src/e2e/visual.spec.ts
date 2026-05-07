@@ -13,15 +13,15 @@ for (const item of cases) {
     await page.goto(item.path, { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle");
 
-    const heading = page.getByRole("heading", { name: "3 秒找到能用的 AI 工具" });
-    const search = page.getByPlaceholder("例如：我要把 Word 文档自动排版成论文格式");
-    const workflow = page.getByTestId("search-recommendation-flow");
-    const firstDetail = page.getByRole("link", { name: /查看详情/ }).first();
+    const heading = page.getByRole("heading", { name: "同一个任务，看看哪个 AI 真能做好" });
+    const search = page.getByPlaceholder("比如：毕业论文排版 / 答辩 PPT / Excel 数据分析 / 代码跑不通");
+    const workflow = page.getByTestId("home-signal-radar");
+    const toolsEntry = page.getByRole("link", { name: /逛工具库/ });
 
     await expect(heading).toBeVisible();
     await expect(search).toBeVisible();
     await expect(workflow).toBeVisible();
-    await expect(firstDetail).toBeVisible();
+    await expect(toolsEntry).toBeVisible();
     await expect(page.getByText("当前没有可展示的工具")).toHaveCount(0);
 
     const headingBox = await heading.boundingBox();

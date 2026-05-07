@@ -10,7 +10,9 @@ _TEST_DB_PATH = os.path.join(os.path.dirname(__file__), "test_ai_integration.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_TEST_DB_PATH}"
 
 from app.main import create_app
+from app.services import auth_service
 app = create_app()
+app.dependency_overrides[auth_service.current_admin_dependency] = lambda: None
 client = TestClient(app)
 
 @patch("app.api.routes.chat.stream_chat_rag")

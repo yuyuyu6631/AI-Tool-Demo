@@ -19,6 +19,7 @@ const EMPTY_DIRECTORY: ToolsDirectoryResponse = {
   accessFacets: [],
   priceRangeFacets: [],
   presets: [],
+  meta: null,
 };
 
 interface ToolsRouteProps {

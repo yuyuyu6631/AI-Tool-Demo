@@ -1,7 +1,7 @@
 ﻿import React from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import ToolsPage from "../ToolsPage";
-import type { ToolsDirectoryResponse } from "../../lib/catalog-types";
+import type { AiSearchResponse, ToolsDirectoryResponse } from "../../lib/catalog-types";
 
 vi.mock("../../components/Header", () => ({
   default: () => <div>Header</div>,
@@ -73,15 +73,58 @@ const directory: ToolsDirectoryResponse = {
   presets: [{ id: "hot", label: "最热", description: "高频工具", count: 1 }],
 };
 
+const aiSearch: AiSearchResponse = {
+  mode: "ai",
+  query: "帮我找免费做 PPT 的工具",
+  normalized_query: "presentation free",
+  ai_panel: {
+    title: "AI 帮你理解了这个需求",
+    user_need: "帮我找免费做 PPT 的工具",
+    system_understanding: "用户希望按任务快速筛选工具",
+    active_logic: ["任务: presentation", "免费优先"],
+    quick_actions: [{ label: "只看免费", action: { type: "set_filter", key: "pricing", value: "free" } }],
+  },
+  results: directory.items,
+  directory,
+  meta: {
+    latency_ms: 12,
+    cache_hit: false,
+    intent_source: "fallback",
+    search_provider: "meilisearch",
+    search_degraded: false,
+  },
+  agent_recommendation: {
+    intent: {
+      task: "做 PPT",
+      summary: "用户需要免费 PPT 工具",
+      constraints: ["免费优先"],
+    },
+    trace: [{ id: "intent", title: "识别任务", description: "识别 PPT 生成任务", status: "done" }],
+    toolPlan: [
+      {
+        tool_slug: "chatgpt",
+        tool_name: "ChatGPT",
+        role: "主推荐",
+        fit_reason: "适合生成提纲和页面文案",
+        free_signal: "有免费额度",
+        limitation_risk: "需要自行导入 PPT 工具排版",
+        next_step: "先生成提纲",
+      },
+    ],
+    alternatives: [],
+    confidence: "medium",
+  },
+};
+
 describe("ToolsPage", () => {
   it("renders search mode with filters and pagination", () => {
     render(<ToolsPage directory={directory} state={{ mode: "search", view: "hot", page: "2", pageSize: "24" }} />);
 
     expect(screen.getByRole("heading", { name: "工具目录" })).toBeInTheDocument();
-    expect(screen.getByText("决策筛选")).toBeInTheDocument();
+    expect(screen.getAllByText("快速入口")[0]).toBeInTheDocument();
     expect(screen.getByText("ChatGPT")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "分页导航" })).toBeInTheDocument();
-    expect(screen.getByText("模式：直接搜索")).toBeInTheDocument();
+    expect(screen.getByText("模式：全部搜索")).toBeInTheDocument();
     expect(screen.getByRole("searchbox")).toHaveAttribute("data-global-search-target", "tools");
     expect(screen.getByRole("link", { name: "上一页" })).toHaveAttribute(
       "href",
@@ -97,19 +140,37 @@ describe("ToolsPage", () => {
     render(
       <ToolsPage
         directory={directory}
+        aiSearch={aiSearch}
         state={{ mode: "ai", q: "帮我找免费做 PPT 的工具", view: "hot", page: "1" }}
       />,
     );
 
     expect(screen.queryByText("AI 理解面板")).not.toBeInTheDocument();
-    expect(screen.getByText("模式：AI 帮找")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "开始推荐" })).toBeInTheDocument();
+    expect(screen.getByText("AI 理解")).toBeInTheDocument();
+    expect(screen.getByText("用户希望按任务快速筛选工具")).toBeInTheDocument();
+    expect(screen.getByText("Meilisearch")).toBeInTheDocument();
+    expect(screen.getByText("查看 AI 推荐报告")).toBeInTheDocument();
+    expect(screen.getByText("模式：AI 搜索")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "开始搜索" })).toBeInTheDocument();
   });
 
   it("keeps reset links on the tools route", () => {
     render(<ToolsPage directory={directory} state={{ mode: "search", view: "latest", page: "1" }} />);
 
-    expect(screen.getByRole("link", { name: "重置筛选" })).toHaveAttribute("href", "/tools?mode=search");
+    expect(screen.getAllByRole("link", { name: "重置筛选" })[0]).toHaveAttribute("href", "/tools?mode=search&page=1&page_size=24");
+  });
+
+  it("shows the canonical category label when the route uses a legacy category slug", () => {
+    const imageDirectory: ToolsDirectoryResponse = {
+      ...directory,
+      total: 324,
+      categories: [{ slug: "ai-图像", label: "AI 图像", count: 324 }],
+    };
+
+    render(<ToolsPage directory={imageDirectory} state={{ mode: "search", category: "ai-image", page: "1" }} />);
+
+    expect(screen.getByText("分类：AI 图像")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "AI 图像 324" })[0]).toHaveClass("bg-blue-50");
   });
 
   it("clears the ai pending state after switching ai focus", () => {

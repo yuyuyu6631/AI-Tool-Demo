@@ -26,6 +26,7 @@ from app.schemas.catalog import (
     PresetView,
     RankingItem as RankingItemSchema,
     RankingSection,
+    SearchMeta,
     ScenarioSummary,
     ToolsDirectoryResponse,
 )
@@ -38,6 +39,7 @@ from app.services.catalog_views_seed import (
 )
 from app.services.embedding_service import recall_tool_ids_by_embedding
 from app.services.logo_assets import normalize_logo_path
+from app.services import meilisearch_service
 
 
 PUBLIC_TOOL_STATUS = "published"
@@ -45,6 +47,7 @@ VISIBLE_TOOL_STATUSES = ("published", "draft", "archived")
 ALL_STATUS_SLUG = "all"
 LEGACY_CATEGORY_SLUGS: dict[str, list[str]] = {
     "chatbot": ["ai-chat", "general-assistants"],
+    "ai-图像": ["ai-image", "image", "image-video"],
 }
 HOME_SIDEBAR_ORDER = ["chatbot", "office"]
 
@@ -268,8 +271,11 @@ def _build_rating_summary(reviews: list[ToolReview]) -> ToolRatingSummary:
 def _tool_row_to_summary(tool: Tool) -> ToolSummary:
     tags = [_repair_text(item.tag.name) for item in tool.tags] if tool.tags else []
     category_name = tool.category_name
+    category_slug = _slugify(category_name)
     if tool.categories:
-        category_name = tool.categories[0].category.name
+        primary_category = tool.categories[0].category
+        category_name = primary_category.name
+        category_slug = primary_category.slug
     media_items = _sanitize_media_items(tool.media_items_json)
     deal_summary = _repair_text(tool.deal_summary).strip() or _repair_text(tool.free_allowance_text).strip()
 
@@ -278,7 +284,7 @@ def _tool_row_to_summary(tool: Tool) -> ToolSummary:
         slug=tool.slug,
         name=_repair_text(tool.name),
         category=_repair_text(category_name),
-        categorySlug=_slugify(category_name),
+        categorySlug=_slugify(category_slug),
         score=tool.score,
         summary=_repair_text(tool.summary),
         tags=tags,
@@ -482,8 +488,17 @@ def _expand_with_ai_recommendations(
 
 
 def _matches_category(tool: ToolSummary, category_slug: str) -> bool:
-    category_values = {_slugify(tool.category), _slugify(tool.category.replace(" ", "-"))}
-    return _slugify(category_slug) in category_values
+    normalized = _slugify(category_slug)
+    canonical_slug = next(
+        (slug for slug, aliases in LEGACY_CATEGORY_SLUGS.items() if normalized == slug or normalized in aliases),
+        normalized,
+    )
+    category_values = {
+        _slugify(tool.categorySlug or ""),
+        _slugify(tool.category),
+        _slugify(tool.category.replace(" ", "-")),
+    }
+    return canonical_slug in category_values
 
 
 def _matches_tag(tool: ToolSummary, tag_slug: str) -> bool:
@@ -572,7 +587,7 @@ def _build_facets(items: list[ToolSummary], key: str) -> list[FacetOption]:
 
     if key == "category":
         for item in items:
-            slug = _slugify(item.category)
+            slug = _slugify(item.categorySlug or item.category)
             counter[slug] += 1
             labels[slug] = item.category
     else:
@@ -696,6 +711,45 @@ def _load_summaries(db, *, status_filter: str | None = PUBLIC_TOOL_STATUS) -> li
     return [item.summary for item in _load_searchable_tools(db, status_filter=status_filter)]
 
 
+def _load_meilisearch_documents(db) -> list[dict]:
+    stmt = select(Tool).options(
+        selectinload(Tool.tags).selectinload(ToolTag.tag),
+        selectinload(Tool.categories).selectinload(ToolCategory.category),
+    ).where(Tool.status == PUBLIC_TOOL_STATUS)
+    rows = db.scalars(stmt).all()
+    documents = []
+    for row in rows:
+        summary = _tool_row_to_summary(row)
+        if _is_public_catalog_garbage(summary):
+            continue
+        documents.append(meilisearch_service.build_tool_document(summary, description=_repair_text(row.description)))
+    return documents
+
+
+def refresh_search_index(db) -> bool:
+    return meilisearch_service.replace_documents(_load_meilisearch_documents(db))
+
+
+def sync_tool_search_index(db, tool_id: int) -> bool:
+    row = db.scalar(
+        select(Tool)
+        .where(Tool.id == tool_id)
+        .options(
+            selectinload(Tool.tags).selectinload(ToolTag.tag),
+            selectinload(Tool.categories).selectinload(ToolCategory.category),
+        )
+    )
+    if row is None or row.status != PUBLIC_TOOL_STATUS:
+        return meilisearch_service.delete_documents([tool_id])
+
+    summary = _tool_row_to_summary(row)
+    if _is_public_catalog_garbage(summary):
+        return meilisearch_service.delete_documents([tool_id])
+    return meilisearch_service.upsert_documents(
+        [meilisearch_service.build_tool_document(summary, description=_repair_text(row.description))]
+    )
+
+
 def _filter_tools(
     items: list[SearchableTool],
     *,
@@ -759,7 +813,44 @@ def _apply_query_recall(*, db, items: list[SearchableTool], q: str | None) -> li
     return merged
 
 
-def get_tools_directory(
+def _build_tools_directory_response(
+    *,
+    searchable_tools: list[SearchableTool],
+    filtered_searchable: list[SearchableTool],
+    sort: str,
+    view: str,
+    page: int,
+    page_size: int,
+    include_all_statuses: bool = False,
+    total_override: int | None = None,
+    meta: SearchMeta | None = None,
+    preserve_order: bool = False,
+) -> ToolsDirectoryResponse:
+    all_tools = [item.summary for item in searchable_tools]
+    filtered = [item.summary for item in filtered_searchable]
+    sorted_items = filtered if preserve_order else _sort_tools(filtered, sort=sort, view=view, include_all_statuses=include_all_statuses)
+    total = total_override if total_override is not None else len(sorted_items)
+    start = (page - 1) * page_size
+    page_items = sorted_items[start : start + page_size] if total_override is None else sorted_items[:page_size]
+
+    return ToolsDirectoryResponse(
+        items=page_items,
+        total=total,
+        page=page,
+        pageSize=page_size,
+        hasMore=total > (start + page_size),
+        categories=_build_facets(filtered, "category"),
+        tags=_build_facets(filtered, "tag"),
+        statuses=_build_status_facets(filtered),
+        priceFacets=_build_price_facets(filtered),
+        accessFacets=_build_access_facets(filtered),
+        priceRangeFacets=_build_price_range_facets(filtered),
+        presets=_build_presets(all_tools),
+        meta=meta,
+    )
+
+
+def _get_tools_directory_legacy(
     *,
     db,
     q: str | None,
@@ -773,6 +864,7 @@ def get_tools_directory(
     view: str,
     page: int,
     page_size: int,
+    meta: SearchMeta | None = None,
 ) -> ToolsDirectoryResponse:
     active_status = _normalize_status_filter(status_slug)
     searchable_tools = _load_searchable_tools(db, status_filter=active_status)
@@ -792,27 +884,94 @@ def get_tools_directory(
         filtered=filtered_searchable,
         searchable_tools=searchable_tools,
     )
-    all_tools = [item.summary for item in searchable_tools]
-    filtered = [item.summary for item in filtered_searchable]
-
-    sorted_items = _sort_tools(filtered, sort=sort, view=view, include_all_statuses=active_status == ALL_STATUS_SLUG)
-    total = len(sorted_items)
-    start = (page - 1) * page_size
-    page_items = sorted_items[start : start + page_size]
-
-    return ToolsDirectoryResponse(
-        items=page_items,
-        total=total,
+    return _build_tools_directory_response(
+        searchable_tools=searchable_tools,
+        filtered_searchable=filtered_searchable,
+        sort=sort,
+        view=view,
         page=page,
-        pageSize=page_size,
-        hasMore=total > (start + page_size),
-        categories=_build_facets(filtered, "category"),
-        tags=_build_facets(filtered, "tag"),
-        statuses=_build_status_facets(filtered),
-        priceFacets=_build_price_facets(filtered),
-        accessFacets=_build_access_facets(filtered),
-        priceRangeFacets=_build_price_range_facets(filtered),
-        presets=_build_presets(all_tools),
+        page_size=page_size,
+        include_all_statuses=active_status == ALL_STATUS_SLUG,
+        meta=meta or SearchMeta(provider="legacy", degraded=False, normalizedQuery=_normalize_query(q or "") or None),
+    )
+
+
+def get_tools_directory(
+    *,
+    db,
+    q: str | None,
+    category_slug: str | None,
+    tag_slug: str | None,
+    status_slug: str | None,
+    price_slug: str | None,
+    access_slug: str | None,
+    price_range_slug: str | None,
+    sort: str,
+    view: str,
+    page: int,
+    page_size: int,
+) -> ToolsDirectoryResponse:
+    active_status = _normalize_status_filter(status_slug)
+    if active_status != PUBLIC_TOOL_STATUS:
+        return _get_tools_directory_legacy(
+            db=db,
+            q=q,
+            category_slug=category_slug,
+            tag_slug=tag_slug,
+            status_slug=status_slug,
+            price_slug=price_slug,
+            access_slug=access_slug,
+            price_range_slug=price_range_slug,
+            sort=sort,
+            view=view,
+            page=page,
+            page_size=page_size,
+        )
+
+    limit = max(page * page_size, 48)
+    search_result = meilisearch_service.search_tool_ids(
+        q=q,
+        category_slug=category_slug,
+        tag_slug=tag_slug,
+        price_slug=price_slug,
+        access_slug=access_slug,
+        price_range_slug=price_range_slug,
+        sort=sort,
+        view=view,
+        limit=limit,
+    )
+    if search_result is None:
+        return _get_tools_directory_legacy(
+            db=db,
+            q=q,
+            category_slug=category_slug,
+            tag_slug=tag_slug,
+            status_slug=status_slug,
+            price_slug=price_slug,
+            access_slug=access_slug,
+            price_range_slug=price_range_slug,
+            sort=sort,
+            view=view,
+            page=page,
+            page_size=page_size,
+            meta=SearchMeta(provider="legacy", degraded=settings.search_provider == "meilisearch", normalizedQuery=_normalize_query(q or "") or None),
+        )
+
+    searchable_tools = _load_searchable_tools(db, status_filter=PUBLIC_TOOL_STATUS)
+    by_id = {item.summary.id: item for item in searchable_tools}
+    start = max(page - 1, 0) * page_size
+    ordered_matches = [by_id[tool_id] for tool_id in search_result.ids if tool_id in by_id]
+    page_matches = ordered_matches[start : start + page_size]
+    return _build_tools_directory_response(
+        searchable_tools=searchable_tools,
+        filtered_searchable=page_matches,
+        sort=sort,
+        view=view,
+        page=page,
+        page_size=page_size,
+        total_override=search_result.total,
+        meta=search_result.meta,
+        preserve_order=True,
     )
 
 

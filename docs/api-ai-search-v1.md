@@ -222,7 +222,7 @@ GET /api/ai-search?q=做视频&price=free&access=cn-lang,no-vpn&sort=featured&vi
 ## 7. 一期冻结清单（Contract Freeze）
 
 以下视为 `v1` 冻结内容：
-- URL 模式: `/?mode=ai&q=...`（`/tools?...` 当前仅作为兼容重定向入口）
+- URL 模式: `/tools?mode=ai&q=...`（首页、`/search` 兼容页和全局搜索均导向该统一结果页）
 - 接口: `GET /api/ai-search`
 - 响应顶层结构: `mode/query/normalized_query/ai_panel/results/directory/meta`
 - `quick_actions[].action` schema

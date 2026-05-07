@@ -20,6 +20,7 @@ const EMPTY_DIRECTORY: ToolsDirectoryResponse = {
   accessFacets: [],
   priceRangeFacets: [],
   presets: [],
+  meta: null,
 };
 
 const EMPTY_SCENARIOS: ScenarioSummary[] = [];

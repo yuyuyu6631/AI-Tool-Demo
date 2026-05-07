@@ -2,6 +2,23 @@
 
 This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
+## Highest Priority: Final Experience First
+
+This project is developed with the final user-facing experience as the highest priority.
+
+Code, documentation, tests, architecture, and historical implementation are tools for delivering the intended product experience. They must not become reasons to block a reasonable improvement to the final user-visible result.
+
+When the intended final experience, existing code, existing documentation, and existing tests conflict:
+
+1. Prioritize the intended final user-facing experience.
+2. Change the implementation to match that experience.
+3. Update tests when they encode outdated behavior.
+4. Update documentation after the implementation reflects the intended experience.
+5. If the current code structure blocks the target experience, refactor within the smallest safe scope.
+6. If the target experience is unclear, clarify or define a verifiable effect before implementation.
+
+Read `doc/00-最终效果约束.md` before product, UI, feature, or documentation work. `docs/current-implementation-baseline.md` describes the current implementation; it is not a product ceiling.
+
 ## Overview
 cl
 Xingdianping (星点评) is an AI Tool Review & Discovery Platform - "Douban/Public Reviews for AI Agents" - helps users discover, compare, and get recommendations for AI tools. It's a clean monorepo with a FastAPI backend and Next.js frontend.
@@ -116,6 +133,15 @@ This project actively cleans up the runtime path:
 - **Legacy/demo code** is moved to `archive/drawer/` and does NOT participate in build/run/test
 - **Do not modify** or reference archived code in new development - it's kept only for reference
 - This keeps the working tree clean and avoids confusion
+
+## Documentation and Baseline Policy
+
+- Product and UI work starts from the intended final effect, then checks code and docs for implementation details.
+- `doc/00-最终效果约束.md` is the highest product-effect constraint for AI development.
+- `docs/current-implementation-baseline.md` is an automatically generated snapshot of current routes, APIs, models, and tests.
+- If docs and code disagree about the current implementation, inspect code and refresh docs.
+- If current implementation and target effect disagree, implement the target effect and then update docs/tests to match.
+- Do not treat old docs, old tests, or current code shape as hard limits on product improvement.
 
 ## Configuration
 

@@ -23,6 +23,7 @@ apps/web/src/e2e/visual.spec.ts-snapshots/
 # Local env files
 .env
 .env.*
+!.env.example
 *.local
 
 # Nested project git metadata

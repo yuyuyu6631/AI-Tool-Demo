@@ -4,7 +4,7 @@ export function normalizeComparisonSlugs(slugs: string[]) {
 
 export function buildComparisonSlug(slugs: string[]) {
   const normalized = normalizeComparisonSlugs(slugs);
-  if (normalized.length < 2 || normalized.length > 3) {
+  if (normalized.length < 2 || normalized.length > 4) {
     return null;
   }
   return normalized.join("-vs-");

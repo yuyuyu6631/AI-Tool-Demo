@@ -106,6 +106,14 @@ export interface ToolsDirectoryResponse {
   accessFacets?: FacetOption[];
   priceRangeFacets?: FacetOption[];
   presets: PresetView[];
+  meta?: SearchMeta | null;
+}
+
+export interface SearchMeta {
+  provider: "legacy" | "meilisearch" | string;
+  degraded: boolean;
+  latencyMs: number;
+  normalizedQuery?: string | null;
 }
 
 export interface ScenarioSummary {
@@ -156,6 +164,9 @@ export interface AiSearchMeta {
   latency_ms: number;
   cache_hit: boolean;
   intent_source: string;
+  search_provider?: string;
+  search_degraded?: boolean;
+  normalized_search_query?: string | null;
 }
 
 export interface AgentIntent {

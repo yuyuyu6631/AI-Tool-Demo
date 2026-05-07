@@ -724,7 +724,7 @@ def search_with_ai(
         intent_future = executor.submit(parse_ai_search_intent, query, normalized_query)
         directory = catalog_service.get_tools_directory(
             db=db,
-            q=None,
+            q=query,
             category_slug=category,
             tag_slug=tag,
             status_slug=None,
@@ -736,6 +736,21 @@ def search_with_ai(
             page=1,
             page_size=max(AI_SEARCH_CANDIDATE_LIMIT, page * page_size),
         )
+        if not directory.items:
+            directory = catalog_service.get_tools_directory(
+                db=db,
+                q=None,
+                category_slug=category,
+                tag_slug=tag,
+                status_slug=None,
+                price_slug=price,
+                access_slug=access,
+                price_range_slug=price_range,
+                sort=sort,
+                view=view,
+                page=1,
+                page_size=max(AI_SEARCH_CANDIDATE_LIMIT, page * page_size),
+            )
 
         intent_payload: dict
         intent_source: str
@@ -802,6 +817,9 @@ def search_with_ai(
             latency_ms=latency_ms,
             cache_hit=cache_hit,
             intent_source=intent_source,
+            search_provider=(directory.meta.provider if directory.meta else "legacy"),
+            search_degraded=(directory.meta.degraded if directory.meta else False),
+            normalized_search_query=(directory.meta.normalizedQuery if directory.meta else normalized_query),
         ),
         agent_recommendation=_build_agent_recommendation(
             query=query,

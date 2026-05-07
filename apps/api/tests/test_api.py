@@ -284,6 +284,11 @@ class TestB4_异常处理:
         assert resp.status_code == 200
         assert resp.json()["status"] == "ok"
 
+    def test_api_prefixed_health_endpoint_returns_ok(self):
+        resp = client.get("/api/health")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "ok"
+
     def test_readiness_endpoint_returns_ok_when_database_is_ready(self):
         resp = client.get("/health/ready")
         assert resp.status_code == 200

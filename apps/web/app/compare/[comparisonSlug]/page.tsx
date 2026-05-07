@@ -22,7 +22,7 @@ export default async function Page({ params }: CompareRouteProps) {
 
   const tools = (await Promise.all(requestedSlugs.map((slug) => fetchToolDetail(slug)))).filter(Boolean);
   const resolvedTools = tools.filter((tool): tool is NonNullable<typeof tool> => tool !== null);
-  if (resolvedTools.length !== requestedSlugs.length || resolvedTools.length < 2 || resolvedTools.length > 3) {
+  if (resolvedTools.length !== requestedSlugs.length || resolvedTools.length < 2 || resolvedTools.length > 4) {
     notFound();
   }
 

@@ -5,6 +5,7 @@ from app.core.config import settings
 from app.db.session import Base, SessionLocal, engine
 from app.models.models import Category, Tag, Tool, ToolCategory, ToolTag
 from app.services.catalog_views_seed import seed_catalog_views
+from app.services.catalog_service import refresh_search_index
 from app.services.dev_admin_seed import ensure_admin_user, ensure_dev_admin_user
 from app.services.logo_assets import LOGO_SOURCE_FALLBACK, normalize_logo_path, resolve_logo_status
 from app.services.seed_data import CATEGORIES, TOOLS
@@ -99,6 +100,7 @@ def run() -> None:
         else:
             admin_user = ensure_dev_admin_user(session)
         session.commit()
+        search_index_refreshed = refresh_search_index(session)
         admin_message = (
             f" Admin ensured: {admin_user.username} (id={admin_user.id})."
             if admin_user is not None
@@ -107,6 +109,7 @@ def run() -> None:
         print(
             f"Database tables and seed data ensured. "
             f"Catalog views refreshed: {ranking_count} rankings, {scenario_count} scenarios."
+            f" Search index refreshed: {search_index_refreshed}."
             f"{admin_message}"
         )
     finally:

@@ -21,7 +21,7 @@ const STATIC_CATEGORY_KEYWORDS: KeywordCandidate[] = [
 ];
 
 const PRICE_KEYWORDS: KeywordCandidate[] = [
-  { slug: "free", keywords: ["免费", "白嫖", "零元", "不用钱", "不花钱"] },
+  { slug: "free", keywords: ["免费", "free", "白嫖", "零元", "不用钱", "不花钱"] },
   { slug: "freemium", keywords: ["免费增值", "先免费后付费", "试用版"] },
   { slug: "subscription", keywords: ["订阅", "按月", "按年", "月付", "年付", "付费"] },
   { slug: "one-time", keywords: ["买断", "一次性", "终身"] },
@@ -75,6 +75,21 @@ function extractKeywordMatches(text: string, candidates: KeywordCandidate[]) {
   return matches;
 }
 
+function removeMatchedKeyword(value: string, matchedKeyword: string) {
+  const normalizedKeyword = normalizeInput(matchedKeyword);
+  if (!normalizedKeyword) return value;
+
+  return value
+    .replace(new RegExp(`(^|\\s)${escapeRegExp(normalizedKeyword)}(?=\\s|$)`, "gu"), " ")
+    .replace(new RegExp(escapeRegExp(normalizedKeyword), "gu"), " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export function parseSearchIntent(input: string, categories: CategorySummary[] = []): NLUIntent {
   const result: NLUIntent = {
     q: "",
@@ -88,33 +103,38 @@ export function parseSearchIntent(input: string, categories: CategorySummary[] =
   }
 
   let normalized = normalizeInput(input);
+  let remainingText = normalized;
   let remainingCompact = normalizeKeyword(input);
 
   const tagMatch = normalized.match(/#([\p{L}\p{N}_-]+)/u);
   if (tagMatch?.[1]) {
     result.tag = tagMatch[1];
     normalized = normalized.replace(tagMatch[0], " ").trim();
+    remainingText = remainingText.replace(tagMatch[0], " ").trim();
     remainingCompact = normalizeKeyword(normalized);
   }
 
   const priceMatches = extractKeywordMatches(remainingCompact, PRICE_KEYWORDS);
   if (priceMatches.length > 0) {
     result.price = priceMatches[0].slug;
+    remainingText = removeMatchedKeyword(remainingText, priceMatches[0].matchedKeyword);
     remainingCompact = remainingCompact.replace(priceMatches[0].matchedKeyword, "");
   }
 
   const dynamicMatches = extractKeywordMatches(remainingCompact, buildDynamicCategoryKeywords(categories));
   if (dynamicMatches.length === 1) {
     result.category = dynamicMatches[0].slug;
+    remainingText = removeMatchedKeyword(remainingText, dynamicMatches[0].matchedKeyword);
     remainingCompact = remainingCompact.replace(dynamicMatches[0].matchedKeyword, "");
   } else if (dynamicMatches.length === 0) {
     const staticMatches = extractKeywordMatches(remainingCompact, STATIC_CATEGORY_KEYWORDS);
     if (staticMatches.length === 1) {
       result.category = staticMatches[0].slug;
+      remainingText = removeMatchedKeyword(remainingText, staticMatches[0].matchedKeyword);
       remainingCompact = remainingCompact.replace(staticMatches[0].matchedKeyword, "");
     }
   }
 
-  result.q = normalizeInput(remainingCompact).replace(FILLER_PATTERN, " ").replace(/\s+/g, " ").trim();
+  result.q = normalizeInput(remainingText).replace(FILLER_PATTERN, " ").replace(/\s+/g, " ").trim();
   return result;
 }

@@ -6,7 +6,6 @@ import type { AccessFlags, AgentToolPlanItem, ToolMediaItem } from "../lib/catal
 import { repairDisplayList, repairDisplayText } from "../lib/catalog-utils";
 import { withPublicPath } from "../lib/public-path";
 import { buildAccessBadgeMeta } from "../lib/tool-display";
-import { theme } from "../../theme/theme";
 import ToolLogo from "./ToolLogo";
 
 export interface ToolCardProps {
@@ -78,16 +77,12 @@ export default function ToolCard({
   const accessBadges = buildAccessBadgeMeta(accessFlags).slice(0, 1);
   const priceText = getPriceText(priceLabel, dealSummary, agentPlan);
   const scoreText = getScoreText(score);
+  const evidenceText = repairDisplayText(agentPlan?.fit_reason || "", "");
 
   return (
     <article
-      className="group flex h-full min-h-[232px] flex-col rounded-lg border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      className="tool-card group flex h-full min-h-[196px] flex-col rounded-lg p-4 transition hover:-translate-y-0.5"
       data-testid="tool-card"
-      style={{
-        borderColor: theme.colors.surface.borderSoft,
-        boxShadow: theme.shadow.card,
-        transition: theme.transition.normal,
-      }}
     >
       <div className="flex items-start gap-3">
         <div style={{ viewTransitionName: `tool-logo-${slug}` }}>
@@ -97,49 +92,49 @@ export default function ToolCard({
           <div className="flex items-start gap-2">
             <Link href={withPublicPath(`/tools/${slug}`)} onClick={onDetailClick} className="block min-w-0 flex-1">
               <h3
-                style={{ viewTransitionName: `tool-title-${slug}`, color: theme.colors.surface.textPrimary }}
-                className="truncate text-base font-semibold"
+                style={{ viewTransitionName: `tool-title-${slug}` }}
+                className="tool-card-title truncate text-base font-semibold"
               >
                 {displayName}
               </h3>
             </Link>
-            <span className="inline-flex shrink-0 items-center gap-1 rounded bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">
+            <span className="badge-score inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-xs font-semibold">
               <Star className="h-3 w-3 fill-current" />
               {scoreText}
             </span>
           </div>
-          <p className="mt-2 line-clamp-2 text-sm leading-6" style={{ color: theme.colors.surface.textSecondary }}>
+          <p className="tool-card-summary mt-2 line-clamp-2 text-sm leading-6">
             {displaySummary}
           </p>
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-wrap gap-2">
         <span
           data-testid="price-tag"
-          className="inline-flex max-w-full items-center rounded border px-2.5 py-1 text-xs font-semibold"
-          style={{
-            borderColor: theme.colors.surface.priceBorder,
-            backgroundColor: theme.colors.surface.priceBg,
-            color: theme.colors.surface.gold,
-          }}
+          className="badge-warning inline-flex max-w-full items-center rounded px-2.5 py-1 text-xs font-semibold"
         >
           <span className="truncate">{priceText}</span>
         </span>
         {accessBadges.map((badge) => (
-          <span key={badge.label} className="inline-flex rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
+          <span key={badge.label} className="token-tag inline-flex rounded border border-slate-200 px-2.5 py-1 text-xs font-medium">
             {badge.label}
           </span>
         ))}
       </div>
+
+      {evidenceText ? (
+        <p className="tool-card-evidence mt-2 line-clamp-1 rounded px-2.5 py-1 text-xs font-medium">
+          {evidenceText}
+        </p>
+      ) : null}
 
       {displayTags.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {displayTags.map((tag) => (
             <span
               key={tag}
-              className="rounded px-2.5 py-1 text-xs font-medium"
-              style={{ backgroundColor: theme.colors.surface.tagBg, color: theme.colors.surface.textMuted }}
+              className="token-tag rounded px-2.5 py-1 text-xs font-medium"
             >
               {tag}
             </span>
@@ -147,8 +142,8 @@ export default function ToolCard({
         </div>
       ) : null}
 
-      <div className="mt-auto flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <span className="text-xs text-slate-500">{reviewCount > 0 ? `${reviewCount} 条反馈` : "反馈待补充"}</span>
+      <div className="mt-auto flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-xs text-slate-500">{reviewCount > 0 ? `${reviewCount} 条收藏` : "收藏待补充"}</span>
         <div className="flex min-w-0 items-center gap-2 sm:shrink-0">
           {onCompareToggle ? (
             <button
@@ -156,13 +151,13 @@ export default function ToolCard({
               onClick={onCompareToggle}
               disabled={!compareSelected && compareDisabled}
               aria-pressed={compareSelected}
-              title={compareDisabled ? "最多可选 3 个工具" : undefined}
-              className={`inline-flex h-9 flex-1 items-center justify-center gap-1 rounded px-3 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 sm:flex-none ${
+              title={compareDisabled ? "最多可选 4 个工具" : undefined}
+              className={`inline-flex h-8 flex-1 items-center justify-center gap-1 rounded px-3 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 sm:flex-none ${
                 compareSelected
-                  ? "bg-slate-950 text-white"
+                  ? "btn-token-selected"
                   : compareDisabled
-                    ? "cursor-not-allowed bg-slate-100 text-slate-400"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    ? "cursor-not-allowed border border-slate-100 bg-slate-100 text-slate-400"
+                    : "btn-token-neutral"
               }`}
             >
               <Plus className="h-3.5 w-3.5" />
@@ -173,7 +168,7 @@ export default function ToolCard({
             href={url}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-9 items-center justify-center rounded border border-slate-200 bg-white px-2.5 text-slate-700 transition hover:bg-slate-50"
+            className="btn-icon-neutral inline-flex h-8 items-center justify-center rounded px-2.5 transition"
             aria-label="官网"
           >
             <ExternalLink className="h-3.5 w-3.5" />
@@ -181,7 +176,7 @@ export default function ToolCard({
           <Link
             href={withPublicPath(`/tools/${slug}`)}
             onClick={onDetailClick}
-            className="inline-flex h-9 flex-1 items-center justify-center gap-1 rounded bg-slate-950 px-3 text-xs font-semibold text-white transition hover:bg-slate-800 sm:flex-none"
+            className="btn-token-primary inline-flex h-8 flex-1 items-center justify-center gap-1 rounded px-3 text-xs font-semibold transition sm:flex-none"
           >
             详情
             <ArrowRight className="h-3.5 w-3.5" />

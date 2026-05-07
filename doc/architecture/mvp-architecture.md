@@ -4,7 +4,7 @@
 
 ## 目录结构
 
-- `apps/web`：Next.js 前端，承接首页、工具详情、场景、对比、匹配、认证和后台页面；`/tools`、`/rankings` 为兼容重定向入口
+- `apps/web`：Next.js 前端，承接首页、工具目录、工具详情、场景、对比、匹配、认证和后台页面；`/rankings` 为兼容重定向入口
 - `apps/api`：FastAPI 后端，承接目录数据、推荐、抓取与认证接口
 - `packages/contracts`：共享类型与样例数据
 - `infra/docker`：本地联调与容器化配置
@@ -17,6 +17,7 @@
 核心表：
 
 - `tools`
+- `tool_embeddings`
 - `categories`
 - `tool_categories`
 - `tags`
@@ -25,10 +26,13 @@
 - `scenario_tools`
 - `rankings`
 - `ranking_items`
+- `match_plans`
+- `match_plan_tools`
 - `sources`
 - `crawl_jobs`
 - `crawl_snapshots`
 - `tool_updates`
+- `tool_reviews`
 - `users`
 - `user_sessions`
 
@@ -37,6 +41,8 @@
 - AI 搜索接口为 `GET /api/ai-search`，AI 意图解析 + 工具筛选，返回含 AI Panel 的结构化结果
 - 推荐接口为 `POST /api/recommend`，批量返回推荐工具（与 ai-search 是两个独立系统）
 - Chat 接口为 `POST /api/chat`，SSE 流式对话，基于 RAG
+- 匹配方案接口为 `GET/POST /api/admin/match-plans`，关键词驱动 + 加权排序推荐引擎
+- 评论接口为 `GET/POST /api/reviews`，支持工具评论读取与提交
 - 抓取入口为 `POST /api/crawl/jobs`
 - 解析入口为 `POST /api/parser/extract`
 - 应用生命周期中已接入定时抓取任务骨架

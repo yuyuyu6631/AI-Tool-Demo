@@ -5,11 +5,11 @@
 
 ## 摘要
 
-- 生成时间：2026-04-28T02:06:55.066Z
-- 前端路由：15
-- API 端点：36
-- 数据模型：17
-- 测试文件：46
+- 生成时间：2026-05-07T09:32:16.365Z
+- 前端路由：20
+- API 端点：42
+- 数据模型：19
+- 测试文件：55
 
 ## 前端路由
 
@@ -17,24 +17,35 @@
 | --- | --- | --- | --- |
 | / | page | - | apps/web/app/page.tsx |
 | /admin | page | - | apps/web/app/admin/page.tsx |
+| /admin/match-plans | page | - | apps/web/app/admin/match-plans/page.tsx |
 | /admin/rankings | page | - | apps/web/app/admin/rankings/page.tsx |
 | /admin/reviews | page | - | apps/web/app/admin/reviews/page.tsx |
 | /admin/tools | page | - | apps/web/app/admin/tools/page.tsx |
 | /admin/tools/[id] | page | - | apps/web/app/admin/tools/[id]/page.tsx |
 | /admin/tools/new | page | - | apps/web/app/admin/tools/new/page.tsx |
 | /auth | page | - | apps/web/app/auth/page.tsx |
-| /compare/[comparisonSlug] | redirect | /compare/${canonicalSlug} | apps/web/app/compare/[comparisonSlug]/page.tsx |
+| /compare/[comparisonSlug] | redirect | [dynamic redirect] | apps/web/app/compare/[comparisonSlug]/page.tsx |
+| /deals | page | - | apps/web/app/deals/page.tsx |
+| /guide | redirect | [dynamic redirect] | apps/web/app/guide/page.tsx |
 | /matches | page | - | apps/web/app/matches/page.tsx |
-| /rankings | redirect | / | apps/web/app/rankings/page.tsx |
+| /rankings | redirect | [dynamic redirect] | apps/web/app/rankings/page.tsx |
 | /scenarios | page | - | apps/web/app/scenarios/page.tsx |
 | /scenarios/[slug] | page | - | apps/web/app/scenarios/[slug]/page.tsx |
-| /tools | redirect | [dynamic redirect] | apps/web/app/tools/page.tsx |
+| /scene/[slug] | page | - | apps/web/app/scene/[slug]/page.tsx |
+| /search | page | - | apps/web/app/search/page.tsx |
+| /tools | page | - | apps/web/app/tools/page.tsx |
 | /tools/[slug] | page | - | apps/web/app/tools/[slug]/page.tsx |
 
 ## API 端点
 
 | Method | Path | Handler | Response | Status | Source |
 | --- | --- | --- | --- | --- | --- |
+| GET | /api/admin/match-plans | list_match_plans | list[AdminMatchPlanListItem] | - | apps/api/app/api/routes/admin.py |
+| POST | /api/admin/match-plans | create_match_plan | AdminMatchPlanPayload | 201 | apps/api/app/api/routes/admin.py |
+| GET | /api/admin/match-plans/{plan_id} | get_match_plan | AdminMatchPlanPayload | - | apps/api/app/api/routes/admin.py |
+| PUT | /api/admin/match-plans/{plan_id} | update_match_plan | AdminMatchPlanPayload | - | apps/api/app/api/routes/admin.py |
+| POST | /api/admin/match-plans/{plan_id}/preview | preview_match_plan | AdminMatchPlanPreviewResponse | - | apps/api/app/api/routes/admin.py |
+| POST | /api/admin/match-plans/{plan_id}/publish | publish_match_plan | AdminMatchPlanPayload | - | apps/api/app/api/routes/admin.py |
 | GET | /api/admin/overview | get_overview | AdminOverviewResponse | - | apps/api/app/api/routes/admin.py |
 | GET | /api/admin/rankings | list_rankings | list[AdminRankingListItem] | - | apps/api/app/api/routes/admin.py |
 | POST | /api/admin/rankings | create_ranking | AdminRankingPayload | 201 | apps/api/app/api/routes/admin.py |
@@ -79,6 +90,8 @@
 | categories | Category | 5 | id, slug, name, description, tools | apps/api/app/models/models.py |
 | crawl_jobs | CrawlJob | 6 | id, source_name, status, started_at, finished_at, error_message | apps/api/app/models/models.py |
 | crawl_snapshots | CrawlSnapshot | 6 | id, crawl_job_id, tool_slug, raw_payload, parsed_payload, diff_summary | apps/api/app/models/models.py |
+| match_plan_tools | MatchPlanTool | 8 | id, match_plan_id, tool_id, reason, sort_order, weight, plan, tool | apps/api/app/models/models.py |
+| match_plans | MatchPlan | 11 | id, slug, title, description, persona, scenario, trigger_keywords_json, status | apps/api/app/models/models.py |
 | ranking_items | RankingItem | 6 | id, ranking_id, tool_id, rank_order, reason, tool | apps/api/app/models/models.py |
 | rankings | Ranking | 4 | id, slug, title, description | apps/api/app/models/models.py |
 | scenario_tools | ScenarioTool | 5 | id, scenario_id, tool_id, is_primary, tool | apps/api/app/models/models.py |
@@ -98,7 +111,7 @@
 
 ### Web unit/integration
 
-- 数量：22
+- 数量：27
 - `apps/web/src/app/components/__tests__/BackToResultsLink.test.tsx`
 - `apps/web/src/app/components/__tests__/CommandPalette.test.tsx`
 - `apps/web/src/app/components/__tests__/CompareToolsGrid.test.tsx`
@@ -107,16 +120,21 @@
 - `apps/web/src/app/components/__tests__/ToolLogo.test.tsx`
 - `apps/web/src/app/components/__tests__/ToolReviewsPanel.test.tsx`
 - `apps/web/src/app/components/admin/__tests__/AdminAccessGate.test.tsx`
+- `apps/web/src/app/components/admin/__tests__/AdminMatchPlansManager.test.tsx`
 - `apps/web/src/app/components/admin/__tests__/AdminOverviewDashboard.test.tsx`
+- `apps/web/src/app/components/admin/__tests__/AdminShell.test.tsx`
 - `apps/web/src/app/components/admin/__tests__/AdminToolEditor.test.tsx`
 - `apps/web/src/app/components/auth/__tests__/AuthCard.test.tsx`
+- `apps/web/src/app/components/home/__tests__/HeroSection.test.tsx`
 - `apps/web/src/app/features/matches/components/__tests__/MatchFeed.test.tsx`
+- `apps/web/src/app/lib/__tests__/api-base.test.ts`
 - `apps/web/src/app/lib/__tests__/catalog-api.test.ts`
 - `apps/web/src/app/lib/__tests__/catalog-navigation.test.ts`
 - `apps/web/src/app/lib/__tests__/compare-utils.test.ts`
 - `apps/web/src/app/lib/__tests__/floating-chat-visibility.test.ts`
 - `apps/web/src/app/lib/__tests__/home-page-data.test.ts`
 - `apps/web/src/app/lib/__tests__/tool-display.test.ts`
+- `apps/web/src/app/pages/__tests__/HomePage.agent.test.tsx`
 - `apps/web/src/app/pages/__tests__/HomePage.test.tsx`
 - `apps/web/src/app/pages/__tests__/ToolDetailPage.test.tsx`
 - `apps/web/src/app/pages/__tests__/ToolsPage.test.tsx`
@@ -133,8 +151,9 @@
 
 ### API pytest
 
-- 数量：19
+- 数量：23
 - `apps/api/tests/test_ai_integration.py`
+- `apps/api/tests/test_ai_search_agent_recommendation.py`
 - `apps/api/tests/test_api_hardening.py`
 - `apps/api/tests/test_api.py`
 - `apps/api/tests/test_auth_api.py`
@@ -145,12 +164,15 @@
 - `apps/api/tests/test_chat_api.py`
 - `apps/api/tests/test_chat_rag.py`
 - `apps/api/tests/test_demo_ai_search.py`
+- `apps/api/tests/test_dev_admin_seed.py`
 - `apps/api/tests/test_embedding_service.py`
 - `apps/api/tests/test_import_preview_validation.py`
 - `apps/api/tests/test_logo_assets.py`
+- `apps/api/tests/test_match_plan_admin_api.py`
 - `apps/api/tests/test_organize_aitool_assets.py`
 - `apps/api/tests/test_published_visibility.py`
 - `apps/api/tests/test_reviews_admin_api.py`
+- `apps/api/tests/test_search_provider.py`
 - `apps/api/tests/test_tool_elements_migration.py`
 - `apps/api/tests/test_tool_parser.py`
 

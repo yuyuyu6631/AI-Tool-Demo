@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, GitBranch, RotateCcw, Search, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, GitBranch, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import Breadcrumbs from "../components/Breadcrumbs";
 import CatalogScrollRestorer from "../components/CatalogScrollRestorer";
 import CompareToolsGrid from "../components/CompareToolsGrid";
 import { Skeleton } from "../components/ui/skeleton";
@@ -14,14 +13,34 @@ import { buildToolsHref, derivePriceFacets } from "../lib/catalog-utils";
 import { withPublicPath } from "../lib/public-path";
 import { trackEvent } from "../lib/analytics";
 
-const CATEGORY_LIMIT = 6;
-const TAG_LIMIT = 8;
+const CATEGORY_LIMIT = 7;
+const TAG_LIMIT = 10;
+const CATEGORY_SLUG_ALIASES: Record<string, string> = {
+  "ai-image": "ai-图像",
+  image: "ai-图像",
+  "image-video": "ai-图像",
+};
 
 const DECISION_SHORTCUTS = [
   { id: "latest", label: "最新", hrefKey: "view", value: "latest" },
   { id: "hot", label: "最热", hrefKey: "view", value: "hot" },
   { id: "free", label: "免费优先", hrefKey: "price", value: "free" },
   { id: "subscription", label: "需要付费", hrefKey: "price", value: "subscription" },
+] as const;
+
+const HERO_FILTERS = [
+  { id: "all", label: "全部", updates: { view: "hot", price: null, tag: null } },
+  { id: "latest", label: "最新", updates: { view: "latest" } },
+  { id: "free", label: "免费优先", updates: { price: "free" } },
+  { id: "team", label: "团队协作", updates: { tag: "团队协作" } },
+] as const;
+
+const HOT_SEARCHES = ["PPT生成", "思维导图", "文案写作", "代码生成", "AI配音"];
+
+const SORT_OPTIONS = [
+  { id: "featured", label: "综合排序" },
+  { id: "latest", label: "最新收录" },
+  { id: "name", label: "名称排序" },
 ] as const;
 
 interface ToolsPageProps {
@@ -70,6 +89,12 @@ function buildPagination(currentPage: number, totalPages: number) {
   return tokens;
 }
 
+function normalizeCategorySlug(slug?: string) {
+  if (!slug) return "";
+  const normalized = slug.trim().toLowerCase();
+  return CATEGORY_SLUG_ALIASES[normalized] || normalized;
+}
+
 function AgentRecommendationSummary({ aiSearch }: { aiSearch?: AiSearchResponse | null }) {
   const agent = aiSearch?.agent_recommendation;
   if (!agent) return null;
@@ -77,64 +102,110 @@ function AgentRecommendationSummary({ aiSearch }: { aiSearch?: AiSearchResponse 
   const confidenceLabel = agent.confidence === "high" ? "高置信" : agent.confidence === "low" ? "低置信" : "中置信";
 
   return (
-    <section data-testid="tools-agent-recommendation" className="panel-base mt-6 overflow-hidden rounded-[28px] border border-slate-900 bg-slate-950 p-5 text-white md:p-6">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="max-w-3xl">
-          <p className="inline-flex items-center gap-2 rounded-full border border-sky-300/20 bg-sky-300/10 px-3 py-1 text-xs font-semibold text-sky-100">
+    <details data-testid="tools-agent-recommendation" className="surface-panel mb-4 rounded-[20px] px-4 py-3">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-slate-900">
+        <span className="inline-flex min-w-0 items-center gap-2">
+          <GitBranch className="h-4 w-4 text-slate-500" />
+          <span className="truncate">查看 AI 推荐报告</span>
+          <span className="hidden rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 sm:inline">{confidenceLabel}</span>
+        </span>
+        {topPlan ? <span className="hidden text-xs font-medium text-slate-500 sm:inline">主推荐：{topPlan.tool_name}</span> : null}
+      </summary>
+
+      <div className="hero-brand-panel mt-4 rounded-2xl p-5 text-white md:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="inline-flex items-center gap-2 rounded-full border border-sky-300/20 bg-sky-300/10 px-3 py-1 text-xs font-semibold text-sky-100">
             <GitBranch className="h-3.5 w-3.5" />
             Agent 推荐报告 · {confidenceLabel}
-          </p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight">{agent.intent.task}</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-300">{agent.intent.summary}</p>
-          {agent.intent.constraints.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {agent.intent.constraints.map((item) => (
-                <span key={item} className="rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-xs text-slate-200">
-                  {item}
-                </span>
-              ))}
+            </p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight">{agent.intent.task}</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-300">{agent.intent.summary}</p>
+            {agent.intent.constraints.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {agent.intent.constraints.map((item) => (
+                  <span key={item} className="rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-xs text-slate-200">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
+          {topPlan ? (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 lg:w-[320px]">
+              <p className="text-xs font-semibold text-white/70">主推荐</p>
+              <p className="mt-2 text-lg font-semibold">{topPlan.tool_name}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-200">{topPlan.fit_reason}</p>
             </div>
           ) : null}
         </div>
-        {topPlan ? (
-          <div className="rounded-2xl border border-[#f6c768]/35 bg-[#f6c768]/10 p-4 lg:w-[320px]">
-            <p className="text-xs font-semibold text-[#ffe6a6]">主推荐</p>
-            <p className="mt-2 text-lg font-semibold">{topPlan.tool_name}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-200">{topPlan.fit_reason}</p>
-          </div>
-        ) : null}
-      </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-5">
-        {agent.trace.map((step, index) => (
-          <div key={step.id} className="rounded-2xl border border-white/10 bg-white/[0.055] p-3">
-            <div className="flex items-center gap-2 text-xs font-semibold text-sky-100">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-300/15">{index + 1}</span>
-              {step.title}
-            </div>
-            <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-400">{step.description}</p>
-          </div>
-        ))}
-      </div>
-
-      {agent.toolPlan.length > 0 ? (
-        <div className="mt-5 grid gap-3 lg:grid-cols-3">
-          {agent.toolPlan.slice(0, 3).map((item) => (
-            <div key={item.tool_slug} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="font-semibold">{item.tool_name}</p>
-                <span className="rounded-full bg-white/10 px-2 py-1 text-xs text-slate-300">{item.role}</span>
+        <div className="mt-5 grid gap-3 md:grid-cols-5">
+          {agent.trace.map((step, index) => (
+            <div key={step.id} className="rounded-2xl border border-white/10 bg-white/[0.055] p-3">
+              <div className="flex items-center gap-2 text-xs font-semibold text-sky-100">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-300/15">{index + 1}</span>
+                {step.title}
               </div>
-              <p className="mt-2 text-sm leading-6 text-slate-300">{item.fit_reason}</p>
-              <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-amber-100">
-                <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#f6c768]" />
-                {item.limitation_risk}
-              </p>
+              <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-400">{step.description}</p>
             </div>
           ))}
         </div>
-      ) : null}
-    </section>
+
+        {agent.toolPlan.length > 0 ? (
+          <div className="mt-5 grid gap-3 lg:grid-cols-3">
+            {agent.toolPlan.slice(0, 3).map((item) => (
+              <div key={item.tool_slug} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-semibold">{item.tool_name}</p>
+                  <span className="rounded-full bg-white/10 px-2 py-1 text-xs text-slate-300">{item.role}</span>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-slate-300">{item.fit_reason}</p>
+                <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-amber-100">
+                  <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+                  {item.limitation_risk}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </details>
+  );
+}
+
+function SearchUnderstanding({
+  aiSearch,
+  directory,
+}: {
+  aiSearch?: AiSearchResponse | null;
+  directory: ToolsDirectoryResponse;
+}) {
+  const panel = aiSearch?.ai_panel;
+  const meta = aiSearch?.meta;
+  const directoryMeta = directory.meta;
+  if (!panel && !directoryMeta) return null;
+
+  const provider = meta?.search_provider || directoryMeta?.provider || "legacy";
+  const degraded = Boolean(meta?.search_degraded || directoryMeta?.degraded);
+  const logic = panel?.active_logic ?? [];
+
+  return (
+    <div className="surface-panel mb-4 flex flex-col gap-2 rounded-lg px-4 py-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <Sparkles className="h-4 w-4 text-slate-400" />
+        <span className="font-medium text-slate-900">AI 理解</span>
+        <span className="min-w-0 truncate">{panel?.system_understanding || "按当前关键词和筛选条件返回工具"}</span>
+        {logic.slice(0, 2).map((item) => (
+          <span key={item} className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+            {item}
+          </span>
+        ))}
+      </div>
+      <span className={`shrink-0 text-xs ${degraded ? "text-amber-700" : "text-slate-400"}`}>
+        {provider === "meilisearch" ? "Meilisearch" : "Legacy"}{degraded ? " · 已降级" : ""}
+      </span>
+    </div>
   );
 }
 
@@ -150,7 +221,8 @@ export default function ToolsPage({ directory, aiSearch, state, loadState = "idl
   const overflowCategories = directory.categories.slice(CATEGORY_LIMIT);
   const visibleTags = directory.tags.slice(0, TAG_LIMIT);
   const overflowTags = directory.tags.slice(TAG_LIMIT);
-  const selectedCategory = directory.categories.find((item) => item.slug === state.category);
+  const activeCategorySlug = normalizeCategorySlug(state.category);
+  const selectedCategory = directory.categories.find((item) => normalizeCategorySlug(item.slug) === activeCategorySlug);
   const selectedTag = directory.tags.find((item) => item.slug === state.tag);
   const selectedPrice = priceFacets.find((item) => item.slug === state.price);
   const selectedPriceRange = priceRangeFacets.find((item) => item.slug === state.priceRange);
@@ -203,131 +275,269 @@ export default function ToolsPage({ directory, aiSearch, state, loadState = "idl
       <CatalogScrollRestorer />
       <Header currentPath="/tools" currentRoute={currentRoute} />
 
-      <main className="py-8 md:py-10">
-        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8">
-          <Breadcrumbs items={[{ label: "首页", href: "/" }, { label: "工具目录" }]} />
-
-          <section className="panel-base rounded-[32px] p-5 md:p-6">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">工具目录</p>
-                <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">{pageTitle}</h1>
-                <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
-                  这里不是把工具堆给你，而是帮你按需求、分类、标签和价格更快缩小范围，再进入详情页判断是否适合。
-                </p>
+      <main className="py-5 md:py-7">
+        <div className="mx-auto grid w-full max-w-[1500px] gap-5 px-4 sm:px-6 xl:grid-cols-[220px_minmax(0,1fr)] xl:px-8">
+          <aside className="hidden xl:sticky xl:top-24 xl:block xl:self-start">
+            <div className="surface-panel rounded-lg p-4">
+              <div className="space-y-1">
+                <p className="px-2 text-sm font-semibold text-slate-900">快速入口</p>
+                {DECISION_SHORTCUTS.map((item) => (
+                  <Link
+                    key={`desktop-quick-${item.id}`}
+                    href={buildToolsPageHref(current, { [item.hrefKey]: item.value, page: 1 })}
+                    className={`aside-item flex items-center justify-between rounded px-2.5 py-2 text-sm ${
+                      (item.hrefKey === "view" ? activeView === item.value : state.price === item.value)
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                    }`}
+                    onClick={startAiPending}
+                  >
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
               </div>
 
-              <form
-                action={withPublicPath("/tools")}
-                method="get"
-                className="w-full rounded-[24px] border border-slate-200/70 bg-slate-50/70 p-3 shadow-sm lg:max-w-[520px]"
-                onSubmit={() => {
-                  if (activeMode === "ai") {
-                    setAiPending(true);
-                  }
-                }}
-              >
-                <div className="mb-3 inline-flex rounded-full border border-slate-200 bg-white p-1 shadow-sm">
-                  <Link
-                    href={buildToolsPageHref(current, { mode: "search", page: 1 })}
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                      activeMode === "search"
-                        ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`}
-                    onClick={() => trackEvent("home_mode_switch", { mode: "search", source: "tools" })}
-                  >
-                    直接搜索
-                  </Link>
-                  <Link
-                    href={buildToolsPageHref(current, { mode: "ai", page: 1 })}
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                      activeMode === "ai"
-                        ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`}
-                    onClick={() => {
-                      setAiPending(true);
-                      trackEvent("home_mode_switch", { mode: "ai", source: "tools" });
-                    }}
-                  >
-                    AI 帮找
-                  </Link>
-                </div>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <div className="relative min-w-0 flex-1">
-                    <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input
-                      id="tools-search"
-                      type="search"
-                      name="q"
-                      defaultValue={state.q || ""}
-                      placeholder="想写文案、做海报、写代码？告诉我你的任务。"
-                      data-global-search-target="tools"
-                      className="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(148,163,184,0.16)]"
-                    />
-                    <input type="hidden" name="mode" value={activeMode} />
-                    {state.view ? <input type="hidden" name="view" value={state.view} /> : null}
-                    {state.category ? <input type="hidden" name="category" value={state.category} /> : null}
-                    {state.tag ? <input type="hidden" name="tag" value={state.tag} /> : null}
-                    {state.price ? <input type="hidden" name="price" value={state.price} /> : null}
-                    {state.access ? <input type="hidden" name="access" value={state.access} /> : null}
-                    {state.priceRange ? <input type="hidden" name="price_range" value={state.priceRange} /> : null}
-                    {state.sort ? <input type="hidden" name="sort" value={state.sort} /> : null}
-                    {state.pageSize ? <input type="hidden" name="page_size" value={state.pageSize} /> : null}
+              {visibleCategories.length > 0 ? (
+                <div className="mt-6">
+                  <p className="px-2 text-sm font-semibold text-slate-900">分类导航</p>
+                  <div className="mt-2 space-y-1">
+                    {visibleCategories.map((category) => (
+                      <Link
+                        key={category.slug}
+                        href={buildToolsPageHref(current, { category: category.slug, page: 1 })}
+                        className={`aside-item flex items-center justify-between rounded px-2.5 py-1.5 text-sm ${
+                          activeCategorySlug === normalizeCategorySlug(category.slug) ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                        }`}
+                      >
+                        <span>{category.label}</span>
+                        <span className="text-xs opacity-70">{category.count}</span>
+                      </Link>
+                    ))}
+                    {overflowCategories.length > 0 ? (
+                      <details className="rounded px-2.5 py-1.5">
+                        <summary className="cursor-pointer text-sm font-medium text-slate-600">展开更多分类</summary>
+                        <div className="mt-2 space-y-1">
+                          {overflowCategories.map((category) => (
+                            <Link
+                              key={category.slug}
+                              href={buildToolsPageHref(current, { category: category.slug, page: 1 })}
+                              className="aside-item flex items-center justify-between rounded px-2 py-1.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                            >
+                              <span>{category.label}</span>
+                              <span className="text-xs opacity-70">{category.count}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </details>
+                    ) : null}
                   </div>
-                  <button
-                    type="submit"
-                    className="btn-primary inline-flex h-11 w-full items-center justify-center rounded-2xl px-5 text-sm font-semibold sm:w-28"
-                    disabled={activeMode === "ai" && aiPending}
-                  >
-                    {activeMode === "ai" ? (aiPending ? "正在匹配..." : "开始推荐") : "开始筛选"}
-                  </button>
                 </div>
+              ) : null}
 
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {DECISION_SHORTCUTS.map((item) => (
-                    <Link
-                      key={item.id}
-                      href={buildToolsPageHref(current, { [item.hrefKey]: item.value, page: 1 })}
-                      className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
-                        (item.hrefKey === "view" ? activeView === item.value : state.price === item.value)
-                          ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
-                          : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-900"
-                      }`}
-                      onClick={startAiPending}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
+              {priceFacets.length > 0 ? (
+                <div className="mt-6">
+                  <p className="px-2 text-sm font-semibold text-slate-900">价格</p>
+                  <div className="mt-2 space-y-1">
+                    {priceFacets.map((price) => (
+                      <Link
+                        key={price.slug}
+                        href={buildToolsPageHref(current, { price: price.slug, page: 1 })}
+                        className={`aside-item flex items-center justify-between rounded px-2.5 py-1.5 text-sm ${
+                          state.price === price.slug ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                        }`}
+                      >
+                        <span>{price.label}</span>
+                        <span className="text-xs opacity-70">{price.count}</span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-              </form>
-            </div>
+              ) : null}
 
-            <div className="mt-5 flex flex-wrap gap-2">
-              {directory.presets.map((preset) => (
-                <Link
-                  key={preset.id}
-                  href={buildToolsPageHref(current, {
-                    view: preset.id,
-                    page: 1,
-                    category: null,
-                    tag: null,
-                  })}
-                  className={`filter-chip rounded-full px-4 py-2 text-sm font-medium transition ${
-                    activeView === preset.id
-                      ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
-                      : "border border-white/45 bg-white/70 text-slate-700 hover:bg-white"
-                  }`}
-                >
-                  {preset.label}
+              {priceRangeFacets.length > 0 ? (
+                <div className="mt-6">
+                  <p className="px-2 text-sm font-semibold text-slate-900">价格区间</p>
+                  <div className="mt-2 space-y-1">
+                    {priceRangeFacets.map((priceRange) => (
+                      <Link
+                        key={priceRange.slug}
+                        href={buildToolsPageHref(current, { price_range: priceRange.slug, page: 1 })}
+                        className={`aside-item flex items-center justify-between rounded px-2.5 py-1.5 text-sm ${
+                          state.priceRange === priceRange.slug ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                        }`}
+                      >
+                        <span>{priceRange.label}</span>
+                        <span className="text-xs opacity-70">{priceRange.count}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {accessFacets.length > 0 ? (
+                <div className="mt-6">
+                  <p className="px-2 text-sm font-semibold text-slate-900">访问条件</p>
+                  <div className="mt-2 space-y-1">
+                    {accessFacets.map((accessFacet) => {
+                      const active = (state.access || "").split(",").includes(accessFacet.slug);
+                      const values = new Set((state.access || "").split(",").filter(Boolean));
+                      if (active) values.delete(accessFacet.slug);
+                      else values.add(accessFacet.slug);
+                      return (
+                        <Link
+                          key={accessFacet.slug}
+                          href={buildToolsPageHref(current, { access: Array.from(values).sort().join(",") || null, page: 1 })}
+                          className={`aside-item flex items-center justify-between rounded px-2.5 py-1.5 text-sm ${
+                            active ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                          }`}
+                        >
+                          <span>{accessFacet.label}</span>
+                          <span className="text-xs opacity-70">{accessFacet.count}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+
+              {visibleTags.length > 0 ? (
+                <div className="mt-6">
+                  <p className="px-2 text-sm font-semibold text-slate-900">标签</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {visibleTags.map((tag) => (
+                      <Link
+                        key={tag.slug}
+                        href={buildToolsPageHref(current, { tag: tag.slug, page: 1 })}
+                        className={`filter-chip rounded px-2.5 py-1 text-xs font-medium ${
+                          state.tag === tag.slug ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        }`}
+                      >
+                        {tag.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {isFiltered ? (
+                <Link href={withPublicPath("/tools?mode=search&page=1&page_size=24")} className="mt-6 inline-flex items-center gap-2 px-2 text-sm font-medium text-slate-700 hover:text-slate-950">
+                  <RotateCcw className="h-4 w-4" />
+                  重置筛选
                 </Link>
-              ))}
+              ) : null}
             </div>
-          </section>
+          </aside>
+
+          <div className="min-w-0">
+            <section className="surface-panel relative overflow-hidden rounded-lg p-5 md:p-8">
+              <div className="tools-hero-accent absolute right-0 top-0 hidden h-full w-[32%] lg:block" />
+              <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(420px,520px)] lg:items-center">
+                <div>
+                  <h1 className="text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">{pageTitle}</h1>
+                  <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
+                    这里不是工具堆砌台，而是帮你按需求、分类、标签和价格更快缩小范围，再进入详情页判断是否适合。
+                  </p>
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    {HERO_FILTERS.map((item) => (
+                      <Link
+                        key={item.id}
+                        href={buildToolsPageHref(current, { ...item.updates, page: 1 })}
+                        className={`filter-chip rounded-full px-4 py-2 text-sm font-semibold ${
+                          (item.id === "all" && !state.price && !state.tag && activeView === "hot") ||
+                          (item.id === "latest" && activeView === "latest") ||
+                          (item.id === "free" && state.price === "free") ||
+                          (item.id === "team" && state.tag === "团队协作")
+                            ? "bg-blue-600 text-white shadow-[0_10px_22px_rgba(37,99,235,0.22)]"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-950"
+                        }`}
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
+                <form
+                  action={withPublicPath("/tools")}
+                  method="get"
+                  className="surface-glass-panel rounded-lg p-3"
+                  onSubmit={() => {
+                    if (activeMode === "ai") {
+                      setAiPending(true);
+                    }
+                  }}
+                >
+                  <div className="mb-3 inline-flex rounded-full bg-slate-100 p-1">
+                    <Link
+                      href={buildToolsPageHref(current, { mode: "search", page: 1 })}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                        activeMode === "search" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-white hover:text-slate-950"
+                      }`}
+                      onClick={() => trackEvent("home_mode_switch", { mode: "search", source: "tools" })}
+                    >
+                      全部搜索
+                    </Link>
+                    <Link
+                      href={buildToolsPageHref(current, { mode: "ai", page: 1 })}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                        activeMode === "ai" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-white hover:text-slate-950"
+                      }`}
+                      onClick={() => {
+                        setAiPending(true);
+                        trackEvent("home_mode_switch", { mode: "ai", source: "tools" });
+                      }}
+                    >
+                      AI 搜索
+                    </Link>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <div className="relative min-w-0 flex-1">
+                      <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <input
+                        id="tools-search"
+                        type="search"
+                        name="q"
+                        defaultValue={state.q || ""}
+                        placeholder="想写文案、做PPT、写代码？告诉我你的任务..."
+                        data-global-search-target="tools"
+                        className="input-token h-11 w-full rounded pl-10 pr-4 text-sm outline-none transition"
+                      />
+                      <input type="hidden" name="mode" value={activeMode} />
+                      {state.view ? <input type="hidden" name="view" value={state.view} /> : null}
+                      {state.category ? <input type="hidden" name="category" value={state.category} /> : null}
+                      {state.tag ? <input type="hidden" name="tag" value={state.tag} /> : null}
+                      {state.price ? <input type="hidden" name="price" value={state.price} /> : null}
+                      {state.access ? <input type="hidden" name="access" value={state.access} /> : null}
+                      {state.priceRange ? <input type="hidden" name="price_range" value={state.priceRange} /> : null}
+                      {state.sort ? <input type="hidden" name="sort" value={state.sort} /> : null}
+                      {state.pageSize ? <input type="hidden" name="page_size" value={state.pageSize} /> : null}
+                    </div>
+                    <button
+                      type="submit"
+                      className="btn-token-primary inline-flex h-11 w-full items-center justify-center rounded px-5 text-sm font-semibold transition sm:w-28"
+                      disabled={activeMode === "ai" && aiPending}
+                    >
+                      {activeMode === "ai" ? (aiPending ? "匹配中" : "开始搜索") : "开始搜索"}
+                    </button>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-medium text-slate-500">热搜:</span>
+                    {HOT_SEARCHES.map((item) => (
+                      <Link
+                        key={item}
+                        href={buildToolsPageHref(current, { q: item, page: 1 })}
+                        className="hot-keyword rounded px-3 py-1 text-xs font-medium transition"
+                      >
+                        {item}
+                      </Link>
+                    ))}
+                  </div>
+                </form>
+              </div>
+            </section>
 
           {activeMode === "ai" && aiPending ? (
-            <section role="status" aria-live="polite" className="panel-base mt-6 rounded-[28px] border border-sky-200/80 bg-sky-50/70 p-5 md:p-6">
+            <section role="status" aria-live="polite" className="mt-5 rounded-lg border border-blue-200 bg-blue-50/80 p-5 md:p-6">
               <p className="text-sm font-semibold text-sky-900">AI 正在匹配工具，请稍候...</p>
               <p className="mt-1 text-xs text-sky-700">正在分析你的任务、价格偏好和访问条件，马上返回结果。</p>
               <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -338,120 +548,62 @@ export default function ToolsPage({ directory, aiSearch, state, loadState = "idl
             </section>
           ) : null}
 
-          <AgentRecommendationSummary aiSearch={aiSearch} />
-
-          <section className="mt-6 grid items-start gap-6 xl:grid-cols-[288px_minmax(0,1fr)]">
-            <aside className="hidden xl:sticky xl:top-24 xl:block xl:self-start">
-              <div className="panel-base rounded-[28px] p-5">
-                <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+          <section className="mt-5">
+            <details className="surface-panel rounded-lg p-4 xl:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-slate-900">
+                <span className="inline-flex items-center gap-2">
                   <SlidersHorizontal className="h-4 w-4" />
-                  决策筛选
-                </div>
-
-                <div className="mt-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">快速入口</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  筛选与排序
+                </span>
+                <span className="text-xs text-slate-500">{isFiltered ? "已应用条件" : "展开筛选"}</span>
+              </summary>
+              <div className="mt-4 space-y-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">快速入口</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
                     {DECISION_SHORTCUTS.map((item) => (
                       <Link
-                        key={`sidebar-${item.id}`}
+                        key={`mobile-${item.id}`}
                         href={buildToolsPageHref(current, { [item.hrefKey]: item.value, page: 1 })}
                         className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
                           (item.hrefKey === "view" ? activeView === item.value : state.price === item.value)
-                            ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
-                            : "bg-white/70 text-slate-700 hover:bg-white"
+                            ? "bg-slate-900 text-white"
+                            : "border border-slate-200 bg-white text-slate-700"
                         }`}
-                        onClick={startAiPending}
                       >
                         {item.label}
                       </Link>
                     ))}
                   </div>
                 </div>
-
-                <div className="mt-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">排序</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {[
-                      { id: "featured", label: "最热" },
-                      { id: "latest", label: "最新" },
-                      { id: "name", label: "名称" },
-                    ].map((sortOption) => (
-                      <Link
-                        key={sortOption.id}
-                        href={buildToolsPageHref(current, { sort: sortOption.id, page: 1 })}
-                        className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
-                          activeSort === sortOption.id
-                            ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
-                            : "bg-white/70 text-slate-700 hover:bg-white"
-                        }`}
-                      >
-                        {sortOption.label}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-6">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">分类</p>
-                    {state.category ? (
-                      <Link href={buildToolsPageHref(current, { category: null, page: 1 })} className="text-xs text-slate-500 hover:text-slate-900">
-                        清除分类
-                      </Link>
-                    ) : null}
-                  </div>
-                  <div className="mt-3 space-y-2">
-                    {visibleCategories.map((category) => (
-                      <Link
-                        key={category.slug}
-                        href={buildToolsPageHref(current, { category: category.slug, page: 1 })}
-                        className={`aside-item flex items-center justify-between rounded-2xl px-3 py-2 text-sm ${
-                          state.category === category.slug ? "bg-slate-900 text-white" : "bg-white/70 text-slate-700 hover:bg-white"
-                        }`}
-                      >
-                        <span>{category.label}</span>
-                        <span className="text-xs opacity-70">{category.count}</span>
-                      </Link>
-                    ))}
-                    {overflowCategories.length > 0 ? (
-                      <details className="rounded-2xl bg-white/60 p-3">
-                        <summary className="cursor-pointer text-sm font-medium text-slate-700">查看更多分类</summary>
-                        <div className="mt-3 space-y-2">
-                          {overflowCategories.map((category) => (
-                            <Link
-                              key={category.slug}
-                              href={buildToolsPageHref(current, { category: category.slug, page: 1 })}
-                              className="aside-item flex items-center justify-between rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-white"
-                            >
-                              <span>{category.label}</span>
-                              <span className="text-xs text-slate-500">{category.count}</span>
-                            </Link>
-                          ))}
-                        </div>
-                      </details>
-                    ) : null}
-                  </div>
-                </div>
-
-                {priceFacets.length > 0 ? (
-                  <div className="mt-6">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">价格</p>
-                      {state.price ? (
-                        <Link href={buildToolsPageHref(current, { price: null, page: 1 })} className="text-xs text-slate-500 hover:text-slate-900">
-                          清除价格
+                {visibleCategories.length > 0 ? (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">分类</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {visibleCategories.map((category) => (
+                        <Link
+                          key={`mobile-category-${category.slug}`}
+                          href={buildToolsPageHref(current, { category: category.slug, page: 1 })}
+                          className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
+                          activeCategorySlug === normalizeCategorySlug(category.slug) ? "bg-slate-900 text-white" : "border border-slate-200 bg-white text-slate-700"
+                          }`}
+                        >
+                          {category.label} ({category.count})
                         </Link>
-                      ) : null}
+                      ))}
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
+                  </div>
+                ) : null}
+                {priceFacets.length > 0 ? (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">价格</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
                       {priceFacets.map((price) => (
                         <Link
-                          key={price.slug}
+                          key={`mobile-price-${price.slug}`}
                           href={buildToolsPageHref(current, { price: price.slug, page: 1 })}
                           className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
-                            state.price === price.slug
-                              ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
-                              : "bg-white/70 text-slate-700 hover:bg-white"
+                            state.price === price.slug ? "bg-slate-900 text-white" : "border border-slate-200 bg-white text-slate-700"
                           }`}
                         >
                           {price.label} ({price.count})
@@ -460,148 +612,39 @@ export default function ToolsPage({ directory, aiSearch, state, loadState = "idl
                     </div>
                   </div>
                 ) : null}
-
-                {priceRangeFacets.length > 0 ? (
-                  <div className="mt-6">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">价格区间</p>
-                      {state.priceRange ? (
-                        <Link href={buildToolsPageHref(current, { price_range: null, page: 1 })} className="text-xs text-slate-500 hover:text-slate-900">
-                          清除区间
-                        </Link>
-                      ) : null}
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {priceRangeFacets.map((priceRange) => (
-                        <Link
-                          key={priceRange.slug}
-                          href={buildToolsPageHref(current, { price_range: priceRange.slug, page: 1 })}
-                          className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
-                            state.priceRange === priceRange.slug
-                              ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
-                              : "bg-white/70 text-slate-700 hover:bg-white"
-                          }`}
-                        >
-                          {priceRange.label} ({priceRange.count})
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
-                {accessFacets.length > 0 ? (
-                  <div className="mt-6">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">访问条件</p>
-                      {state.access ? (
-                        <Link href={buildToolsPageHref(current, { access: null, page: 1 })} className="text-xs text-slate-500 hover:text-slate-900">
-                          清除条件
-                        </Link>
-                      ) : null}
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {accessFacets.map((accessFacet) => {
-                        const active = (state.access || "").split(",").includes(accessFacet.slug);
-                        const values = new Set((state.access || "").split(",").filter(Boolean));
-                        if (active) values.delete(accessFacet.slug);
-                        else values.add(accessFacet.slug);
-                        return (
-                          <Link
-                            key={accessFacet.slug}
-                            href={buildToolsPageHref(current, { access: Array.from(values).sort().join(",") || null, page: 1 })}
-                            className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
-                              active ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" : "bg-white/70 text-slate-700 hover:bg-white"
-                            }`}
-                          >
-                            {accessFacet.label} ({accessFacet.count})
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className="mt-6">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">标签</p>
-                    {state.tag ? (
-                      <Link href={buildToolsPageHref(current, { tag: null, page: 1 })} className="text-xs text-slate-500 hover:text-slate-900">
-                        清除标签
-                      </Link>
-                    ) : null}
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {visibleTags.map((tag) => (
-                      <Link
-                        key={tag.slug}
-                        href={buildToolsPageHref(current, { tag: tag.slug, page: 1 })}
-                        className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
-                          state.tag === tag.slug
-                            ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
-                            : "bg-white/70 text-slate-700 hover:bg-white"
-                        }`}
-                      >
-                        {tag.label}
-                      </Link>
-                    ))}
-                  </div>
-                  {overflowTags.length > 0 ? (
-                    <details className="mt-3 rounded-2xl bg-white/60 p-3">
-                      <summary className="cursor-pointer text-sm font-medium text-slate-700">
-                        更多标签 ({overflowTags.length})
-                      </summary>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {overflowTags.map((tag) => (
-                          <Link
-                            key={tag.slug}
-                            href={buildToolsPageHref(current, { tag: tag.slug, page: 1 })}
-                            className={`filter-chip rounded-full px-3 py-1.5 text-xs font-medium ${
-                              state.tag === tag.slug
-                                ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
-                                : "bg-white/70 text-slate-700 hover:bg-white"
-                            }`}
-                          >
-                            {tag.label}
-                          </Link>
-                        ))}
-                      </div>
-                    </details>
-                  ) : null}
-                </div>
-
                 {isFiltered ? (
-                  <div className="mt-6">
-                    <Link href={withPublicPath("/tools?mode=search")} className="inline-flex items-center gap-2 text-sm font-medium text-slate-900 hover:underline">
-                      <RotateCcw className="h-4 w-4" />
-                      重置筛选
-                    </Link>
-                  </div>
+                  <Link href={withPublicPath("/tools?mode=search")} className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
+                    <RotateCcw className="h-4 w-4" />
+                    重置筛选
+                  </Link>
                 ) : null}
               </div>
-            </aside>
+            </details>
 
-            <div>
+            <div className="mt-4">
+              <SearchUnderstanding aiSearch={aiSearch} directory={directory} />
+              <AgentRecommendationSummary aiSearch={aiSearch} />
+
               {loadState !== "idle" ? (
-                <div className="panel-base rounded-[28px] p-6">
+                <div className="surface-panel rounded-lg p-6">
                   <h2 className="text-lg font-semibold text-slate-900">{loadState === "timeout" ? "目录加载超时" : "目录加载失败"}</h2>
                   <p className="mt-2 text-sm leading-7 text-slate-600">当前未能完整获取工具目录数据。你可以刷新重试，或稍后再访问。</p>
                   <div className="mt-4 flex flex-wrap gap-3">
-                    <Link href={buildToolsPageHref(current, {})} className="btn-primary rounded-full px-4 py-2 text-sm">
+                    <Link href={buildToolsPageHref(current, {})} className="btn-primary rounded px-4 py-2 text-sm">
                       重新加载
                     </Link>
-                    <Link href={withPublicPath("/tools?mode=search")} className="btn-secondary rounded-full px-4 py-2 text-sm">
+                    <Link href={withPublicPath("/tools?mode=search")} className="btn-secondary rounded px-4 py-2 text-sm">
                       返回目录
                     </Link>
                   </div>
                 </div>
               ) : null}
 
-              <div className="panel-base mb-4 rounded-[24px] px-4 py-3">
+              <div className="surface-panel mb-3 rounded-lg px-4 py-3">
                 <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
                   <div className="flex flex-wrap items-center gap-3">
-                    <span>{`结果数：${directory.total}`}</span>
-                    <span>{`当前页：${currentPage} / ${totalPages}`}</span>
-                    <span>{`模式：${activeMode === "ai" ? "AI 帮找" : "直接搜索"}`}</span>
+                    <span>{`共 ${directory.total} 个工具，找到 ${directory.items.length} 个结果`}</span>
+                    <span>{`模式：${activeMode === "ai" ? "AI 搜索" : "全部搜索"}`}</span>
                     {selectedCategory ? <span>{`分类：${selectedCategory.label}`}</span> : null}
                     {selectedTag ? <span>{`标签：${selectedTag.label}`}</span> : null}
                     {selectedPrice ? <span>{`价格：${selectedPrice.label}`}</span> : null}
@@ -609,20 +652,36 @@ export default function ToolsPage({ directory, aiSearch, state, loadState = "idl
                     {selectedAccess.length > 0 ? <span>{`访问条件：${selectedAccess.join(" / ")}`}</span> : null}
                     {state.q ? <span>{`搜索：${state.q}`}</span> : null}
                   </div>
-                  {!showEmpty && totalPages > 1 ? <div className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">列表 / 详情 / 返回</div> : null}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-500">排序:</span>
+                    {SORT_OPTIONS.map((sortOption) => (
+                      <Link
+                        key={sortOption.id}
+                        href={buildToolsPageHref(current, { sort: sortOption.id, page: 1 })}
+                        className={`rounded px-3 py-1.5 text-xs font-medium transition ${
+                          activeSort === sortOption.id ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        }`}
+                      >
+                        {sortOption.label}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               </div>
 
               {showEmpty ? (
-                <div className="panel-base rounded-[28px] p-8 text-center">
+                <div className="surface-panel rounded-lg p-8 text-center">
                   <h2 className="text-xl font-semibold text-slate-900">暂无匹配工具</h2>
-                  <p className="mt-3 text-sm leading-7 text-slate-600">当前筛选条件下没有找到结果。你可以换一个关键词，或清除分类、价格和标签后再试。</p>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">当前筛选条件下没有找到结果。你可以放宽条件、切换到 AI 帮找，或先看热门工具继续缩小范围。</p>
                   <div className="mt-5 flex flex-wrap justify-center gap-3">
-                    <Link href={withPublicPath("/tools?mode=search")} className="btn-primary rounded-full px-5 py-3 text-sm">
-                      重置筛选
+                    <Link href={withPublicPath("/tools?mode=search&page=1&page_size=24")} className="btn-primary rounded px-5 py-3 text-sm">
+                      放宽全部条件
                     </Link>
-                    <Link href={withPublicPath("/tools?view=hot&mode=search")} className="btn-secondary rounded-full px-5 py-3 text-sm">
-                      返回最热
+                    <Link href={buildToolsPageHref(current, { mode: "ai", page: 1, category: null, tag: null })} className="btn-secondary rounded px-5 py-3 text-sm">
+                      用 AI 重新理解
+                    </Link>
+                    <Link href={withPublicPath("/tools?view=hot&mode=search")} className="btn-secondary rounded px-5 py-3 text-sm">
+                      查看热门候选
                     </Link>
                   </div>
                 </div>
@@ -685,6 +744,7 @@ export default function ToolsPage({ directory, aiSearch, state, loadState = "idl
               ) : null}
             </div>
           </section>
+        </div>
         </div>
       </main>
 

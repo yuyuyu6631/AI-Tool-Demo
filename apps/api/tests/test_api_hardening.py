@@ -5,9 +5,12 @@ from fastapi.testclient import TestClient
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 
 from app.main import create_app
+from app.services import auth_service
 
 
-client = TestClient(create_app())
+app = create_app()
+app.dependency_overrides[auth_service.current_admin_dependency] = lambda: None
+client = TestClient(app)
 
 
 def test_http_errors_preserve_detail_and_expose_stable_error_fields():

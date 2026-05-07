@@ -280,6 +280,7 @@ def upsert_tool(db: Session, payload: AdminToolPayload, *, tool_id: int | None =
         failure_detail="宸ュ叿淇濆瓨澶辫触锛岃绋嶅悗閲嶈瘯銆?",
         conflict_detail="宸ュ叿淇℃伅鍐茬獊锛岃妫€鏌?slug 鎴栧悕绉版槸鍚﹂噸澶嶃€?",
     )
+    catalog_service.sync_tool_search_index(db, tool.id)
     return get_tool_detail(db, tool.id)
 
 
@@ -330,6 +331,8 @@ def delete_review(db: Session, review_id: int) -> None:
         action="admin_delete_review",
         failure_detail="鍒犻櫎璇勮澶辫触锛岃绋嶅悗閲嶈瘯銆?",
     )
+    if tool is not None:
+        catalog_service.sync_tool_search_index(db, tool.id)
 
 
 def list_rankings(db: Session) -> list[AdminRankingListItem]:

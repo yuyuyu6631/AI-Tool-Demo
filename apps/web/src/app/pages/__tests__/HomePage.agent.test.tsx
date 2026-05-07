@@ -116,7 +116,7 @@ describe("HomePage agent recommendation", () => {
       />,
     );
 
-    expect(screen.getByText("3 秒找到能用的 AI 工具")).toBeInTheDocument();
+    expect(screen.getByText("3 秒定位 · 第三方 AI 工具测评")).toBeInTheDocument();
     expect(screen.getByTestId("home-signal-radar")).toBeInTheDocument();
     expect(screen.queryByTestId("product-critique-deck")).not.toBeInTheDocument();
     expect(screen.queryByText("ChatGPT")).not.toBeInTheDocument();

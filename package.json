@@ -19,6 +19,7 @@
     "validate:aitool:preview": "python apps/api/app/scripts/validate_aitool_preview.py",
     "import:aitool:preview": "python apps/api/app/scripts/import_aitool_preview.py",
     "import:aitool:all": "python apps/api/app/scripts/import_aitool_preview.py --limit 0 --status-mode payload --featured-mode payload",
+    "search:reindex": "cd apps/api && python -m app.scripts.reindex_search",
     "export:data": "python apps/api/app/scripts/export_data.py",
     "export:data:json": "python apps/api/app/scripts/export_data.py --format json",
     "export:data:csv": "python apps/api/app/scripts/export_data.py --format csv",

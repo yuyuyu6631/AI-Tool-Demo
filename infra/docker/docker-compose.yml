@@ -19,18 +19,34 @@ services:
     ports:
       - "6379:6379"
 
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    container_name: xingdianping-meilisearch
+    environment:
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+    ports:
+      - "7700:7700"
+    volumes:
+      - meili_data:/meili_data
+
   api:
     build:
-      context: ../../apps/api
+      context: ../../
+      dockerfile: apps/api/Dockerfile
     container_name: xingdianping-api
     environment:
       DATABASE_URL: mysql+pymysql://xingdianping:xingdianping@mysql:3306/xingdianping
       REDIS_URL: redis://redis:6379/0
+      SEARCH_PROVIDER: meilisearch
+      MEILISEARCH_URL: http://meilisearch:7700
+      MEILISEARCH_INDEX: tools
       AI_PROVIDER: stub
       AI_API_KEY: ""
     depends_on:
       - mysql
       - redis
+      - meilisearch
     ports:
       - "8000:8000"
 
@@ -48,3 +64,4 @@ services:
 
 volumes:
   mysql_data:
+  meili_data:

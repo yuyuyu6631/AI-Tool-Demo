@@ -1,4 +1,9 @@
-const PUBLIC_BASE_PATH = (process.env.NEXT_PUBLIC_PUBLIC_BASE_PATH || process.env.NEXT_PUBLIC_ASSET_PREFIX || "").replace(/\/+$/, "");
+const PUBLIC_BASE_PATH = (
+  process.env.NEXT_PUBLIC_PUBLIC_BASE_PATH
+  || process.env.NEXT_PUBLIC_BASE_PATH
+  || process.env.NEXT_PUBLIC_ASSET_PREFIX
+  || ""
+).replace(/\/+$/, "");
 
 export function withPublicPath(href: string) {
   if (!PUBLIC_BASE_PATH) return href;

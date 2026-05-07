@@ -22,16 +22,16 @@ export default function InlineChatBot() {
     }, [messages, scrollToBottom]);
 
     return (
-        <div className="flex flex-col h-full min-h-[460px] max-h-[600px] w-full rounded-[24px] border border-white/40 bg-white/60 overflow-hidden shadow-sm backdrop-blur-md">
+        <div className="flex h-full min-h-[460px] max-h-[600px] w-full flex-col overflow-hidden rounded-[24px] border border-[var(--border-default)] bg-[var(--bg-surface)] shadow-[var(--shadow-glass)] backdrop-blur-md">
             {/* ── 内嵌态简易 Header (可选) ── */}
-            <div className="px-5 py-4 border-b border-white/30 flex justify-between items-center bg-white/40">
+            <div className="flex items-center justify-between border-b border-[var(--border-default)] bg-[var(--bg-surface-strong)] px-5 py-4">
                 <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center text-white text-[10px] font-bold">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[10px] font-bold text-[var(--color-primary)]">
                         AI
                     </div>
                     <div>
-                        <h3 className="font-semibold text-sm text-slate-800 leading-tight">不知道用什么？</h3>
-                        <p className="text-[10px] text-slate-500">让智能导购帮你缩小范围</p>
+                        <h3 className="text-sm font-semibold leading-tight text-[var(--text-primary)]">不知道用什么？</h3>
+                        <p className="text-[10px] text-[var(--text-tertiary)]">让智能导购帮你缩小范围</p>
                     </div>
                 </div>
             </div>
@@ -49,16 +49,16 @@ export default function InlineChatBot() {
                     >
                         <div
                             className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium mt-0.5 ${msg.role === "user"
-                                ? "bg-slate-800 text-white"
-                                : "bg-indigo-50 text-indigo-600 border border-indigo-100"
+                                ? "bg-[var(--color-primary)] text-[#0B1020]"
+                                : "border border-[var(--color-primary-border)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
                                 }`}
                         >
                             {msg.role === "user" ? "我" : "AI"}
                         </div>
                         <div
                             className={`message-bubble max-w-[85%] px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed break-words shadow-sm ${msg.role === "user"
-                                ? "bg-slate-800 text-white rounded-tr-sm"
-                                : "bg-white text-slate-800 border border-slate-100/60 rounded-tl-sm"
+                                ? "bg-[var(--color-primary)] text-[#0B1020] rounded-tr-sm"
+                                : "border border-[var(--border-default)] bg-[var(--bg-surface-strong)] text-[var(--text-secondary)] rounded-tl-sm"
                                 }`}
                         >
                             {msg.role === "assistant" ? (
@@ -72,13 +72,13 @@ export default function InlineChatBot() {
 
                 {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
                     <div className="flex gap-2.5 flex-row">
-                        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center text-[11px] font-medium">
+                        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-[var(--color-primary-border)] bg-[var(--color-primary-soft)] text-[11px] font-medium text-[var(--color-primary)]">
                             AI
                         </div>
-                        <div className="max-w-[85%] px-3.5 py-2.5 rounded-2xl text-[13px] bg-white border border-slate-100/60 rounded-tl-sm shadow-sm flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" />
-                            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "0.15s" }} />
-                            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "0.3s" }} />
+                        <div className="flex max-w-[85%] items-center gap-1.5 rounded-2xl rounded-tl-sm border border-[var(--border-default)] bg-[var(--bg-surface-strong)] px-3.5 py-2.5 text-[13px]">
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--color-primary)]" />
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--color-primary)]" style={{ animationDelay: "0.15s" }} />
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--color-primary)]" style={{ animationDelay: "0.3s" }} />
                             <span className="ml-1.5 text-xs text-slate-400">正在思考…</span>
                         </div>
                     </div>
@@ -90,7 +90,7 @@ export default function InlineChatBot() {
                             <button
                                 key={idx}
                                 onClick={() => handleSend(q)}
-                                className="px-3 py-1.5 text-[11px] bg-white/80 text-slate-600 border border-slate-200/60 rounded-full hover:bg-white hover:border-slate-300 hover:text-slate-900 transition-all duration-200 shadow-sm"
+                                className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface-strong)] px-3 py-1.5 text-[11px] text-[var(--text-tertiary)] transition-all duration-200 hover:border-[var(--color-primary-border)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]"
                             >
                                 {q}
                             </button>
@@ -102,8 +102,8 @@ export default function InlineChatBot() {
             </div>
 
             {/* ── Input Area ── */}
-            <div className="p-3 bg-white/70 border-t border-white/50">
-                <div className="flex items-center gap-2 bg-white rounded-xl p-1 border border-slate-200/60 focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-100 transition-all shadow-sm">
+            <div className="border-t border-[var(--border-default)] bg-[var(--bg-surface-strong)] p-3">
+                <div className="flex items-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] p-1 transition-all focus-within:border-[var(--border-focus)] focus-within:ring-2 focus-within:ring-[var(--color-primary-soft)]">
                     <input
                         type="text"
                         value={input}
@@ -116,12 +116,12 @@ export default function InlineChatBot() {
                         }}
                         disabled={isLoading}
                         placeholder="用一句话描述你想做的事..."
-                        className="flex-1 bg-transparent border-none outline-none text-sm px-3 py-2 text-slate-800 placeholder:text-slate-400"
+                        className="flex-1 border-none bg-transparent px-3 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
                     />
                     <button
                         onClick={() => handleSend()}
                         disabled={!input.trim() || isLoading}
-                        className="p-2 text-white bg-slate-800 hover:bg-slate-900 disabled:bg-slate-200 disabled:text-slate-400 rounded-lg transition-colors"
+                        className="rounded-lg bg-[var(--color-primary)] p-2 text-[#0B1020] transition-colors hover:bg-[var(--color-primary-hover)] disabled:bg-[var(--bg-surface-hover)] disabled:text-[var(--text-disabled)]"
                         aria-label="发送消息"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4.5 h-4.5">

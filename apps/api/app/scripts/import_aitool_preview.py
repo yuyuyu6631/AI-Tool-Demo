@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import Base, SessionLocal, engine
 from app.models.models import Category, Source, Tag, Tool, ToolCategory, ToolTag
+from app.services.catalog_service import refresh_search_index
 from app.services.logo_assets import LOGO_SOURCE_IMPORTED, normalize_logo_path, resolve_logo_status
 
 
@@ -318,6 +319,7 @@ def run(
             session.rollback()
         else:
             session.commit()
+            refresh_search_index(session)
 
     action = "Dry run complete" if dry_run else "Import complete"
     print(

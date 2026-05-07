@@ -25,6 +25,13 @@ class PresetView(BaseModel):
     count: int
 
 
+class SearchMeta(BaseModel):
+    provider: str = "legacy"
+    degraded: bool = False
+    latencyMs: int = 0
+    normalizedQuery: str | None = None
+
+
 class ToolsDirectoryResponse(BaseModel):
     items: list[ToolSummary]
     total: int
@@ -38,6 +45,7 @@ class ToolsDirectoryResponse(BaseModel):
     accessFacets: list[FacetOption] = Field(default_factory=list)
     priceRangeFacets: list[FacetOption] = Field(default_factory=list)
     presets: list[PresetView] = Field(default_factory=list)
+    meta: SearchMeta | None = None
 
 
 class HomeSidebarCategory(BaseModel):

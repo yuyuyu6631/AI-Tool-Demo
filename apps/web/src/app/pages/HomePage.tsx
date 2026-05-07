@@ -10,7 +10,6 @@ import type { AgentRecommendation, AiPanel, AiSearchMeta, ScenarioSummary, ToolS
 import { buildToolsHref } from "../lib/catalog-utils";
 import { trackEvent } from "../lib/analytics";
 import { withPublicPath } from "../lib/public-path";
-import { theme } from "../../theme/theme";
 
 const HOME_PRESERVE_SCROLL_KEY = "home:preserve-scroll";
 
@@ -68,7 +67,7 @@ export default function HomePage({ state }: HomePageProps) {
 
   const submitSearch = (value: string) => {
     const trimmed = value.trim();
-    const href = trimmed ? withPublicPath(`/search?task=${encodeURIComponent(trimmed)}`) : withPublicPath("/search");
+    const href = trimmed ? withPublicPath(`/tools?mode=ai&q=${encodeURIComponent(trimmed)}&page=1&page_size=24`) : withPublicPath("/tools?mode=ai");
     trackEvent("home_semantic_search", { has_query: Boolean(trimmed), query_length: trimmed.length });
     if (!trimmed) {
       searchInputRef.current?.focus();
@@ -94,11 +93,11 @@ export default function HomePage({ state }: HomePageProps) {
   };
 
   return (
-    <div className="page-shell min-h-screen" style={{ backgroundColor: theme.colors.home.bg }}>
+    <div className="home-light-shell min-h-screen bg-[var(--home-bg)]">
       <CatalogScrollRestorer />
       <Header currentPath="/" currentRoute={currentRoute} />
 
-      <main aria-busy={pendingLabel ? "true" : "false"} className="pb-16" style={{ backgroundColor: theme.colors.home.bg }}>
+      <main aria-busy={pendingLabel ? "true" : "false"} className="bg-[var(--home-bg)] pb-16">
         <HeroSection
           query={query}
           inputRef={searchInputRef}

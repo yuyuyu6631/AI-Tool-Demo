@@ -8,15 +8,17 @@ vi.mock("../ToolCard", () => ({
     name,
     onCompareToggle,
     onDetailClick,
+    compareDisabled,
   }: {
     name: string;
     onCompareToggle?: () => void;
     onDetailClick?: () => void;
+    compareDisabled?: boolean;
   }) => (
     <div>
       <div>{name}</div>
       {onCompareToggle ? (
-        <button type="button" onClick={onCompareToggle}>
+        <button type="button" onClick={onCompareToggle} disabled={compareDisabled}>
           compare
         </button>
       ) : null}
@@ -69,10 +71,42 @@ describe("CompareToolsGrid", () => {
     fireEvent.click(compareButtons[0]);
     fireEvent.click(compareButtons[1]);
 
-    expect(screen.getByRole("link", { name: "\u5f00\u59cb\u5bf9\u6bd4" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "\u67e5\u770b\u5bf9\u6bd4" })).toHaveAttribute(
       "href",
       "/compare/chatgpt-vs-gamma",
     );
+  });
+
+  it("allows four tools, disables the fifth, and can clear the compare tray", () => {
+    render(
+      <CompareToolsGrid
+        items={[
+          makeTool(1, "chatgpt", "ChatGPT"),
+          makeTool(2, "gamma", "Gamma"),
+          makeTool(3, "claude", "Claude"),
+          makeTool(4, "canva", "Canva"),
+          makeTool(5, "cursor", "Cursor"),
+        ]}
+      />,
+    );
+
+    const compareButtons = screen.getAllByRole("button", { name: "compare" });
+    fireEvent.click(compareButtons[0]);
+    fireEvent.click(compareButtons[1]);
+    fireEvent.click(compareButtons[2]);
+    fireEvent.click(compareButtons[3]);
+
+    expect(compareButtons[4]).toBeDisabled();
+    expect(screen.getByText("\u5de5\u5177\u5bf9\u6bd4 (4/4)")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "\u67e5\u770b\u5bf9\u6bd4" })).toHaveAttribute(
+      "href",
+      "/compare/canva-vs-chatgpt-vs-claude-vs-gamma",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "\u6e05\u7a7a" }));
+
+    expect(screen.getByText("\u5de5\u5177\u5bf9\u6bd4 (0/4)")).toBeInTheDocument();
+    expect(screen.getByText("\u9009\u62e9\u81f3\u5c11 2 \u4e2a")).toBeInTheDocument();
   });
 
   it("remembers the current route before opening a tool detail", () => {

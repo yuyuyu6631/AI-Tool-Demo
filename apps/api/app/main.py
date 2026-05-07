@@ -131,6 +131,10 @@ def create_app() -> FastAPI:
     def health_check():
         return {"status": "ok"}
 
+    @application.get(f"{settings.api_prefix}/health")
+    def prefixed_health_check():
+        return {"status": "ok"}
+
     @application.get("/health/ready")
     def readiness_check():
         ready, payload = check_backend_readiness()

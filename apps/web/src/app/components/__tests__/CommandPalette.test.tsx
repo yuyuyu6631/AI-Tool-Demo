@@ -123,4 +123,14 @@ describe("CommandPalette", () => {
       fireEvent.keyDown(document, { ctrlKey: true });
     }).not.toThrow();
   });
+
+  it("routes free-form searches to the unified tools results page", async () => {
+    render(<CommandPalette />);
+
+    fireEvent.keyDown(document, { key: "k", ctrlKey: true });
+    fireEvent.change(await screen.findByRole("combobox"), { target: { value: "deep research" } });
+    fireEvent.click(await screen.findByText("在目录中搜索 “deep research”"));
+
+    expect(pushMock).toHaveBeenCalledWith("/tools?q=deep+research&mode=ai&page=1&page_size=24");
+  });
 });

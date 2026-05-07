@@ -73,7 +73,7 @@ export default function HeroParticleScene({ query, active }: { query?: string; a
       map: dotTexture,
       vertexColors: true,
       transparent: true,
-      opacity: 0.82,
+      opacity: 0.36,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
@@ -111,7 +111,7 @@ export default function HeroParticleScene({ query, active }: { query?: string; a
     lineGeometry.setAttribute("position", new THREE.Float32BufferAttribute(linePositions, 3));
     const lines = new THREE.LineSegments(
       lineGeometry,
-      new THREE.LineBasicMaterial({ color: theme.colors.home.accent, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending }),
+      new THREE.LineBasicMaterial({ color: theme.colors.home.accent, transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending }),
     );
     ringGroup.add(lines);
 
@@ -225,7 +225,7 @@ export default function HeroParticleScene({ query, active }: { query?: string; a
       ref={hostRef}
       data-testid="hero-particle-scene"
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 opacity-95 [mask-image:linear-gradient(180deg,black_0%,black_78%,transparent_100%)]"
+      className="pointer-events-none absolute inset-0 opacity-35 [mask-image:linear-gradient(180deg,black_0%,black_78%,transparent_100%)]"
     />
   );
 }

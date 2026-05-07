@@ -1,8 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
-import { Radar } from "lucide-react";
-import { theme } from "../../../theme/theme";
+import { ArrowRight, CheckCircle2, Radar } from "lucide-react";
 import HeroParticleScene from "./HeroParticleScene";
 import QuickTasks from "./QuickTasks";
 import SearchSection from "./SearchSection";
@@ -25,8 +24,8 @@ export interface HeroSectionProps {
 }
 
 export default function HeroSection({
-  title = "3 秒找到能用的 AI 工具",
-  subtitle = "说任务、看福利、逛工具库。别在一堆工具名里硬猜，先选你现在最想走的路。",
+  title = "同一个任务，看看哪个 AI 真能做好",
+  subtitle = "先看统一输入、原始输出、缺陷标注和免费/付费建议，再决定要不要试、要不要买。",
   query,
   inputRef,
   active = false,
@@ -38,37 +37,51 @@ export default function HeroSection({
   onRadarStart,
 }: HeroSectionProps) {
   const activeQuickTask = QUICK_TASKS.find((task) => task.id === activeQuickTaskId) ?? null;
-  const heroOverlay = `radial-gradient(circle at 24% 22%, rgba(14,165,233,0.18), transparent 26%), radial-gradient(circle at 78% 42%, rgba(246,199,104,0.08), transparent 22%), linear-gradient(180deg, rgba(2,6,23,0.24) 0%, rgba(2,5,11,0.86) 68%, ${theme.colors.home.bg} 100%)`;
+  const proofPoints = ["统一输入", "原始输出可复查", "缺陷和避坑前置", "免费/付费建议清楚"];
 
   return (
-    <section className="relative -mt-[68px] min-h-screen overflow-hidden pt-[68px] text-white" style={{ backgroundColor: theme.colors.home.bg }}>
+    <section className="home-light-shell relative -mt-[68px] min-h-screen overflow-hidden pt-[68px]">
       <HeroParticleScene query={query} active={active} />
-      <div className="absolute inset-0" style={{ backgroundImage: heroOverlay }} />
-      <div className="absolute inset-x-0 bottom-0 h-32" style={{ backgroundImage: `linear-gradient(to bottom, transparent, ${theme.colors.home.bg})` }} />
-      <div className="absolute inset-x-0 bottom-0 h-px" style={{ backgroundImage: `linear-gradient(to right, transparent, ${theme.colors.home.gold}73, transparent)` }} />
-      <div className="relative mx-auto grid w-full min-w-0 max-w-[1440px] gap-6 px-4 py-6 sm:px-6 md:py-7 lg:min-h-[calc(100vh-68px)] lg:grid-cols-[minmax(0,58%)_minmax(360px,42%)] lg:px-8">
-        <div className="flex min-h-[520px] min-w-0 flex-col justify-center py-2 lg:min-h-[620px]">
-          <div className="inline-flex w-fit items-center gap-2 rounded border border-sky-300/25 bg-sky-300/10 px-3 py-1.5 text-xs font-semibold text-sky-100 shadow-[0_0_30px_rgba(14,165,233,0.18)] motion-safe:animate-[agentReveal_360ms_ease-out_both]">
+      <div className="home-route-map pointer-events-none absolute inset-0 opacity-60" aria-hidden="true" />
+      <div className="home-hero-fade pointer-events-none absolute inset-x-0 bottom-0 h-36" aria-hidden="true" />
+
+      <div className="relative mx-auto grid w-full min-w-0 max-w-[1440px] gap-8 px-4 pb-12 pt-8 sm:px-6 md:pt-10 lg:min-h-[calc(100vh-68px)] lg:grid-cols-[minmax(0,57%)_minmax(380px,43%)] lg:px-8">
+        <div className="flex min-h-[560px] min-w-0 flex-col justify-center py-6 lg:min-h-[640px]">
+          <div className="home-kicker inline-flex w-fit items-center gap-2 rounded-full px-3.5 py-2 text-xs font-semibold motion-safe:animate-[agentReveal_360ms_ease-out_both]">
             <Radar className="h-3.5 w-3.5" />
             3 秒定位 · 第三方 AI 工具测评
           </div>
-          <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-tight text-slate-50 [text-shadow:0_0_32px_rgba(56,189,248,0.18)] motion-safe:animate-[agentReveal_420ms_ease-out_80ms_both] md:text-5xl lg:text-6xl">
+          <h1 className="home-title mt-6 max-w-3xl text-[clamp(2.65rem,6vw,5.4rem)] font-semibold leading-[1.04] tracking-normal motion-safe:animate-[agentReveal_420ms_ease-out_80ms_both]">
             {title}
           </h1>
           {subtitle ? (
-            <p className="mt-4 max-w-2xl text-base leading-8 text-sky-50/72 motion-safe:animate-[agentReveal_460ms_ease-out_160ms_both]">
+            <p className="home-subtitle mt-5 max-w-2xl text-base leading-8 motion-safe:animate-[agentReveal_460ms_ease-out_160ms_both] md:text-lg">
               {subtitle}
             </p>
           ) : null}
 
           <SearchSection query={query} inputRef={inputRef} onQueryChange={onQueryChange} onSubmit={onSearchSubmit} />
+
+          <div className="home-flow mt-4 flex flex-wrap items-center gap-2 text-sm motion-safe:animate-[agentReveal_520ms_ease-out_280ms_both]">
+            <span className="home-flow-active font-semibold">输入任务</span>
+            <ArrowRight className="home-flow-arrow h-4 w-4" />
+            <span>拆解需求</span>
+            <ArrowRight className="home-flow-arrow h-4 w-4" />
+            <span>推荐工具 / 路线</span>
+            <ArrowRight className="home-flow-arrow h-4 w-4" />
+            <span>看实测结果</span>
+          </div>
+
           <TaskEntryCards />
           <QuickTasks onTaskActivate={onQuickTaskActivate} onTaskClick={onQuickTaskClick} />
 
-          <div className="mt-6 flex flex-wrap items-center gap-3 text-xs text-sky-50/48">
-            <span className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5">不在首页堆工具详情</span>
-            <span className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5">先分流，再推荐</span>
-            <span className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5">测评与福利进入独立页面</span>
+          <div className="mt-7 flex flex-wrap items-center gap-2 text-xs">
+            {proofPoints.map((point) => (
+              <span key={point} className="home-proof inline-flex items-center gap-1.5 rounded-full px-3 py-1.5">
+                <CheckCircle2 className="home-proof-icon h-3.5 w-3.5" />
+                {point}
+              </span>
+            ))}
           </div>
         </div>
 

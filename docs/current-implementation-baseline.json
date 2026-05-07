@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-04-28T02:06:55.066Z",
+  "generatedAt": "2026-05-07T09:32:16.365Z",
   "summary": {
-    "frontendRouteCount": 15,
-    "apiEndpointCount": 36,
-    "dataModelCount": 17,
-    "testFileCount": 46
+    "frontendRouteCount": 20,
+    "apiEndpointCount": 42,
+    "dataModelCount": 19,
+    "testFileCount": 55
   },
   "frontendRoutes": [
     {
@@ -18,6 +18,12 @@
       "kind": "page",
       "redirectTarget": null,
       "source": "apps/web/app/admin/page.tsx"
+    },
+    {
+      "route": "/admin/match-plans",
+      "kind": "page",
+      "redirectTarget": null,
+      "source": "apps/web/app/admin/match-plans/page.tsx"
     },
     {
       "route": "/admin/rankings",
@@ -58,8 +64,20 @@
     {
       "route": "/compare/[comparisonSlug]",
       "kind": "redirect",
-      "redirectTarget": "/compare/${canonicalSlug}",
+      "redirectTarget": "[dynamic redirect]",
       "source": "apps/web/app/compare/[comparisonSlug]/page.tsx"
+    },
+    {
+      "route": "/deals",
+      "kind": "page",
+      "redirectTarget": null,
+      "source": "apps/web/app/deals/page.tsx"
+    },
+    {
+      "route": "/guide",
+      "kind": "redirect",
+      "redirectTarget": "[dynamic redirect]",
+      "source": "apps/web/app/guide/page.tsx"
     },
     {
       "route": "/matches",
@@ -70,7 +88,7 @@
     {
       "route": "/rankings",
       "kind": "redirect",
-      "redirectTarget": "/",
+      "redirectTarget": "[dynamic redirect]",
       "source": "apps/web/app/rankings/page.tsx"
     },
     {
@@ -86,9 +104,21 @@
       "source": "apps/web/app/scenarios/[slug]/page.tsx"
     },
     {
+      "route": "/scene/[slug]",
+      "kind": "page",
+      "redirectTarget": null,
+      "source": "apps/web/app/scene/[slug]/page.tsx"
+    },
+    {
+      "route": "/search",
+      "kind": "page",
+      "redirectTarget": null,
+      "source": "apps/web/app/search/page.tsx"
+    },
+    {
       "route": "/tools",
-      "kind": "redirect",
-      "redirectTarget": "[dynamic redirect]",
+      "kind": "page",
+      "redirectTarget": null,
       "source": "apps/web/app/tools/page.tsx"
     },
     {
@@ -99,6 +129,54 @@
     }
   ],
   "apiEndpoints": [
+    {
+      "method": "GET",
+      "path": "/api/admin/match-plans",
+      "handler": "list_match_plans",
+      "responseModel": "list[AdminMatchPlanListItem]",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/admin.py"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/match-plans",
+      "handler": "create_match_plan",
+      "responseModel": "AdminMatchPlanPayload",
+      "statusCode": "201",
+      "source": "apps/api/app/api/routes/admin.py"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/match-plans/{plan_id}",
+      "handler": "get_match_plan",
+      "responseModel": "AdminMatchPlanPayload",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/admin.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/match-plans/{plan_id}",
+      "handler": "update_match_plan",
+      "responseModel": "AdminMatchPlanPayload",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/admin.py"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/match-plans/{plan_id}/preview",
+      "handler": "preview_match_plan",
+      "responseModel": "AdminMatchPlanPreviewResponse",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/admin.py"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/match-plans/{plan_id}/publish",
+      "handler": "publish_match_plan",
+      "responseModel": "AdminMatchPlanPayload",
+      "statusCode": null,
+      "source": "apps/api/app/api/routes/admin.py"
+    },
     {
       "method": "GET",
       "path": "/api/admin/overview",
@@ -431,6 +509,38 @@
       "source": "apps/api/app/models/models.py"
     },
     {
+      "className": "MatchPlanTool",
+      "tableName": "match_plan_tools",
+      "fieldCount": 8,
+      "fieldsPreview": [
+        "id",
+        "match_plan_id",
+        "tool_id",
+        "reason",
+        "sort_order",
+        "weight",
+        "plan",
+        "tool"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
+      "className": "MatchPlan",
+      "tableName": "match_plans",
+      "fieldCount": 11,
+      "fieldsPreview": [
+        "id",
+        "slug",
+        "title",
+        "description",
+        "persona",
+        "scenario",
+        "trigger_keywords_json",
+        "status"
+      ],
+      "source": "apps/api/app/models/models.py"
+    },
+    {
       "className": "RankingItem",
       "tableName": "ranking_items",
       "fieldCount": 6,
@@ -628,7 +738,7 @@
   "tests": [
     {
       "name": "Web unit/integration",
-      "count": 22,
+      "count": 27,
       "files": [
         "apps/web/src/app/components/__tests__/BackToResultsLink.test.tsx",
         "apps/web/src/app/components/__tests__/CommandPalette.test.tsx",
@@ -638,16 +748,21 @@
         "apps/web/src/app/components/__tests__/ToolLogo.test.tsx",
         "apps/web/src/app/components/__tests__/ToolReviewsPanel.test.tsx",
         "apps/web/src/app/components/admin/__tests__/AdminAccessGate.test.tsx",
+        "apps/web/src/app/components/admin/__tests__/AdminMatchPlansManager.test.tsx",
         "apps/web/src/app/components/admin/__tests__/AdminOverviewDashboard.test.tsx",
+        "apps/web/src/app/components/admin/__tests__/AdminShell.test.tsx",
         "apps/web/src/app/components/admin/__tests__/AdminToolEditor.test.tsx",
         "apps/web/src/app/components/auth/__tests__/AuthCard.test.tsx",
+        "apps/web/src/app/components/home/__tests__/HeroSection.test.tsx",
         "apps/web/src/app/features/matches/components/__tests__/MatchFeed.test.tsx",
+        "apps/web/src/app/lib/__tests__/api-base.test.ts",
         "apps/web/src/app/lib/__tests__/catalog-api.test.ts",
         "apps/web/src/app/lib/__tests__/catalog-navigation.test.ts",
         "apps/web/src/app/lib/__tests__/compare-utils.test.ts",
         "apps/web/src/app/lib/__tests__/floating-chat-visibility.test.ts",
         "apps/web/src/app/lib/__tests__/home-page-data.test.ts",
         "apps/web/src/app/lib/__tests__/tool-display.test.ts",
+        "apps/web/src/app/pages/__tests__/HomePage.agent.test.tsx",
         "apps/web/src/app/pages/__tests__/HomePage.test.tsx",
         "apps/web/src/app/pages/__tests__/ToolDetailPage.test.tsx",
         "apps/web/src/app/pages/__tests__/ToolsPage.test.tsx",
@@ -667,9 +782,10 @@
     },
     {
       "name": "API pytest",
-      "count": 19,
+      "count": 23,
       "files": [
         "apps/api/tests/test_ai_integration.py",
+        "apps/api/tests/test_ai_search_agent_recommendation.py",
         "apps/api/tests/test_api_hardening.py",
         "apps/api/tests/test_api.py",
         "apps/api/tests/test_auth_api.py",
@@ -680,12 +796,15 @@
         "apps/api/tests/test_chat_api.py",
         "apps/api/tests/test_chat_rag.py",
         "apps/api/tests/test_demo_ai_search.py",
+        "apps/api/tests/test_dev_admin_seed.py",
         "apps/api/tests/test_embedding_service.py",
         "apps/api/tests/test_import_preview_validation.py",
         "apps/api/tests/test_logo_assets.py",
+        "apps/api/tests/test_match_plan_admin_api.py",
         "apps/api/tests/test_organize_aitool_assets.py",
         "apps/api/tests/test_published_visibility.py",
         "apps/api/tests/test_reviews_admin_api.py",
+        "apps/api/tests/test_search_provider.py",
         "apps/api/tests/test_tool_elements_migration.py",
         "apps/api/tests/test_tool_parser.py"
       ]

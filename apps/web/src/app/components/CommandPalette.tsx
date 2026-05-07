@@ -91,13 +91,11 @@ export default function CommandPalette() {
     if (nluIntent.category) params.set("category", nluIntent.category);
     if (nluIntent.price) params.set("price", nluIntent.price);
 
-    if (nluIntent.category || nluIntent.price) {
-      const query = params.toString();
-      router.push(withPublicPath(query ? `/tools?mode=search&${query}` : "/tools?mode=search"));
-      return;
-    }
-
-    router.push(withPublicPath(nluIntent.q ? `/search?task=${encodeURIComponent(nluIntent.q)}` : "/search"));
+    params.set("mode", nluIntent.q ? "ai" : "search");
+    params.set("page", "1");
+    params.set("page_size", "24");
+    const query = params.toString();
+    router.push(withPublicPath(query ? `/tools?${query}` : "/tools?mode=search"));
   };
 
   return (
@@ -105,44 +103,44 @@ export default function CommandPalette() {
       open={open}
       onOpenChange={setOpen}
       label="Global Command Menu"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/28 p-4 backdrop-blur-sm sm:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(8,10,15,0.72)] p-4 backdrop-blur-sm sm:p-6"
     >
       <DialogPrimitive.Title className="sr-only">全局搜索面板</DialogPrimitive.Title>
       <DialogPrimitive.Description className="sr-only">
         搜索工具、分类和任务关键词；如果页面已有搜索框，会优先聚焦当前页面搜索框。
       </DialogPrimitive.Description>
-      <div className="w-full max-w-2xl overflow-hidden rounded-[28px] bg-white shadow-[0_40px_120px_rgba(15,23,42,0.18)] ring-1 ring-black/6">
+      <div className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-glass)]">
         <Command className="w-full" shouldFilter={false}>
-          <div className="flex items-center border-b border-black/6 px-4">
+          <div className="flex items-center border-b border-[var(--border-default)] px-4">
             <Command.Input
               value={search}
               onValueChange={setSearch}
               placeholder="搜索工具、分类或任务，例如：做 PPT、AI 写作、图像生成"
-              className="mb-0 h-14 w-full rounded-none border-none bg-transparent px-3 py-5 text-base text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-0"
+              className="mb-0 h-14 w-full rounded-none border-none bg-transparent px-3 py-5 text-base text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-0"
             />
           </div>
 
-          <div className="border-b border-black/6 px-4 py-2 text-xs text-slate-500">
-            快捷键：<kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5">Ctrl/Cmd + K</kbd>
+          <div className="border-b border-[var(--border-default)] px-4 py-2 text-xs text-[var(--text-tertiary)]">
+            快捷键：<kbd className="rounded border border-[var(--border-default)] bg-[var(--bg-surface-strong)] px-1.5 py-0.5 text-[var(--text-secondary)]">Ctrl/Cmd + K</kbd>
             <span className="mx-2">或</span>
-            <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5">Ctrl/Cmd + G</kbd>
+            <kbd className="rounded border border-[var(--border-default)] bg-[var(--bg-surface-strong)] px-1.5 py-0.5 text-[var(--text-secondary)]">Ctrl/Cmd + G</kbd>
           </div>
 
           <Command.List className="max-h-[60vh] scroll-py-2 overflow-y-auto p-2">
-            <Command.Empty className="py-6 text-center text-sm text-slate-500">
+            <Command.Empty className="py-6 text-center text-sm text-[var(--text-tertiary)]">
               {search ? "没有找到匹配工具，试试换个任务描述或分类关键词。" : "输入任务或工具名称，快速跳到目录结果。"}
             </Command.Empty>
 
             {search && (nluIntent.category || nluIntent.price) ? (
-              <div className="mb-2 rounded-2xl bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700">
-                <span className="mr-2 text-slate-500">已识别条件</span>
+              <div className="mb-2 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface-strong)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)]">
+                <span className="mr-2 text-[var(--text-tertiary)]">已识别条件</span>
                 {nluIntent.category ? (
-                  <span className="mr-1 rounded-full bg-white px-2 py-0.5 ring-1 ring-black/6">
+                  <span className="mr-1 rounded-full border border-[var(--color-primary-border)] bg-[var(--color-primary-soft)] px-2 py-0.5 text-[var(--color-primary)]">
                     分类：{resolveCategoryLabel(categories, nluIntent.category)}
                   </span>
                 ) : null}
                 {nluIntent.price ? (
-                  <span className="rounded-full bg-white px-2 py-0.5 ring-1 ring-black/6">
+                  <span className="rounded-full border border-[var(--color-accent-border)] bg-[var(--color-accent-soft)] px-2 py-0.5 text-[var(--color-accent)]">
                     价格：{PRICE_LABELS[nluIntent.price] || nluIntent.price}
                   </span>
                 ) : null}
@@ -155,18 +153,18 @@ export default function CommandPalette() {
                   key={tool.slug}
                   value={tool.slug}
                   onSelect={() => handleSelect(tool.slug)}
-                  className="flex cursor-pointer items-center gap-4 rounded-2xl px-4 py-3 text-sm text-slate-900 transition-colors aria-selected:bg-slate-100"
+                  className="flex cursor-pointer items-center gap-4 rounded-2xl px-4 py-3 text-sm text-[var(--text-primary)] transition-colors aria-selected:bg-[var(--bg-surface-hover)]"
                 >
                   {tool.logoPath ? (
                     <Image src={withPublicPath(tool.logoPath)} alt={tool.name} width={32} height={32} className="h-8 w-8 rounded-lg object-cover" />
                   ) : (
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface-strong)] text-xs font-bold text-[var(--text-tertiary)]">
                       {tool.name[0]}
                     </div>
                   )}
                   <div className="flex min-w-0 flex-col">
                     <div className="truncate font-medium">{tool.name}</div>
-                    <div className="truncate text-xs text-slate-500">{tool.summary}</div>
+                    <div className="truncate text-xs text-[var(--text-tertiary)]">{tool.summary}</div>
                   </div>
                 </Command.Item>
               ))}
@@ -176,9 +174,9 @@ export default function CommandPalette() {
               <Command.Group heading="在完整目录中继续筛选">
                 <Command.Item
                   onSelect={handleGlobalSearch}
-                  className="mt-2 flex cursor-pointer items-center gap-2 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-900 transition-colors aria-selected:bg-slate-100"
+                  className="mt-2 flex cursor-pointer items-center gap-2 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface-strong)] px-4 py-3 text-sm text-[var(--text-primary)] transition-colors aria-selected:bg-[var(--bg-surface-hover)]"
                 >
-                  <Search className="h-4 w-4 text-slate-500" />
+                  <Search className="h-4 w-4 text-[var(--color-primary)]" />
                   <span className="font-medium">在目录中搜索 “{search}”</span>
                 </Command.Item>
               </Command.Group>

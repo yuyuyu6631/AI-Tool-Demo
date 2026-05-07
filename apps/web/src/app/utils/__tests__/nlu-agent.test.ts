@@ -40,9 +40,27 @@ describe("parseSearchIntent", () => {
 
   it("keeps query text when multiple dynamic categories collide", () => {
     expect(parseSearchIntent("AI聊天助手 AI办公工具", categories)).toEqual({
-      q: "ai聊天助手ai办公",
+      q: "ai聊天助手 ai办公",
       category: "",
       price: "",
+      tag: "",
+    });
+  });
+
+  it("preserves spaces in free-form English queries", () => {
+    expect(parseSearchIntent("deep research", categories)).toEqual({
+      q: "deep research",
+      category: "",
+      price: "",
+      tag: "",
+    });
+  });
+
+  it("removes English price keywords without joining the remaining query", () => {
+    expect(parseSearchIntent("free deep research tools", categories)).toEqual({
+      q: "deep research tools",
+      category: "",
+      price: "free",
       tag: "",
     });
   });

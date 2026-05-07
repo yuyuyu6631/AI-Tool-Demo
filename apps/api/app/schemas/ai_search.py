@@ -38,6 +38,9 @@ class AiSearchMeta(BaseModel):
     latency_ms: int
     cache_hit: bool = False
     intent_source: str = "fallback"
+    search_provider: str = "legacy"
+    search_degraded: bool = False
+    normalized_search_query: str | None = None
 
 
 class AgentIntent(BaseModel):

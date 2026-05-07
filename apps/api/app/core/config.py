@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     embedding_openai_base_url: str = ""
     embedding_recall_top_k: int = 12
     embedding_recall_min_similarity: float = 0.2
+    search_provider: str = "legacy"
+    meilisearch_url: str = ""
+    meilisearch_api_key: str = ""
+    meilisearch_index: str = "tools"
     recommendation_ttl_seconds: int = 1800
 
     model_config = SettingsConfigDict(env_file=ROOT_DIR / ".env", extra="ignore")

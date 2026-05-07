@@ -70,42 +70,38 @@ jobs:
           file: apps/web/Dockerfile
           push: true
           tags: ${{ steps.meta-web.outputs.tags }}
+          build-args: |
+            NEXT_PUBLIC_BASE_PATH=/xingdp
+            NEXT_PUBLIC_PUBLIC_BASE_PATH=/xingdp
+            NEXT_PUBLIC_API_BASE_PATH=/xingdp
+            SERVER_API_BASE_URL=http://api:8000
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ── Job 2: Deploy (placeholder — configure per target) ────
+  # ── Job 2: Deploy over SSH ────────────────────────────────
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
     needs: build-and-push
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy notification
-        run: |
-          echo "::notice::Deploy step is a placeholder. Configure your deployment target:"
-          echo "  - SSH: ssh into server, pull images, docker compose up"
-          echo "  - Cloud Run: gcloud run deploy"
-          echo "  - Fly.io: fly deploy"
-          echo ""
-          echo "Built images:"
-          echo "  API: ${{ needs.build-and-push.outputs.api-image }}"
-          echo "  Web: ${{ needs.build-and-push.outputs.web-image }}"
-
-      # Uncomment and configure for SSH deploy:
-      # - name: Deploy via SSH
-      #   uses: appleboy/ssh-action@v1
-      #   with:
-      #     host: ${{ secrets.DEPLOY_HOST }}
-      #     username: ${{ secrets.DEPLOY_USER }}
-      #     key: ${{ secrets.DEPLOY_SSH_KEY }}
-      #     script: |
-      #       cd /opt/xingdianping
-      #       docker compose pull
-      #       docker compose up -d --remove-orphans
-      #       docker compose exec -T api python -m alembic upgrade head
-      #       curl -sf http://localhost:8000/health || exit 1
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
+          BRANCH: main
+          PUBLIC_BASE_URL: ${{ secrets.PUBLIC_BASE_URL }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: DEPLOY_DIR,BRANCH,PUBLIC_BASE_URL
+          script: |
+            set -euo pipefail
+            cd "${DEPLOY_DIR:-/home/agent/xingdianping}"
+            chmod +x ./deploy.sh
+            ./deploy.sh
 
   # ── Job 3: Post-deploy Health Check ───────────────────────
   health-check:
@@ -117,11 +113,14 @@ jobs:
       - name: Wait for deployment to stabilize
         run: sleep 30
 
-      - name: Check API health
+      - name: Check public routes
+        env:
+          PUBLIC_BASE_URL: ${{ secrets.PUBLIC_BASE_URL }}
         run: |
-          # Replace with your actual deployment URL
-          # curl -sf https://your-api-domain.com/health || exit 1
-          echo "::notice::Health check skipped — configure your deployment URL"
+          base="${PUBLIC_BASE_URL:-http://changsha.01view.ydns.eu:12318}"
+          curl -fsS "$base/xingdp/" >/dev/null
+          curl -fsS "$base/xingdp/auth" >/dev/null
+          curl -fsS "$base/xingdp/api/health" >/dev/null
 
       - name: Create issue on failure
         if: failure()

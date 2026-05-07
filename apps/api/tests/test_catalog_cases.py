@@ -445,6 +445,7 @@ def test_tools_directory_default_response_shape_and_visibility():
         "accessFacets",
         "priceRangeFacets",
         "presets",
+        "meta",
     }
     assert payload["page"] == 1
     assert payload["pageSize"] == 9

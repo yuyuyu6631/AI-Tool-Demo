@@ -11,7 +11,7 @@ const DEFAULT_TASK_PREVIEW = {
 };
 
 interface TaskBreakdownPreviewProps {
-  activeTask: QuickTask | null;
+  activeTask: (QuickTask & { title?: string; body?: string; next?: string }) | null;
   onStart: () => void;
 }
 

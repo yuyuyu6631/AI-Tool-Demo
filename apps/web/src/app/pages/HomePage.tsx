@@ -78,18 +78,18 @@ export default function HomePage({ state }: HomePageProps) {
     router.push(href);
   };
 
-  const focusTaskInput = () => {
-    searchInputRef.current?.focus();
-    searchInputRef.current?.scrollIntoView?.({ block: "center", behavior: "smooth" });
-  };
-
   const activateQuickTask = (taskId: QuickTask["id"]) => {
     setActiveQuickTaskId(taskId);
   };
 
+  const primeQuickTask = (task: QuickTask) => {
+    setQuery(task.query);
+    setPendingLabel(`正在进入任务搜索：${task.query}`);
+  };
+
   const trackQuickTaskClick = (taskId: QuickTask["id"]) => {
     if (!QUICK_TASKS.some((task) => task.id === taskId)) return;
-    trackEvent("home_quick_task_click", { task: taskId });
+    window.setTimeout(() => trackEvent("home_quick_task_click", { task: taskId }), 0);
   };
 
   return (
@@ -107,7 +107,7 @@ export default function HomePage({ state }: HomePageProps) {
           onSearchSubmit={submitSearch}
           onQuickTaskActivate={activateQuickTask}
           onQuickTaskClick={trackQuickTaskClick}
-          onRadarStart={focusTaskInput}
+          onQuickTaskPress={primeQuickTask}
         />
       </main>
     </div>

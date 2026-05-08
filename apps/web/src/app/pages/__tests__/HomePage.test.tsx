@@ -103,13 +103,15 @@ describe("HomePage", () => {
     expect(screen.queryByText("Footer")).not.toBeInTheDocument();
     expect(screen.getByTestId("hero-particle-scene")).toBeInTheDocument();
     expect(screen.getByText("同一个任务，看看哪个 AI 真能做好")).toBeInTheDocument();
-    expect(screen.getByText("先看统一输入、原始输出、缺陷标注和免费/付费建议，再决定要不要试、要不要买。")).toBeInTheDocument();
+    expect(screen.getByText("别试了再后悔——我们替你测好了")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /聚焦任务输入/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /看本周实测/ })).toHaveAttribute("href", "/scenarios");
     expect(screen.getByRole("link", { name: /看免费福利/ })).toHaveAttribute("href", "/deals");
     expect(screen.getByRole("link", { name: /逛工具库/ })).toHaveAttribute("href", "/tools?mode=search&page=1&page_size=24");
-    expect(screen.getByText("原始输出可复查")).toBeInTheDocument();
-    expect(screen.getByText("缺陷和避坑前置")).toBeInTheDocument();
-    expect(screen.getByTestId("home-signal-radar")).toBeInTheDocument();
+    expect(screen.getByText("说你要做什么")).toBeInTheDocument();
+    expect(screen.getByText("看真实对比结果")).toBeInTheDocument();
+    expect(screen.queryByText("任务路线预览")).not.toBeInTheDocument();
+    expect(screen.queryByText("LIVE")).not.toBeInTheDocument();
     expect(screen.queryByText("ChatGPT")).not.toBeInTheDocument();
   });
 
@@ -123,33 +125,28 @@ describe("HomePage", () => {
     expect(pushMock.mock.calls[0][0]).toBe("/tools?mode=ai&q=free%20PPT&page=1&page_size=24");
   });
 
-  it("quick task entries point to scene pages", () => {
+  it("quick task entries point to task search pages", () => {
     renderHome();
 
-    expect(screen.getByRole("link", { name: "论文改文" })).toHaveAttribute("href", "/scene/paper");
-    expect(screen.getByRole("link", { name: "PPT 润思路" })).toHaveAttribute("href", "/scene/ppt");
-    expect(screen.getByRole("link", { name: "表格看不懂" })).toHaveAttribute("href", "/scene/data");
-    expect(screen.getByRole("link", { name: "想做长图" })).toHaveAttribute("href", "/scene/design");
-    expect(screen.getByRole("link", { name: "代码快速修复" })).toHaveAttribute("href", "/scene/code");
-    expect(screen.getByRole("link", { name: "视频来不及剪" })).toHaveAttribute("href", "/scene/video");
-    expect(screen.getByRole("link", { name: "简历优化" })).toHaveAttribute("href", "/scene/resume");
-    expect(screen.getByRole("link", { name: "报告生成" })).toHaveAttribute("href", "/scene/report");
+    expect(screen.getByRole("link", { name: "论文润色" })).toHaveAttribute("href", expect.stringContaining("/tools?mode=ai"));
+    expect(screen.getByRole("link", { name: "PPT 出框架" })).toHaveAttribute("href", expect.stringContaining("/tools?mode=ai"));
+    expect(screen.getByRole("link", { name: "表格读不懂" })).toHaveAttribute("href", expect.stringContaining("/tools?mode=ai"));
+    expect(screen.getByRole("link", { name: "代码跑不通" })).toHaveAttribute("href", expect.stringContaining("/tools?mode=ai"));
+    expect(screen.getByRole("link", { name: "长文提炼" })).toHaveAttribute("href", expect.stringContaining("/tools?mode=ai"));
   });
 
-  it("switches the radar copy on quick task hover", () => {
+  it("primes the search input on quick task press", () => {
     renderHome();
 
-    fireEvent.mouseEnter(screen.getByRole("link", { name: "论文改文" }));
-    expect(screen.getByText("论文这件事，别一上来就让 AI 写全文")).toBeInTheDocument();
-
-    fireEvent.mouseEnter(screen.getByRole("link", { name: "表格看不懂" }));
-    expect(screen.getByText("表格问题一般不是单纯丢给 AI 就完事")).toBeInTheDocument();
+    fireEvent.pointerDown(screen.getByRole("link", { name: "论文润色" }));
+    expect(screen.getByRole("searchbox")).toHaveValue("帮我润色论文");
   });
 
-  it("focuses the task input from the radar action", () => {
+  it("keeps the primary button as the search submit action", () => {
     renderHome();
 
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "代码报错" } });
     fireEvent.click(screen.getByRole("button", { name: /聚焦任务输入/ }));
-    expect(document.activeElement).toBe(screen.getByRole("searchbox"));
+    expect(pushMock).toHaveBeenCalledWith("/tools?mode=ai&q=%E4%BB%A3%E7%A0%81%E6%8A%A5%E9%94%99&page=1&page_size=24");
   });
 });

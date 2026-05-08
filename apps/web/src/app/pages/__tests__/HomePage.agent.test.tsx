@@ -116,8 +116,9 @@ describe("HomePage agent recommendation", () => {
       />,
     );
 
-    expect(screen.getByText("3 秒定位 · 第三方 AI 工具测评")).toBeInTheDocument();
-    expect(screen.getByTestId("home-signal-radar")).toBeInTheDocument();
+    expect(screen.getByText("同一个任务，看看哪个 AI 真能做好")).toBeInTheDocument();
+    expect(screen.getByRole("searchbox")).toHaveValue("我要把 Word 文档排版成论文格式");
+    expect(screen.queryByText("任务路线预览")).not.toBeInTheDocument();
     expect(screen.queryByTestId("product-critique-deck")).not.toBeInTheDocument();
     expect(screen.queryByText("ChatGPT")).not.toBeInTheDocument();
     expect(screen.queryByText("适合先梳理论文格式问题")).not.toBeInTheDocument();

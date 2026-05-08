@@ -670,6 +670,250 @@
     background: var(--home-card);
   }
 
+  .home-light-shell {
+    --home-bg: #F7F3EA;
+    --home-bg-soft: #FBF8F0;
+    --home-card: rgba(255, 255, 255, 0.72);
+    --home-card-soft: rgba(255, 255, 255, 0.58);
+    --home-text: #111111;
+    --home-copy: #4F4A42;
+    --home-muted: #9A9285;
+    --home-blue: #2F75FF;
+    --home-gold: #F5C842;
+    --home-gold-hover: #FFD85C;
+    --home-gold-border: rgba(203, 145, 34, 0.34);
+    --home-border: rgba(45, 42, 36, 0.10);
+    --home-border-strong: rgba(45, 42, 36, 0.16);
+    --home-card-shadow: 0 16px 38px rgba(36, 31, 23, 0.08);
+    --home-card-shadow-hover: 0 20px 48px rgba(36, 31, 23, 0.11);
+    --home-search-shadow: 0 20px 58px rgba(39, 34, 25, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    --home-search-shadow-focus: 0 24px 68px rgba(245, 200, 66, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    background:
+      radial-gradient(circle at 50% 36%, rgba(255, 255, 255, 0.8), transparent 24rem),
+      linear-gradient(180deg, var(--home-bg-soft) 0%, var(--home-bg) 100%);
+  }
+
+  .dark .home-light-shell {
+    --home-bg: #0D0F1A;
+    --home-bg-soft: #101423;
+    --home-card: rgba(255, 255, 255, 0.04);
+    --home-card-soft: rgba(255, 255, 255, 0.05);
+    --home-text: #F7F2E8;
+    --home-copy: #C9C6C0;
+    --home-muted: #8E94A3;
+    --home-blue: #8FB2FF;
+    --home-gold: #F5C842;
+    --home-gold-hover: #FFD86A;
+    --home-gold-border: rgba(245, 200, 66, 0.38);
+    --home-border: rgba(255, 255, 255, 0.10);
+    --home-border-strong: rgba(255, 255, 255, 0.18);
+    --home-card-shadow: 0 22px 58px rgba(0, 0, 0, 0.28);
+    --home-card-shadow-hover: 0 28px 72px rgba(0, 0, 0, 0.38);
+    --home-search-shadow: 0 22px 70px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    --home-search-shadow-focus: 0 24px 78px rgba(245, 200, 66, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    background: linear-gradient(180deg, var(--home-bg-soft) 0%, var(--home-bg) 100%);
+  }
+
+  .home-orb-layer {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .home-orb {
+    position: absolute;
+    display: block;
+    width: 26rem;
+    aspect-ratio: 1;
+    border-radius: 9999px;
+    filter: blur(46px);
+    opacity: 0.42;
+    animation: homeOrbDrift 16s ease-in-out infinite alternate;
+  }
+
+  .home-orb--gold {
+    left: -8rem;
+    top: 28%;
+    background: #F5C842;
+  }
+
+  .home-orb--orange {
+    right: 3rem;
+    bottom: 8rem;
+    width: 14rem;
+    background: #F0A060;
+    animation-duration: 18s;
+  }
+
+  .home-orb--cyan {
+    right: -7rem;
+    top: 12%;
+    width: 30rem;
+    background: #A8D8EA;
+    animation-duration: 14s;
+  }
+
+  .home-orb--violet {
+    left: 10%;
+    top: 14%;
+    width: 12rem;
+    background: rgba(240, 160, 96, 0.46);
+    animation-duration: 17s;
+  }
+
+  .dark .home-orb {
+    opacity: 0.22;
+    filter: blur(54px);
+  }
+
+  .dark .home-orb--gold {
+    background: #C8963E;
+  }
+
+  .dark .home-orb--orange {
+    background: #6B4FBB;
+  }
+
+  .dark .home-orb--cyan {
+    background: #1A6B7A;
+  }
+
+  .dark .home-orb--violet {
+    background: #6B4FBB;
+  }
+
+  .home-hero-spotlight {
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.58), transparent 66%);
+  }
+
+  .home-title {
+    text-shadow: none;
+  }
+
+  .dark .home-title {
+    text-shadow: 0 0 40px rgba(200, 150, 60, 0.3);
+  }
+
+  .home-search-form {
+    border: 1px solid var(--home-border-strong);
+    background: color-mix(in srgb, var(--home-card) 92%, transparent);
+    box-shadow: var(--home-search-shadow);
+  }
+
+  .home-search-form:focus-within {
+    border-color: color-mix(in srgb, var(--home-gold) 48%, var(--home-border));
+    box-shadow: var(--home-search-shadow-focus);
+  }
+
+  .home-search-input {
+    background: transparent;
+    color: var(--home-text);
+    caret-color: var(--home-gold);
+  }
+
+  .home-search-input::placeholder,
+  .home-search-icon {
+    color: var(--home-muted);
+  }
+
+  .home-cta {
+    border: 1px solid var(--home-gold-border);
+    background: var(--home-gold);
+    color: #1D1608;
+    box-shadow: 0 10px 24px rgba(245, 200, 66, 0.25);
+  }
+
+  .home-cta:hover {
+    background: var(--home-gold-hover);
+  }
+
+  .home-gold-line {
+    height: 1px;
+    width: min(400px, 70vw);
+    background: linear-gradient(90deg, transparent, rgba(245, 200, 66, 0.45), transparent);
+  }
+
+  .home-flow-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--home-copy);
+  }
+
+  .home-flow-step span {
+    display: grid;
+    width: 1.6rem;
+    height: 1.6rem;
+    place-items: center;
+    border-radius: 9999px;
+    background: var(--home-gold);
+    color: #1D1608;
+    font-weight: 700;
+  }
+
+  .home-flow-step b {
+    font-weight: 500;
+  }
+
+  .home-entry-card {
+    border-color: var(--home-border);
+    background: var(--home-card);
+    box-shadow: var(--home-card-shadow);
+  }
+
+  .dark .home-entry-card {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.10);
+  }
+
+  .home-entry-card:hover {
+    border-color: var(--home-border-strong);
+    box-shadow: var(--home-card-shadow-hover);
+  }
+
+  .dark .home-entry-card:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+
+  .home-entry-icon {
+    border: 1px solid var(--home-border);
+    background: color-mix(in srgb, var(--home-card-soft) 90%, transparent);
+    color: var(--home-gold);
+  }
+
+  .home-quick-chip {
+    border: 1px solid var(--home-border);
+    background: color-mix(in srgb, var(--home-card-soft) 90%, transparent);
+    color: var(--home-copy);
+  }
+
+  .home-quick-chip:hover,
+  .home-quick-chip:focus-visible {
+    border-color: color-mix(in srgb, var(--home-gold) 44%, var(--home-border));
+    color: var(--home-text);
+  }
+
+  .home-quick-dot {
+    background: var(--home-gold);
+  }
+
+  @keyframes homeOrbDrift {
+    from {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      transform: translate3d(3rem, -2rem, 0) scale(1.06);
+    }
+  }
+
+  @media (max-width: 767px), (prefers-reduced-motion: reduce) {
+    .home-orb {
+      animation: none;
+    }
+  }
+
   .nav-link {
     position: relative;
     padding-bottom: 4px;

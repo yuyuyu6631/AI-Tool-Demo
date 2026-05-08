@@ -34,7 +34,8 @@
     "lint:web": "npm run lint --workspace @xingdianping/web",
     "test:web": "npm run test --workspace @xingdianping/web",
     "docs:sync": "node scripts/sync_current_docs.js",
-    "docs:check": "node scripts/sync_current_docs.js --check"
+    "docs:check": "node scripts/sync_current_docs.js --check",
+    "deploy:prod": "python scripts/deploy_prod.py"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [

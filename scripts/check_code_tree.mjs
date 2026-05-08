@@ -8,12 +8,14 @@ const allowedTopLevel = new Set([
   ".gitignore",
   ".prettierrc",
   ".railwayignore",
+  ".env.example",
   "AGENTS.md",
   "CLAUDE.md",
   "README.md",
   "apps",
   "doc",
   "docs",
+  "deploy.sh",
   "generate_prd.js",
   "goal",
   "infra",
@@ -40,7 +42,7 @@ const forbiddenTrackedPatterns = [
   /^newfiel\//,
   /^testagentfilespace\//,
   /^\.dev-stack\.json$/,
-  /^\.env(?:\.|$)/,
+  /^\.env(?:\.|$)(?!example$)/,
   /\.(?:7z|zip|tar|tgz|tar\.gz|db|sqlite|sqlite3)$/i,
 ];
 

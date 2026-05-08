@@ -6,7 +6,7 @@ COPY package-lock.json ./
 COPY apps/web/package.json ./apps/web/package.json
 COPY packages/contracts/package.json ./packages/contracts/package.json
 COPY packages/contracts/src ./packages/contracts/src
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev --ignore-scripts
 
 # ── Stage 2: Build ──────────────────────────────────────────
 FROM node:22-alpine AS builder
@@ -16,7 +16,7 @@ COPY package-lock.json ./
 COPY apps/web/package.json ./apps/web/package.json
 COPY packages/contracts/package.json ./packages/contracts/package.json
 COPY packages/contracts/src ./packages/contracts/src
-RUN npm ci
+RUN npm ci --ignore-scripts
 COPY apps/web ./apps/web
 WORKDIR /workspace/apps/web
 ENV NEXT_TELEMETRY_DISABLED=1

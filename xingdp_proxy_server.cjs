@@ -19,10 +19,14 @@ function mapPath(pathname) {
   }
 
   if (pathname === "/" || pathname === "") {
-    return { origin: nextOrigin, path: "/xingdp/" };
+    return { origin: nextOrigin, path: "/xingdp" };
   }
 
-  if (pathname === "/xingdp" || pathname.startsWith("/xingdp/")) {
+  if (pathname === "/xingdp/" || pathname === "/xingdp") {
+    return { origin: nextOrigin, path: "/xingdp" };
+  }
+
+  if (pathname.startsWith("/xingdp/")) {
     return { origin: nextOrigin, path: pathname };
   }
 

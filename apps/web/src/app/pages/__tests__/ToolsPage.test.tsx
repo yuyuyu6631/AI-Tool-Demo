@@ -136,7 +136,7 @@ describe("ToolsPage", () => {
     );
   });
 
-  it("keeps ai mode results without rendering the old ai panel", () => {
+  it("keeps ai mode results without rendering search reasoning panels", () => {
     render(
       <ToolsPage
         directory={directory}
@@ -145,11 +145,11 @@ describe("ToolsPage", () => {
       />,
     );
 
-    expect(screen.queryByText("AI 理解面板")).not.toBeInTheDocument();
-    expect(screen.getByText("AI 理解")).toBeInTheDocument();
-    expect(screen.getByText("用户希望按任务快速筛选工具")).toBeInTheDocument();
-    expect(screen.getByText("Meilisearch")).toBeInTheDocument();
-    expect(screen.getByText("查看 AI 推荐报告")).toBeInTheDocument();
+    expect(screen.queryByText("AI 理解")).not.toBeInTheDocument();
+    expect(screen.queryByText("用户希望按任务快速筛选工具")).not.toBeInTheDocument();
+    expect(screen.queryByText("Meilisearch")).not.toBeInTheDocument();
+    expect(screen.queryByText("查看 AI 推荐报告")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tools-agent-recommendation")).not.toBeInTheDocument();
     expect(screen.getByText("模式：AI 搜索")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "开始搜索" })).toBeInTheDocument();
   });

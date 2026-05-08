@@ -14,30 +14,30 @@ for (const item of cases) {
     await page.waitForLoadState("networkidle");
 
     const heading = page.getByRole("heading", { name: "同一个任务，看看哪个 AI 真能做好" });
-    const search = page.getByPlaceholder("比如：毕业论文排版 / 答辩 PPT / Excel 数据分析 / 代码跑不通");
-    const workflow = page.getByTestId("home-signal-radar");
+    const search = page.getByPlaceholder("比如：帮我润色论文 / 做一份销售周报 / 看懂这张表格");
+    const quickTask = page.getByRole("link", { name: "论文润色" });
     const toolsEntry = page.getByRole("link", { name: /逛工具库/ });
 
     await expect(heading).toBeVisible();
     await expect(search).toBeVisible();
-    await expect(workflow).toBeVisible();
+    await expect(quickTask).toBeVisible();
     await expect(toolsEntry).toBeVisible();
     await expect(page.getByText("当前没有可展示的工具")).toHaveCount(0);
 
     const headingBox = await heading.boundingBox();
     const searchBox = await search.boundingBox();
-    const workflowBox = await workflow.boundingBox();
+    const quickTaskBox = await quickTask.boundingBox();
     expect(headingBox).not.toBeNull();
     expect(searchBox).not.toBeNull();
-    expect(workflowBox).not.toBeNull();
+    expect(quickTaskBox).not.toBeNull();
 
     expect(searchBox!.y).toBeGreaterThan(headingBox!.y);
     expect(searchBox!.height).toBeGreaterThan(40);
-    expect(workflowBox!.width).toBeGreaterThan(160);
-    expect(workflowBox!.height).toBeGreaterThan(20);
+    expect(quickTaskBox!.width).toBeGreaterThan(80);
+    expect(quickTaskBox!.height).toBeGreaterThan(20);
 
     if (item.width < 768) {
-      expect(searchBox!.y + searchBox!.height).toBeLessThan(workflowBox!.y + workflowBox!.height);
+      expect(searchBox!.y + searchBox!.height).toBeLessThan(quickTaskBox!.y + quickTaskBox!.height);
     }
   });
 }

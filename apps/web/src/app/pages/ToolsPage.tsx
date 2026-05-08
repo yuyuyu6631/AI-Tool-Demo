@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, GitBranch, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import CatalogScrollRestorer from "../components/CatalogScrollRestorer";
@@ -95,121 +95,7 @@ function normalizeCategorySlug(slug?: string) {
   return CATEGORY_SLUG_ALIASES[normalized] || normalized;
 }
 
-function AgentRecommendationSummary({ aiSearch }: { aiSearch?: AiSearchResponse | null }) {
-  const agent = aiSearch?.agent_recommendation;
-  if (!agent) return null;
-  const topPlan = agent.toolPlan[0];
-  const confidenceLabel = agent.confidence === "high" ? "高置信" : agent.confidence === "low" ? "低置信" : "中置信";
-
-  return (
-    <details data-testid="tools-agent-recommendation" className="surface-panel mb-4 rounded-[20px] px-4 py-3">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-slate-900">
-        <span className="inline-flex min-w-0 items-center gap-2">
-          <GitBranch className="h-4 w-4 text-slate-500" />
-          <span className="truncate">查看 AI 推荐报告</span>
-          <span className="hidden rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 sm:inline">{confidenceLabel}</span>
-        </span>
-        {topPlan ? <span className="hidden text-xs font-medium text-slate-500 sm:inline">主推荐：{topPlan.tool_name}</span> : null}
-      </summary>
-
-      <div className="hero-brand-panel mt-4 rounded-2xl p-5 text-white md:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-3xl">
-            <p className="inline-flex items-center gap-2 rounded-full border border-sky-300/20 bg-sky-300/10 px-3 py-1 text-xs font-semibold text-sky-100">
-            <GitBranch className="h-3.5 w-3.5" />
-            Agent 推荐报告 · {confidenceLabel}
-            </p>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight">{agent.intent.task}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-300">{agent.intent.summary}</p>
-            {agent.intent.constraints.length > 0 ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {agent.intent.constraints.map((item) => (
-                  <span key={item} className="rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-xs text-slate-200">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-          </div>
-          {topPlan ? (
-            <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 lg:w-[320px]">
-              <p className="text-xs font-semibold text-white/70">主推荐</p>
-              <p className="mt-2 text-lg font-semibold">{topPlan.tool_name}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-200">{topPlan.fit_reason}</p>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="mt-5 grid gap-3 md:grid-cols-5">
-          {agent.trace.map((step, index) => (
-            <div key={step.id} className="rounded-2xl border border-white/10 bg-white/[0.055] p-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-sky-100">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-300/15">{index + 1}</span>
-                {step.title}
-              </div>
-              <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-400">{step.description}</p>
-            </div>
-          ))}
-        </div>
-
-        {agent.toolPlan.length > 0 ? (
-          <div className="mt-5 grid gap-3 lg:grid-cols-3">
-            {agent.toolPlan.slice(0, 3).map((item) => (
-              <div key={item.tool_slug} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-semibold">{item.tool_name}</p>
-                  <span className="rounded-full bg-white/10 px-2 py-1 text-xs text-slate-300">{item.role}</span>
-                </div>
-                <p className="mt-2 text-sm leading-6 text-slate-300">{item.fit_reason}</p>
-                <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-amber-100">
-                  <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
-                  {item.limitation_risk}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </div>
-    </details>
-  );
-}
-
-function SearchUnderstanding({
-  aiSearch,
-  directory,
-}: {
-  aiSearch?: AiSearchResponse | null;
-  directory: ToolsDirectoryResponse;
-}) {
-  const panel = aiSearch?.ai_panel;
-  const meta = aiSearch?.meta;
-  const directoryMeta = directory.meta;
-  if (!panel && !directoryMeta) return null;
-
-  const provider = meta?.search_provider || directoryMeta?.provider || "legacy";
-  const degraded = Boolean(meta?.search_degraded || directoryMeta?.degraded);
-  const logic = panel?.active_logic ?? [];
-
-  return (
-    <div className="surface-panel mb-4 flex flex-col gap-2 rounded-lg px-4 py-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <Sparkles className="h-4 w-4 text-slate-400" />
-        <span className="font-medium text-slate-900">AI 理解</span>
-        <span className="min-w-0 truncate">{panel?.system_understanding || "按当前关键词和筛选条件返回工具"}</span>
-        {logic.slice(0, 2).map((item) => (
-          <span key={item} className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-            {item}
-          </span>
-        ))}
-      </div>
-      <span className={`shrink-0 text-xs ${degraded ? "text-amber-700" : "text-slate-400"}`}>
-        {provider === "meilisearch" ? "Meilisearch" : "Legacy"}{degraded ? " · 已降级" : ""}
-      </span>
-    </div>
-  );
-}
-
-export default function ToolsPage({ directory, aiSearch, state, loadState = "idle" }: ToolsPageProps) {
+export default function ToolsPage({ directory, state, loadState = "idle" }: ToolsPageProps) {
   const [aiPending, setAiPending] = useState(false);
   const activeMode = state.mode === "ai" ? "ai" : "search";
   const activeView = state.view || "hot";
@@ -622,9 +508,6 @@ export default function ToolsPage({ directory, aiSearch, state, loadState = "idl
             </details>
 
             <div className="mt-4">
-              <SearchUnderstanding aiSearch={aiSearch} directory={directory} />
-              <AgentRecommendationSummary aiSearch={aiSearch} />
-
               {loadState !== "idle" ? (
                 <div className="surface-panel rounded-lg p-6">
                   <h2 className="text-lg font-semibold text-slate-900">{loadState === "timeout" ? "目录加载超时" : "目录加载失败"}</h2>

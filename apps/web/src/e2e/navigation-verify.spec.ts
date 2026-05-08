@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const HOME_SEARCH_PLACEHOLDER = "比如：毕业论文排版 / 答辩 PPT / Excel 数据分析";
+const HOME_SEARCH_PLACEHOLDER = "比如：帮我润色论文 / 做一份销售周报 / 看懂这张表格";
 
 test.describe("Homepage-first navigation", () => {
   test.use({ viewport: { width: 1280, height: 720 } });
@@ -10,10 +10,9 @@ test.describe("Homepage-first navigation", () => {
     await page.waitForLoadState("networkidle");
 
     await expect(page).toHaveTitle(/星点评/);
-    await expect(page.getByRole("heading", { name: "3 秒找到能用的 AI 工具" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "开始找" })).toBeVisible();
-    await expect(page.getByRole("link", { name: /PPT 没思路/ })).toBeVisible();
-    await expect(page.getByTestId("home-signal-radar")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "同一个任务，看看哪个 AI 真能做好" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "聚焦任务输入" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "PPT 出框架" })).toBeVisible();
     await expect(page.locator("header.site-header nav")).toBeVisible();
     await expect(page.locator("header.site-header nav").getByRole("link", { name: "按任务找" })).toBeVisible();
   });
@@ -23,14 +22,14 @@ test.describe("Homepage-first navigation", () => {
     await page.waitForLoadState("networkidle");
 
     await page.getByPlaceholder(HOME_SEARCH_PLACEHOLDER).fill("写论文");
-    await page.getByRole("button", { name: "开始找" }).click();
+    await page.getByRole("button", { name: "聚焦任务输入" }).click();
 
     await expect(page).toHaveURL(/\/tools\?/);
     await expect(page).toHaveURL(/mode=ai/);
     await expect(page).toHaveURL(/q=(%E5%86%99%E8%AE%BA%E6%96%87|写论文)/);
 
     await expect(page.getByRole("heading", { name: "搜索结果" })).toBeVisible();
-    await expect(page.getByText("AI 理解")).toBeVisible();
+    await expect(page.getByText("AI 理解")).toHaveCount(0);
     await expect(page.getByRole("link", { name: /^详情$/ }).first()).toBeVisible();
   });
 

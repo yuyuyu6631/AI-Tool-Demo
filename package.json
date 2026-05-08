@@ -37,9 +37,16 @@
     "docs:check": "node scripts/sync_current_docs.js --check"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": ["eslint --fix --no-error-on-unmatched-pattern"],
-    "*.{ts,tsx,js,jsx,json,css,md}": ["prettier --write"],
-    "*.py": ["ruff check --fix", "ruff format"]
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix --no-error-on-unmatched-pattern"
+    ],
+    "*.{ts,tsx,js,jsx,json,css,md}": [
+      "prettier --write"
+    ],
+    "*.py": [
+      "ruff check --fix",
+      "ruff format"
+    ]
   },
   "dependencies": {
     "docx": "^9.6.1"

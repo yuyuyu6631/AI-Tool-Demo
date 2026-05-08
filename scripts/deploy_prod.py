@@ -73,19 +73,23 @@ def remote_exec(client: paramiko.SSHClient, command: str, *, timeout: int = 60, 
     channel.exec_command(command)
     started = time.time()
 
+    def write_output(data: bytes) -> None:
+        if hasattr(sys.stdout, "buffer"):
+            sys.stdout.buffer.write(data)
+        else:
+            sys.stdout.write(data.decode("utf-8", errors="replace"))
+        sys.stdout.flush()
+
     while True:
         if channel.recv_ready():
-            sys.stdout.write(channel.recv(4096).decode("utf-8", errors="replace"))
-            sys.stdout.flush()
+            write_output(channel.recv(4096))
         if channel.recv_stderr_ready():
-            sys.stdout.write(channel.recv_stderr(4096).decode("utf-8", errors="replace"))
-            sys.stdout.flush()
+            write_output(channel.recv_stderr(4096))
         if channel.exit_status_ready():
             while channel.recv_ready():
-                sys.stdout.write(channel.recv(4096).decode("utf-8", errors="replace"))
+                write_output(channel.recv(4096))
             while channel.recv_stderr_ready():
-                sys.stdout.write(channel.recv_stderr(4096).decode("utf-8", errors="replace"))
-            sys.stdout.flush()
+                write_output(channel.recv_stderr(4096))
             return channel.recv_exit_status()
         if not stream and time.time() - started > timeout:
             channel.close()

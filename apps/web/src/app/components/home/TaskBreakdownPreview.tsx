@@ -82,7 +82,7 @@ export default function TaskBreakdownPreview({ activeTask, onStart }: TaskBreakd
           onClick={onStart}
           className="home-cta mt-6 inline-flex w-full items-center justify-center gap-2 rounded-[18px] px-4 py-3 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 focus:outline-none"
         >
-          聚焦任务输入
+          找工具
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>

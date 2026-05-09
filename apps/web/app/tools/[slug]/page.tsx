@@ -39,7 +39,9 @@ export async function generateMetadata({ params }: ToolDetailRouteProps): Promis
   }
 
   return {
-    title: buildToolTitle(tool.name, tool.summary),
+    title: {
+      absolute: buildToolTitle(tool.name, tool.summary),
+    },
     description: buildToolDescription(tool),
   };
 }

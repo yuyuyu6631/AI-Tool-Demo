@@ -2,6 +2,7 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import ScenariosPage from "../page";
 import ScenarioDetailPage from "../[slug]/page";
+import RankingsPage from "../../rankings/page";
 import type { ToolsDirectoryResponse } from "@/src/app/lib/catalog-types";
 
 vi.mock("@/src/app/components/Header", () => ({
@@ -38,6 +39,9 @@ vi.mock("@/src/app/components/CompareToolsGrid", () => ({
 vi.mock("next/navigation", () => ({
   notFound: () => {
     throw new Error("not found");
+  },
+  redirect: (href: string) => {
+    throw new Error(`redirect:${href}`);
   },
 }));
 
@@ -82,18 +86,24 @@ describe("scenario pages", () => {
   it("renders the featured scenario index entries", async () => {
     render(await ScenariosPage());
 
-    expect(screen.getByRole("link", { name: /做 PPT 用什么 AI/ })).toHaveAttribute("href", "/scenarios/make-ppt");
-    expect(screen.getByRole("link", { name: /写论文排版/ })).toHaveAttribute("href", "/scenarios/paper-format");
-    expect(screen.getByRole("link", { name: /分析 Excel 数据/ })).toHaveAttribute("href", "/scenarios/excel-analysis");
+    expect(screen.getByText("按真实任务看 AI 工具榜")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /PPT 制作榜 TOP5/ })).toHaveAttribute("href", "/scenarios/make-ppt");
+    expect(screen.getByRole("link", { name: /AI 写作工具榜 TOP5/ })).toHaveAttribute("href", "/scenarios/paper-format");
+    expect(screen.getByRole("link", { name: /数据分析工具榜 TOP5/ })).toHaveAttribute("href", "/scenarios/excel-analysis");
+    expect(screen.getByRole("link", { name: /开发工具榜 TOP5/ })).toHaveAttribute("href", "/scenarios/coding-debug");
     expect(screen.getByRole("link", { name: /下一页/ })).toHaveAttribute("href", "/tools?page=2&page_size=24");
   });
 
   it("renders fallback detail content when the backend scenario is missing", async () => {
     render(await ScenarioDetailPage({ params: Promise.resolve({ slug: "paper-format" }) }));
 
-    expect(screen.getByRole("heading", { name: "写论文排版" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "AI 写作工具榜 TOP5" })).toBeInTheDocument();
     expect(screen.getByText("操作流程")).toBeInTheDocument();
     expect(screen.getByText("Paper AI")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "工具库下一页" })).toHaveAttribute("href", "/tools?page=2&page_size=24");
+  });
+
+  it("keeps /rankings available by routing to the merged scenario rankings page", () => {
+    expect(() => RankingsPage()).toThrow("redirect:/scenarios");
   });
 });

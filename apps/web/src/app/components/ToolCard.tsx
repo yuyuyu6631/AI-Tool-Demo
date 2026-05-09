@@ -2,6 +2,7 @@
 
 import { Link } from "next-view-transitions";
 import { ArrowRight, ExternalLink, Plus, Star } from "lucide-react";
+import { memo } from "react";
 import type { AccessFlags, AgentToolPlanItem, ToolMediaItem } from "../lib/catalog-types";
 import { repairDisplayList, repairDisplayText } from "../lib/catalog-utils";
 import { withPublicPath } from "../lib/public-path";
@@ -53,7 +54,19 @@ function getScoreText(score?: number | null) {
   return Number.isFinite(score) && typeof score === "number" && score > 0 ? score.toFixed(1) : "待评";
 }
 
-export default function ToolCard({
+function getUseCaseText(summary: string, bestFor: string[], features: string[], agentPlan?: AgentToolPlanItem) {
+  const fitReason = repairDisplayText(agentPlan?.fit_reason || "", "");
+  if (fitReason) return fitReason;
+
+  const audience = repairDisplayList(bestFor, 1)[0];
+  const feature = repairDisplayList(features, 1)[0];
+  if (audience && feature) return `适合${audience}，用于${feature}`;
+  if (audience) return `适合${audience}：${summary}`;
+  if (feature) return `适合处理：${feature}`;
+  return summary;
+}
+
+function ToolCard({
   slug,
   name,
   summary,
@@ -68,16 +81,17 @@ export default function ToolCard({
   compareDisabled = false,
   onCompareToggle,
   onDetailClick,
+  features = [],
+  bestFor = [],
   dealSummary = "",
   agentPlan,
 }: ToolCardProps) {
   const displayName = repairDisplayText(name, slug);
-  const displaySummary = repairDisplayText(summary, "一句话介绍待补充");
+  const displaySummary = getUseCaseText(repairDisplayText(summary, "一句话介绍待补充"), bestFor, features, agentPlan);
   const displayTags = repairDisplayList(tags, 3);
   const accessBadges = buildAccessBadgeMeta(accessFlags).slice(0, 1);
   const priceText = getPriceText(priceLabel, dealSummary, agentPlan);
   const scoreText = getScoreText(score);
-  const evidenceText = repairDisplayText(agentPlan?.fit_reason || "", "");
 
   return (
     <article
@@ -123,12 +137,6 @@ export default function ToolCard({
         ))}
       </div>
 
-      {evidenceText ? (
-        <p className="tool-card-evidence mt-2 line-clamp-1 rounded px-2.5 py-1 text-xs font-medium">
-          {evidenceText}
-        </p>
-      ) : null}
-
       {displayTags.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {displayTags.map((tag) => (
@@ -143,7 +151,7 @@ export default function ToolCard({
       ) : null}
 
       <div className="mt-auto flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <span className="text-xs text-slate-500">{reviewCount > 0 ? `${reviewCount} 条收藏` : "收藏待补充"}</span>
+        <span className="text-xs text-slate-500">{reviewCount > 0 ? `${reviewCount} 条评价` : "评价待补充"}</span>
         <div className="flex min-w-0 items-center gap-2 sm:shrink-0">
           {onCompareToggle ? (
             <button
@@ -168,10 +176,11 @@ export default function ToolCard({
             href={url}
             target="_blank"
             rel="noreferrer"
-            className="btn-icon-neutral inline-flex h-8 items-center justify-center rounded px-2.5 transition"
+            className="btn-token-neutral inline-flex h-8 flex-1 items-center justify-center gap-1 rounded px-3 text-xs font-semibold transition sm:flex-none"
             aria-label="官网"
           >
             <ExternalLink className="h-3.5 w-3.5" />
+            官网
           </a>
           <Link
             href={withPublicPath(`/tools/${slug}`)}
@@ -186,3 +195,5 @@ export default function ToolCard({
     </article>
   );
 }
+
+export default memo(ToolCard);

@@ -3,7 +3,11 @@ import json
 from app.core.config import settings
 from app.schemas.recommend import RecommendItem, RecommendRequest
 from app.services.ai_client import rank_with_ai
-from app.services.cache_service import build_recommendation_cache_key, get_redis_client, mark_redis_unavailable
+from app.services.cache_service import (
+    build_recommendation_cache_key,
+    get_redis_client,
+    mark_redis_unavailable,
+)
 from app.services.candidate_selector import select_candidates
 from app.services.match_plan_service import apply_match_plan_boost
 
@@ -68,7 +72,7 @@ def recommend(*, db, payload: RecommendRequest) -> list[RecommendItem]:
         items=ranked,
     )
     ai_reasons = {**ai_reasons, **plan_reasons}
-    ranked = ranked[:3]
+    ranked = ranked[: settings.recommendation_result_limit]
 
     items = [
         RecommendItem(

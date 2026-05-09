@@ -7,8 +7,24 @@ import { withPublicPath } from "@/src/app/lib/public-path";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "星点评",
-  description: "帮助用户发现、比较和选择 AI 工具的点评与发现平台。",
+  title: {
+    default: "星点评 - AI 工具导航、评测与对比",
+    template: "%s | 星点评",
+  },
+  description: "星点评是面向产品、运营、内容和开发用户的 AI 工具导航、AI工具大全、AI工具推荐、免费AI工具、AI工具评测与 AI 工具对比平台，帮助你按任务快速找到合适工具。",
+  keywords: [
+    "AI工具导航",
+    "AI工具大全",
+    "AI工具推荐",
+    "免费AI工具",
+    "AI工具集合",
+    "AI工具平台",
+    "AI工具目录",
+    "最好用的AI工具",
+    "AI工具评测",
+    "AI工具对比",
+    "星点评",
+  ],
   icons: {
     icon: withPublicPath("/brand/logo.png"),
     shortcut: withPublicPath("/brand/logo.png"),

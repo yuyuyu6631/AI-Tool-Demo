@@ -15,7 +15,7 @@ export default function SearchSection({ query, inputRef, onQueryChange, onSubmit
   return (
     <form
       data-testid="compact-hero-search"
-      className="home-search-form mx-auto mt-9 w-full min-w-0 max-w-full rounded-[24px] p-2 backdrop-blur-xl transition duration-200 motion-safe:animate-[agentReveal_500ms_ease-out_180ms_both] sm:max-w-[820px]"
+      className="home-search-form mx-auto mt-7 w-full min-w-0 max-w-full rounded-[24px] p-2 backdrop-blur-xl transition duration-200 motion-safe:animate-[agentReveal_500ms_ease-out_180ms_both] sm:max-w-[820px]"
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit(query);
@@ -29,6 +29,7 @@ export default function SearchSection({ query, inputRef, onQueryChange, onSubmit
             id="tools-search"
             type="search"
             name="q"
+            aria-label="搜索 AI 工具、任务或使用场景"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder={placeholder}
@@ -41,7 +42,7 @@ export default function SearchSection({ query, inputRef, onQueryChange, onSubmit
           className="home-cta inline-flex min-h-14 shrink-0 items-center justify-center gap-2 rounded-[18px] px-6 py-3 text-base font-semibold transition duration-200 hover:-translate-y-0.5 focus:outline-none"
         >
           <Sparkles className="h-4 w-4" />
-          聚焦任务输入
+          找工具
         </button>
       </div>
     </form>

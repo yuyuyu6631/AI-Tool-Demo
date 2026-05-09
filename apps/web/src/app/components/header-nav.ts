@@ -1,6 +1,7 @@
 export const headerNavItems = [
   { href: "/", label: "首页" },
   { href: "/search", label: "按任务找" },
+  { href: "/scenarios", label: "场景榜单" },
   { href: "/deals", label: "免费福利" },
   { href: "/tools?mode=search&page=1&page_size=24", label: "工具库" },
 ] as const;

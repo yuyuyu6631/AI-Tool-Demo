@@ -16,8 +16,8 @@ export interface FeaturedScenario {
 export const FEATURED_SCENARIOS: FeaturedScenario[] = [
   {
     slug: "make-ppt",
-    title: "做 PPT 用什么 AI",
-    description: "先生成完整演示稿，再人工统一模板与表达节奏。",
+    title: "PPT 制作榜 TOP5",
+    description: "适合销售汇报、课程展示和答辩初稿，先看生成完整度、模板质量和改稿成本。",
     problem: "临时做汇报时，最耗时的不是找工具，而是把大纲、页面结构、视觉风格和讲述节奏串成一份能交付的演示稿。",
     targetAudience: ["产品经理", "销售", "学生答辩", "创业团队"],
     searchQuery: "做 PPT 用什么 AI",
@@ -30,8 +30,8 @@ export const FEATURED_SCENARIOS: FeaturedScenario[] = [
   },
   {
     slug: "paper-format",
-    title: "写论文排版",
-    description: "按学校格式检查标题、目录、页眉页脚和参考文献。",
+    title: "AI 写作工具榜 TOP5",
+    description: "适合文章润色、论文格式检查和长文改写，先看表达质量、引用风险和格式能力。",
     problem: "论文内容完成后，格式问题往往分散在标题层级、目录、页眉页脚、图表编号和参考文献里，人工逐项检查很容易漏。",
     targetAudience: ["毕业生", "研究生", "高校教师", "论文辅导"],
     searchQuery: "论文排版 格式 检查",
@@ -44,8 +44,8 @@ export const FEATURED_SCENARIOS: FeaturedScenario[] = [
   },
   {
     slug: "excel-analysis",
-    title: "分析 Excel 数据",
-    description: "先识别字段含义，再给公式、图表和核验路径。",
+    title: "数据分析工具榜 TOP5",
+    description: "适合运营报表、Excel 分析和业务复盘，先看字段理解、公式生成和图表核验路径。",
     problem: "Excel 分析的难点通常不是生成公式，而是理解字段含义、判断口径、发现异常值，并把结论转成可复核的图表和说明。",
     targetAudience: ["运营", "分析师", "产品经理", "业务负责人"],
     searchQuery: "分析 Excel 数据 公式 图表",
@@ -54,6 +54,20 @@ export const FEATURED_SCENARIOS: FeaturedScenario[] = [
       { title: "生成公式和透视思路", body: "根据目标让 AI 给出公式、透视表字段摆放和分组方式，再在 Excel 里实际验证。" },
       { title: "做图表与异常检查", body: "优先生成趋势、占比、TopN 和异常值检查，不只看平均值，避免被极端值误导。" },
       { title: "保留核验路径", body: "把每个结论对应的数据范围、筛选条件和公式写清楚，方便同事或客户复核。" },
+    ],
+  },
+  {
+    slug: "coding-debug",
+    title: "开发工具榜 TOP5",
+    description: "适合代码生成、报错定位和测试补全，先看项目上下文理解、改动可控性和代码质量。",
+    problem: "开发提效的关键不是让 AI 随便写代码，而是让它读懂项目上下文、定位真实报错，并给出能验证、能回滚的改动。",
+    targetAudience: ["前端开发", "后端开发", "测试工程师", "技术负责人"],
+    searchQuery: "代码生成 报错修复 测试用例",
+    workflow: [
+      { title: "描述项目和报错", body: "提供框架、运行命令、错误堆栈和相关文件范围，让 AI 先定位问题而不是直接改全局。" },
+      { title: "生成最小修复", body: "优先要求 AI 给出最小可验证改动，避免一次性重构太多模块。" },
+      { title: "补充测试用例", body: "让 AI 根据修复点补单元测试或回归场景，确认旧路径没有被破坏。" },
+      { title: "人工审查差异", body: "合并前检查依赖、类型、边界条件和安全风险，关键逻辑仍需开发者复核。" },
     ],
   },
 ];

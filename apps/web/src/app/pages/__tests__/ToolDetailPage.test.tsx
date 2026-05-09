@@ -88,7 +88,7 @@ describe("ToolDetailPage", () => {
     render(<ToolDetailPage tool={tool} relatedTools={[]} reviews={null} />);
 
     expect(screen.getByText("评测结论")).toBeInTheDocument();
-    expect(screen.getByText("先看缺陷 / 限制")).toBeInTheDocument();
+    expect(screen.getByText("缺陷 / 限制")).toBeInTheDocument();
     expect(screen.getByText("复杂工作流需要二次编排")).toBeInTheDocument();
     expect(screen.getByText("核心特点")).toBeInTheDocument();
     expect(screen.getByText("长文本理解稳定")).toBeInTheDocument();

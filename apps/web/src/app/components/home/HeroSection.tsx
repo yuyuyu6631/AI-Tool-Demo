@@ -4,6 +4,7 @@ import type { RefObject } from "react";
 import { ArrowRight } from "lucide-react";
 import HeroParticleScene from "./HeroParticleScene";
 import QuickTasks from "./QuickTasks";
+import RecentToolsStrip from "./RecentToolsStrip";
 import SearchSection from "./SearchSection";
 import TaskEntryCards from "./TaskEntryCards";
 import { type QuickTask } from "./home-data";
@@ -24,7 +25,7 @@ export interface HeroSectionProps {
 }
 
 export default function HeroSection({
-  title = "同一个任务，看看哪个 AI 真能做好",
+  title = "按任务找到合适的 AI 工具",
   subtitle,
   query,
   inputRef,
@@ -38,23 +39,26 @@ export default function HeroSection({
   void activeQuickTaskId;
 
   return (
-    <section className="home-light-shell relative -mt-[68px] min-h-screen overflow-hidden pt-[68px]">
+    <section className="home-light-shell relative -mt-[68px] min-h-[calc(100svh-24px)] overflow-hidden pt-[68px]">
       <HeroParticleScene />
-      <div className="home-hero-spotlight pointer-events-none absolute inset-x-0 top-[220px] mx-auto h-64 max-w-4xl" aria-hidden="true" />
-      <div className="home-hero-fade pointer-events-none absolute inset-x-0 bottom-0 h-36" aria-hidden="true" />
+      <div className="home-hero-spotlight pointer-events-none absolute inset-x-0 top-[180px] mx-auto h-56 max-w-4xl" aria-hidden="true" />
+      <div className="home-hero-fade pointer-events-none absolute inset-x-0 bottom-0 h-28" aria-hidden="true" />
 
-      <div className="relative mx-auto flex w-full max-w-[1280px] flex-col items-center px-4 pb-12 pt-14 text-center sm:px-6 md:pt-20 lg:min-h-[calc(100vh-68px)] lg:justify-center lg:px-8">
-        <h1 className="home-title max-w-4xl text-[clamp(3rem,6.2vw,5.5rem)] font-semibold leading-[1.05] tracking-normal motion-safe:animate-[agentReveal_420ms_ease-out_60ms_both]">
+      <div className="relative mx-auto flex w-full max-w-[1180px] flex-col items-center px-4 pb-10 pt-10 text-center sm:px-6 md:pt-14 lg:min-h-[calc(100svh-92px)] lg:justify-center lg:px-8">
+        <p className="home-kicker inline-flex rounded-full px-3 py-1 text-xs font-semibold motion-safe:animate-[agentReveal_380ms_ease-out_40ms_both]">
+          给产品、运营、内容和开发的 AI 工具筛选台
+        </p>
+        <h1 className="home-title mt-5 max-w-4xl text-[clamp(2.35rem,5vw,4.8rem)] font-semibold leading-[1.08] tracking-normal motion-safe:animate-[agentReveal_420ms_ease-out_60ms_both]">
           {title}
         </h1>
 
-        <p className="home-subtitle mt-5 text-base leading-8 motion-safe:animate-[agentReveal_460ms_ease-out_120ms_both] md:text-xl">
+        <p className="home-subtitle mt-4 max-w-3xl text-base leading-8 motion-safe:animate-[agentReveal_460ms_ease-out_120ms_both] md:text-lg">
           {subtitle ? (
             subtitle
           ) : (
             <>
-              <span className="dark:hidden">别试了再后悔——我们替你测好了</span>
-              <span className="hidden dark:inline">我们替你把每个 AI 都试了一遍</span>
+              <span className="dark:hidden">说清楚要做什么，先看适合场景、价格门槛、真实限制和横向对比，少花时间试错。</span>
+              <span className="hidden dark:inline">说清楚要做什么，先看适合场景、价格门槛、真实限制和横向对比。</span>
             </>
           )}
         </p>
@@ -64,7 +68,7 @@ export default function HeroSection({
           inputRef={inputRef}
           onQueryChange={onQueryChange}
           onSubmit={onSearchSubmit}
-          placeholder="比如：帮我润色论文 / 做一份销售周报 / 看懂这张表格"
+          placeholder="比如：做销售周报 PPT / 分析投放数据 / 修复前端报错"
         />
 
         <div className="home-gold-line mt-3 hidden dark:block" aria-hidden="true" />
@@ -72,24 +76,23 @@ export default function HeroSection({
         <div className="home-flow mx-auto mt-6 flex flex-wrap items-center justify-center gap-3 text-sm motion-safe:animate-[agentReveal_520ms_ease-out_240ms_both]">
           <span className="home-flow-step">
             <span>1</span>
-            <b className="dark:hidden">说你要做什么</b>
-            <b className="hidden dark:inline">描述你的任务</b>
+            <b>描述任务</b>
           </span>
           <ArrowRight className="home-flow-arrow h-4 w-4" />
           <span className="home-flow-step">
             <span>2</span>
-            <b className="dark:hidden">看真实对比结果</b>
-            <b className="hidden dark:inline">看横向实测结果</b>
+            <b>看场景榜单</b>
           </span>
           <ArrowRight className="home-flow-arrow h-4 w-4" />
           <span className="home-flow-step">
             <span>3</span>
-            <b>直接用最好那个</b>
+            <b>进入详情或对比</b>
           </span>
         </div>
 
         <QuickTasks onTaskActivate={onQuickTaskActivate} onTaskClick={onQuickTaskClick} onTaskPress={onQuickTaskPress} />
         <TaskEntryCards />
+        <RecentToolsStrip />
       </div>
     </section>
   );

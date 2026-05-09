@@ -46,7 +46,6 @@ export default function ToolLogo({
         height={sizeValue}
         className="h-full w-full object-contain p-2"
         loading="lazy"
-        unoptimized
         onError={() => setFailed(true)}
       />
     </div>

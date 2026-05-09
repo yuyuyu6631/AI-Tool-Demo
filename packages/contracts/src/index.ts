@@ -177,8 +177,8 @@ export interface ScenarioSummary {
   description: string;
   problem: string;
   toolCount: number;
-  primaryTools: string[];
-  alternativeTools: string[];
+  primaryTools: ToolSummary[];
+  alternativeTools: ToolSummary[];
   targetAudience: string[];
 }
 
@@ -212,9 +212,12 @@ export interface RecommendResult {
   tool_id: number;
   name: string;
   slug: string;
+  url: string;
+  summary: string;
+  tags: string[];
   reason: string;
   score: number;
-  logoPath?: string;
+  logoPath?: string | null;
 }
 
 export interface RecommendResponse {
@@ -518,6 +521,12 @@ export const tools: ToolDetail[] = [
   }
 ];
 
+function pickTools(slugs: string[]): ToolSummary[] {
+  return slugs
+    .map((slug) => tools.find((tool) => tool.slug === slug))
+    .filter((tool): tool is ToolSummary => Boolean(tool));
+}
+
 export const scenarios: ScenarioSummary[] = [
   {
     id: 1,
@@ -526,8 +535,8 @@ export const scenarios: ScenarioSummary[] = [
     description: "优先看能快速产出完整演示稿的工具，避免从空白页开始。",
     problem: "汇报和提案常常时间紧，需要在很短时间内拿出结构完整、视觉可用的演示稿。",
     toolCount: 3,
-    primaryTools: ["gamma", "canva-ai"],
-    alternativeTools: ["chatgpt"],
+    primaryTools: pickTools(["gamma", "canva-ai"]),
+    alternativeTools: pickTools(["chatgpt"]),
     targetAudience: ["销售", "产品经理", "创业者"]
   },
   {
@@ -537,8 +546,8 @@ export const scenarios: ScenarioSummary[] = [
     description: "适合先出结构、再润色成稿的内容工作流。",
     problem: "很多内容岗位不是没有想法，而是难在稳定、持续、高质量地输出。",
     toolCount: 4,
-    primaryTools: ["chatgpt", "claude", "notion-ai"],
-    alternativeTools: ["gamma"],
+    primaryTools: pickTools(["chatgpt", "claude", "notion-ai"]),
+    alternativeTools: pickTools(["gamma"]),
     targetAudience: ["运营", "内容团队", "咨询顾问"]
   },
   {
@@ -548,8 +557,8 @@ export const scenarios: ScenarioSummary[] = [
     description: "优先考虑能融入 IDE 和代码仓库的协作型工具。",
     problem: "开发者真正需要的不是演示级回答，而是能进入上下文、减少重复劳动的助手。",
     toolCount: 3,
-    primaryTools: ["cursor", "github-copilot"],
-    alternativeTools: ["chatgpt"],
+    primaryTools: pickTools(["cursor", "github-copilot"]),
+    alternativeTools: pickTools(["chatgpt"]),
     targetAudience: ["开发者", "技术团队"]
   },
   {
@@ -559,8 +568,8 @@ export const scenarios: ScenarioSummary[] = [
     description: "适合知识库、客服机器人和工作流自动化场景。",
     problem: "企业落地 AI 应用不缺想法，真正难的是速度、可控性和后续维护。",
     toolCount: 3,
-    primaryTools: ["coze", "dify"],
-    alternativeTools: ["chatgpt"],
+    primaryTools: pickTools(["coze", "dify"]),
+    alternativeTools: pickTools(["chatgpt"]),
     targetAudience: ["企业团队", "产品团队", "技术团队"]
   }
 ];

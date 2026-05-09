@@ -9,7 +9,16 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, selectinload
 
-from app.models.models import Category, Ranking, RankingItem, Tag, Tool, ToolCategory, ToolReview, ToolTag
+from app.models.models import (
+    Category,
+    Ranking,
+    RankingItem,
+    Tag,
+    Tool,
+    ToolCategory,
+    ToolReview,
+    ToolTag,
+)
 from app.schemas.admin import (
     AdminOverviewRecentToolItem,
     AdminOverviewResponse,
@@ -20,9 +29,7 @@ from app.schemas.admin import (
     AdminToolPayload,
 )
 from app.schemas.tool import ToolDetail
-from app.services import catalog_service
-from app.services import match_plan_service
-
+from app.services import catalog_service, match_plan_service
 
 VALID_TOOL_STATUSES = {"published", "draft", "archived"}
 logger = logging.getLogger(__name__)
@@ -84,13 +91,16 @@ def _validate_public_http_url(value: str, *, field_name: str) -> None:
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail={field_name: "璇疯緭鍏ユ湁鏁堢殑 http(s) 鍦板潃"},
+            detail={field_name: "请输入有效的 http(s) 地址"},
         )
 
 
 def _validate_tool_payload(payload: AdminToolPayload) -> None:
     if payload.status not in VALID_TOOL_STATUSES:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid tool status")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Invalid tool status",
+        )
 
     _validate_public_http_url(payload.officialUrl, field_name="officialUrl")
 
@@ -136,14 +146,22 @@ def _commit_with_guard(
     except IntegrityError as error:
         db.rollback()
         logger.warning("%s_integrity_error error=%s", action, type(error).__name__)
+        error_status = (
+            status.HTTP_409_CONFLICT
+            if conflict_detail
+            else status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT if conflict_detail else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=error_status,
             detail=conflict_detail or failure_detail,
         ) from error
     except SQLAlchemyError as error:
         db.rollback()
         logger.exception("%s_database_error", action)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=failure_detail) from error
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=failure_detail,
+        ) from error
 
 
 def list_tools(db: Session) -> list[AdminToolListItem]:
@@ -166,12 +184,18 @@ def list_tools(db: Session) -> list[AdminToolListItem]:
 
 def get_overview(db: Session) -> AdminOverviewResponse:
     tool_count = int(db.scalar(select(func.count()).select_from(Tool)) or 0)
-    draft_tool_count = int(db.scalar(select(func.count()).select_from(Tool).where(Tool.status == "draft")) or 0)
-    published_tool_count = int(db.scalar(select(func.count()).select_from(Tool).where(Tool.status == "published")) or 0)
+    draft_tool_count = int(
+        db.scalar(select(func.count()).select_from(Tool).where(Tool.status == "draft")) or 0
+    )
+    published_tool_count = int(
+        db.scalar(select(func.count()).select_from(Tool).where(Tool.status == "published")) or 0
+    )
     review_count = int(db.scalar(select(func.count()).select_from(ToolReview)) or 0)
     ranking_count = int(db.scalar(select(func.count()).select_from(Ranking)) or 0)
     recent_tools = db.scalars(select(Tool).order_by(Tool.updated_at.desc()).limit(5)).all()
-    match_plan_count, published_match_plan_count, recent_match_plans = match_plan_service.count_match_plans(db)
+    match_plan_count, published_match_plan_count, recent_match_plans = (
+        match_plan_service.count_match_plans(db)
+    )
 
     return AdminOverviewResponse(
         toolCount=tool_count,
@@ -210,7 +234,12 @@ def get_tool_detail(db: Session, tool_id: int) -> ToolDetail:
     return catalog_service._tool_row_to_detail(tool)
 
 
-def upsert_tool(db: Session, payload: AdminToolPayload, *, tool_id: int | None = None) -> ToolDetail:
+def upsert_tool(
+    db: Session,
+    payload: AdminToolPayload,
+    *,
+    tool_id: int | None = None,
+) -> ToolDetail:
     _validate_tool_payload(payload)
 
     tool = db.get(Tool, tool_id) if tool_id is not None else None
@@ -277,9 +306,10 @@ def upsert_tool(db: Session, payload: AdminToolPayload, *, tool_id: int | None =
     _commit_with_guard(
         db,
         action="admin_upsert_tool",
-        failure_detail="宸ュ叿淇濆瓨澶辫触锛岃绋嶅悗閲嶈瘯銆?",
-        conflict_detail="宸ュ叿淇℃伅鍐茬獊锛岃妫€鏌?slug 鎴栧悕绉版槸鍚﹂噸澶嶃€?",
+        failure_detail="工具保存失败，请稍后重试。",
+        conflict_detail="工具信息冲突，请检查 slug 或名称是否重复。",
     )
+    catalog_service.clear_catalog_runtime_cache()
     catalog_service.sync_tool_search_index(db, tool.id)
     return get_tool_detail(db, tool.id)
 
@@ -320,7 +350,11 @@ def delete_review(db: Session, review_id: int) -> None:
     db.flush()
     ratings = db.execute(
         select(func.avg(ToolReview.rating), func.count(ToolReview.id))
-        .where(ToolReview.tool_id == tool_id, ToolReview.status == "published", ToolReview.rating.is_not(None))
+        .where(
+            ToolReview.tool_id == tool_id,
+            ToolReview.status == "published",
+            ToolReview.rating.is_not(None),
+        )
     ).one()
     tool = db.get(Tool, tool_id)
     if tool is not None:
@@ -329,8 +363,9 @@ def delete_review(db: Session, review_id: int) -> None:
     _commit_with_guard(
         db,
         action="admin_delete_review",
-        failure_detail="鍒犻櫎璇勮澶辫触锛岃绋嶅悗閲嶈瘯銆?",
+        failure_detail="删除评价失败，请稍后重试。",
     )
+    catalog_service.clear_catalog_runtime_cache()
     if tool is not None:
         catalog_service.sync_tool_search_index(db, tool.id)
 
@@ -339,7 +374,11 @@ def list_rankings(db: Session) -> list[AdminRankingListItem]:
     rankings = db.scalars(select(Ranking).order_by(Ranking.id)).all()
     items_by_ranking = {
         ranking_id: count
-        for ranking_id, count in db.execute(select(RankingItem.ranking_id, func.count(RankingItem.id)).group_by(RankingItem.ranking_id)).all()
+        for ranking_id, count in db.execute(
+            select(RankingItem.ranking_id, func.count(RankingItem.id)).group_by(
+                RankingItem.ranking_id
+            )
+        ).all()
     }
     return [
         AdminRankingListItem(
@@ -357,20 +396,34 @@ def get_ranking_payload(db: Session, ranking_id: int) -> AdminRankingPayload:
     ranking = db.get(Ranking, ranking_id)
     if ranking is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ranking not found")
-    rows = db.scalars(select(RankingItem).where(RankingItem.ranking_id == ranking_id).order_by(RankingItem.rank_order).options(selectinload(RankingItem.tool))).all()
+    rows = db.scalars(
+        select(RankingItem)
+        .where(RankingItem.ranking_id == ranking_id)
+        .order_by(RankingItem.rank_order)
+        .options(selectinload(RankingItem.tool))
+    ).all()
     return AdminRankingPayload(
         slug=ranking.slug,
         title=ranking.title,
         description=ranking.description,
         items=[
-            {"toolSlug": row.tool.slug if row.tool else "", "rank": row.rank_order, "reason": row.reason}
+            {
+                "toolSlug": row.tool.slug if row.tool else "",
+                "rank": row.rank_order,
+                "reason": row.reason,
+            }
             for row in rows
             if row.tool is not None
         ],
     )
 
 
-def upsert_ranking(db: Session, payload: AdminRankingPayload, *, ranking_id: int | None = None) -> AdminRankingPayload:
+def upsert_ranking(
+    db: Session,
+    payload: AdminRankingPayload,
+    *,
+    ranking_id: int | None = None,
+) -> AdminRankingPayload:
     _validate_ranking_payload(payload)
     ranking = db.get(Ranking, ranking_id) if ranking_id is not None else None
     if ranking is None and ranking_id is not None:
@@ -378,7 +431,10 @@ def upsert_ranking(db: Session, payload: AdminRankingPayload, *, ranking_id: int
 
     duplicate = db.scalar(select(Ranking).where(Ranking.slug == payload.slug))
     if duplicate and duplicate.id != ranking_id:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ranking slug already exists")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ranking slug already exists",
+        )
 
     if ranking is None:
         ranking = Ranking(slug=payload.slug, title=payload.title, description=payload.description)
@@ -389,21 +445,41 @@ def upsert_ranking(db: Session, payload: AdminRankingPayload, *, ranking_id: int
     ranking.title = payload.title
     ranking.description = payload.description
 
-    for existing in db.scalars(select(RankingItem).where(RankingItem.ranking_id == ranking.id)).all():
+    requested_tool_slugs = [item.toolSlug for item in payload.items]
+    tools_by_slug = {
+        tool.slug: tool
+        for tool in db.scalars(select(Tool).where(Tool.slug.in_(requested_tool_slugs))).all()
+    }
+    missing_slugs = [item.toolSlug for item in payload.items if item.toolSlug not in tools_by_slug]
+    if missing_slugs:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Unknown tool slug: {missing_slugs[0]}",
+        )
+
+    existing_items = db.scalars(
+        select(RankingItem).where(RankingItem.ranking_id == ranking.id)
+    ).all()
+    for existing in existing_items:
         db.delete(existing)
     db.flush()
 
     for item in payload.items:
-        tool = db.scalar(select(Tool).where(Tool.slug == item.toolSlug))
-        if tool is None:
-            db.rollback()
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=f"Unknown tool slug: {item.toolSlug}")
-        db.add(RankingItem(ranking_id=ranking.id, tool_id=tool.id, rank_order=item.rank, reason=item.reason))
+        tool = tools_by_slug[item.toolSlug]
+        db.add(
+            RankingItem(
+                ranking_id=ranking.id,
+                tool_id=tool.id,
+                rank_order=item.rank,
+                reason=item.reason,
+            )
+        )
 
     _commit_with_guard(
         db,
         action="admin_upsert_ranking",
-        failure_detail="姒滃崟淇濆瓨澶辫触锛岃绋嶅悗閲嶈瘯銆?",
-        conflict_detail="姒滃崟淇℃伅鍐茬獊锛岃妫€鏌?slug 鎴栨帓搴忛」銆?",
+        failure_detail="榜单保存失败，请稍后重试。",
+        conflict_detail="榜单信息冲突，请检查 slug 或排序项。",
     )
+    catalog_service.clear_catalog_runtime_cache()
     return get_ranking_payload(db, ranking.id)

@@ -116,7 +116,7 @@ describe("HomePage agent recommendation", () => {
       />,
     );
 
-    expect(screen.getByText("同一个任务，看看哪个 AI 真能做好")).toBeInTheDocument();
+    expect(screen.getByText("按任务找到合适的 AI 工具")).toBeInTheDocument();
     expect(screen.getByRole("searchbox")).toHaveValue("我要把 Word 文档排版成论文格式");
     expect(screen.queryByText("任务路线预览")).not.toBeInTheDocument();
     expect(screen.queryByTestId("product-critique-deck")).not.toBeInTheDocument();

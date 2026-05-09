@@ -2,6 +2,7 @@ import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import HomePage from "../HomePage";
 import type { ScenarioSummary, ToolSummary, ToolsDirectoryResponse } from "../../lib/catalog-types";
+import { trackEvent } from "../../lib/analytics";
 
 const pushMock = vi.fn();
 
@@ -93,6 +94,7 @@ function renderHome(state: React.ComponentProps<typeof HomePage>["state"] = { pa
 describe("HomePage", () => {
   beforeEach(() => {
     pushMock.mockReset();
+    vi.mocked(trackEvent).mockClear();
     window.sessionStorage.clear();
   });
 
@@ -102,14 +104,15 @@ describe("HomePage", () => {
     expect(screen.getByText("Header")).toBeInTheDocument();
     expect(screen.queryByText("Footer")).not.toBeInTheDocument();
     expect(screen.getByTestId("hero-particle-scene")).toBeInTheDocument();
-    expect(screen.getByText("同一个任务，看看哪个 AI 真能做好")).toBeInTheDocument();
-    expect(screen.getByText("别试了再后悔——我们替你测好了")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /聚焦任务输入/ })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /看本周实测/ })).toHaveAttribute("href", "/scenarios");
+    expect(screen.getByText("按任务找到合适的 AI 工具")).toBeInTheDocument();
+    expect(screen.getAllByText(/说清楚要做什么/).length).toBeGreaterThan(0);
+    expect(screen.getByText("给产品、运营、内容和开发的 AI 工具筛选台")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /找工具/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /看场景榜单/ })).toHaveAttribute("href", "/scenarios");
     expect(screen.getByRole("link", { name: /看免费福利/ })).toHaveAttribute("href", "/deals");
     expect(screen.getByRole("link", { name: /逛工具库/ })).toHaveAttribute("href", "/tools?mode=search&page=1&page_size=24");
-    expect(screen.getByText("说你要做什么")).toBeInTheDocument();
-    expect(screen.getByText("看真实对比结果")).toBeInTheDocument();
+    expect(screen.getByText("描述任务")).toBeInTheDocument();
+    expect(screen.getAllByText("看场景榜单").length).toBeGreaterThan(0);
     expect(screen.queryByText("任务路线预览")).not.toBeInTheDocument();
     expect(screen.queryByText("LIVE")).not.toBeInTheDocument();
     expect(screen.queryByText("ChatGPT")).not.toBeInTheDocument();
@@ -125,28 +128,43 @@ describe("HomePage", () => {
     expect(pushMock.mock.calls[0][0]).toBe("/tools?mode=ai&q=free%20PPT&page=1&page_size=24");
   });
 
-  it("quick task entries point to task search pages", () => {
+  it("quick task entries point to task search pages", async () => {
     renderHome();
 
-    expect(screen.getByRole("link", { name: "论文润色" })).toHaveAttribute("href", expect.stringContaining("/tools?mode=ai"));
-    expect(screen.getByRole("link", { name: "PPT 出框架" })).toHaveAttribute("href", expect.stringContaining("/tools?mode=ai"));
-    expect(screen.getByRole("link", { name: "表格读不懂" })).toHaveAttribute("href", expect.stringContaining("/tools?mode=ai"));
-    expect(screen.getByRole("link", { name: "代码跑不通" })).toHaveAttribute("href", expect.stringContaining("/tools?mode=ai"));
-    expect(screen.getByRole("link", { name: "长文提炼" })).toHaveAttribute("href", expect.stringContaining("/tools?mode=ai"));
+    expect(screen.getByRole("link", { name: "写作润色" })).toHaveAttribute("href", expect.stringContaining("/tools?mode=ai"));
+    expect(screen.getByRole("link", { name: "PPT 初稿" })).toHaveAttribute("href", expect.stringContaining("/tools?mode=ai"));
+    expect(screen.getByRole("link", { name: "表格分析" })).toHaveAttribute("href", expect.stringContaining("/tools?mode=ai"));
+    expect(screen.getByRole("link", { name: "代码修复" })).toHaveAttribute("href", expect.stringContaining("/tools?mode=ai"));
+    expect(screen.getByRole("link", { name: "客户开发" })).toHaveAttribute("href", expect.stringContaining("/tools?mode=ai"));
+
+    const pptTaskLink = screen.getByRole("link", { name: "PPT 初稿" });
+    pptTaskLink.addEventListener("click", (event) => event.preventDefault());
+    fireEvent.click(pptTaskLink);
+    await waitFor(() =>
+      expect(trackEvent).toHaveBeenCalledWith(
+        "home_quick_task_click",
+        expect.objectContaining({
+          task: "ppt",
+          label: "PPT 初稿",
+          query: "帮我做一份销售汇报 PPT 初稿",
+          source: "home_hero",
+        }),
+      ),
+    );
   });
 
   it("primes the search input on quick task press", () => {
     renderHome();
 
-    fireEvent.pointerDown(screen.getByRole("link", { name: "论文润色" }));
-    expect(screen.getByRole("searchbox")).toHaveValue("帮我润色论文");
+    fireEvent.pointerDown(screen.getByRole("link", { name: "写作润色" }));
+    expect(screen.getByRole("searchbox")).toHaveValue("帮我润色一篇公众号文章");
   });
 
   it("keeps the primary button as the search submit action", () => {
     renderHome();
 
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "代码报错" } });
-    fireEvent.click(screen.getByRole("button", { name: /聚焦任务输入/ }));
+    fireEvent.click(screen.getByRole("button", { name: /找工具/ }));
     expect(pushMock).toHaveBeenCalledWith("/tools?mode=ai&q=%E4%BB%A3%E7%A0%81%E6%8A%A5%E9%94%99&page=1&page_size=24");
   });
 });

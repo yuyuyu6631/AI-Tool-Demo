@@ -1,9 +1,9 @@
 from app.schemas.recommend import RecommendRequest
-from app.services.catalog_service import list_tools_raw
+from app.services.catalog_service import list_tools
 
 
 def select_candidates(*, db, payload: RecommendRequest):
-    tools = list_tools_raw(db=db)
+    tools = list_tools(db=db)
     filtered = tools
 
     if payload.candidateSlugs:
@@ -16,6 +16,10 @@ def select_candidates(*, db, payload: RecommendRequest):
 
     if payload.scenario:
         lowered = payload.scenario.lower()
-        filtered = [tool for tool in filtered if lowered in tool.category.lower() or lowered in tool.summary.lower()]
+        filtered = [
+            tool
+            for tool in filtered
+            if lowered in tool.category.lower() or lowered in tool.summary.lower()
+        ]
 
     return filtered or tools

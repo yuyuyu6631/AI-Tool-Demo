@@ -17,6 +17,7 @@ import ToolCard from "../components/ToolCard";
 import ToolLogo from "../components/ToolLogo";
 import ToolReviewsPanel from "../components/ToolReviewsPanel";
 import BackToResultsLink from "../components/BackToResultsLink";
+import RecentToolTracker from "../components/RecentToolTracker";
 import type { ToolDetail, ToolMediaItem, ToolReviewsResponse, ToolSummary } from "../lib/catalog-types";
 import { buildDecisionBadges, buildToolsHref, hasValidOfficialUrl, slugifyLabel } from "../lib/catalog-utils";
 import { withPublicPath } from "../lib/public-path";
@@ -98,11 +99,11 @@ function ScoreBar({ score, reviewCount }: { score: number; reviewCount: number }
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-3">
-        <span className="text-3xl font-semibold text-white">{score.toFixed(1)}</span>
-        <span className="text-xs text-slate-300">{reviewCount} 条评价</span>
+        <span className="text-3xl font-semibold text-[var(--text-primary)]">{score.toFixed(1)}</span>
+        <span className="text-xs text-[var(--text-secondary)]">{reviewCount} 条评价</span>
       </div>
-      <div className="h-2 w-full rounded bg-white/10">
-        <div className="h-full rounded bg-lime-300 transition-all duration-500" style={{ width: `${percentage}%` }} />
+      <div className="h-2 w-full rounded bg-[var(--bg-surface-strong)]">
+        <div className="h-full rounded bg-[var(--color-accent)] transition-all duration-500" style={{ width: `${percentage}%` }} />
       </div>
     </div>
   );
@@ -115,20 +116,20 @@ function MediaPreview({ item, toolName }: { item: ToolMediaItem; toolName: strin
   const thumbnailUrl = item.thumbnailUrl ? withPublicPath(item.thumbnailUrl) : null;
 
   return (
-    <article className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-      <div className="relative aspect-video bg-slate-950">
+    <article className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)]">
+      <div className="relative aspect-video bg-[var(--bg-subtle)]">
         {item.type === "image" || item.thumbnailUrl ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element -- Reviewed media may be an arbitrary external URL. */}
             <img src={thumbnailUrl || mediaUrl} alt={title} className="h-full w-full object-cover" />
           </>
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-[#05070f] text-slate-300">
+          <div className="flex h-full w-full items-center justify-center bg-[var(--bg-subtle)] text-[var(--text-secondary)]">
             <Play className="h-10 w-10" />
           </div>
         )}
         {isVideo ? (
-          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded bg-white px-2 py-1 text-xs font-semibold text-slate-950">
+          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded bg-[var(--bg-surface)] px-2 py-1 text-xs font-semibold text-[var(--text-primary)]">
             <Play className="h-3.5 w-3.5" />
             视频
           </span>
@@ -137,14 +138,14 @@ function MediaPreview({ item, toolName }: { item: ToolMediaItem; toolName: strin
       <div className="p-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-slate-950">{title}</p>
-            {item.sourceName ? <p className="mt-1 truncate text-xs text-slate-500">{item.sourceName}</p> : null}
+            <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{title}</p>
+            {item.sourceName ? <p className="mt-1 truncate text-xs text-[var(--text-tertiary)]">{item.sourceName}</p> : null}
           </div>
           <a
             href={item.sourceUrl || mediaUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 rounded border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-1 rounded border border-[var(--border-default)] px-2 py-1 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)]"
           >
             打开
             <ExternalLink className="h-3.5 w-3.5" />
@@ -161,9 +162,9 @@ export default function ToolDetailPage({ tool, relatedTools, reviews }: ToolDeta
       <div className="page-shell">
         <Header currentPath="/" currentRoute="/" />
         <main className="mx-auto w-full max-w-[1440px] px-4 py-20 text-center sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-semibold text-slate-950">暂时找不到这个工具</h1>
-          <p className="mt-3 text-sm text-slate-600">当前工具信息可能已下架或尚未收录，你可以先回到目录继续浏览其他结果。</p>
-          <BackToResultsLink className="mt-6 inline-flex items-center gap-2 rounded bg-slate-950 px-5 py-3 text-sm font-medium text-white" />
+          <h1 className="text-3xl font-semibold text-[var(--text-primary)]">暂时找不到这个工具</h1>
+          <p className="mt-3 text-sm text-[var(--text-secondary)]">当前工具信息可能已下架或尚未收录，你可以先回到目录继续浏览其他结果。</p>
+          <BackToResultsLink className="btn-primary mt-6 inline-flex items-center gap-2 rounded px-5 py-3 text-sm font-medium" />
         </main>
         <Footer />
       </div>
@@ -208,36 +209,37 @@ export default function ToolDetailPage({ tool, relatedTools, reviews }: ToolDeta
 
   return (
     <div className="page-shell">
+      <RecentToolTracker slug={tool.slug} name={tool.name} summary={tool.summary} category={tool.category} />
       <Header currentPath={`/tools/${tool.slug}`} currentRoute={`/tools/${tool.slug}`} />
 
       <main>
-        <section className="bg-[#05070f] text-white">
+        <section className="bg-[var(--bg-subtle)] text-[var(--text-primary)]">
           <div className="mx-auto w-full max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
             <Breadcrumbs items={[{ label: "首页", href: "/" }, { label: tool.name }]} />
 
             <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-              <div className="rounded-lg border border-white/10 bg-white/5 p-5 md:p-7">
+              <div className="panel-base rounded-lg p-5 md:p-7">
                 <div className="flex flex-col gap-5 md:flex-row md:items-start">
                   <div style={{ viewTransitionName: `tool-logo-${tool.slug}` }}>
                     <ToolLogo slug={tool.slug} name={tool.name} logoPath={tool.logoPath} size="lg" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h1 className="text-3xl font-semibold text-white md:text-5xl" style={{ viewTransitionName: `tool-title-${tool.slug}` }}>
+                      <h1 className="text-3xl font-semibold text-[var(--text-primary)] md:text-5xl" style={{ viewTransitionName: `tool-title-${tool.slug}` }}>
                         {tool.name}
                       </h1>
-                      {scoreBadge ? <span className="rounded bg-amber-100 px-2 py-1 text-sm font-semibold text-amber-800">{scoreBadge.label}</span> : null}
-                      <Link href={categoryHref} className="rounded border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-slate-200">
+                      {scoreBadge ? <span className="rounded bg-[var(--color-accent-soft)] px-2 py-1 text-sm font-semibold text-[var(--color-accent)]">{scoreBadge.label}</span> : null}
+                      <Link href={categoryHref} className="rounded border border-[var(--border-default)] bg-[var(--bg-surface-strong)] px-3 py-1 text-sm font-medium text-[var(--text-secondary)]">
                         {fallbackText(tool.category)}
                       </Link>
                     </div>
-                    <p className="mt-4 max-w-3xl text-base leading-8 text-slate-300">{fallbackText(tool.summary, "这款工具的简介还在补充中。")}</p>
-                    <div className="mt-5 rounded-lg border border-rose-300/25 bg-rose-300/10 p-4">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-rose-100">
+                    <p className="mt-4 max-w-3xl text-base leading-8 text-[var(--text-secondary)]">{fallbackText(tool.summary, "这款工具的简介还在补充中。")}</p>
+                    <div className="mt-5 rounded-lg border border-[var(--border-default)] bg-[var(--danger-soft)] p-4">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-[var(--danger)]">
                         <ShieldAlert className="h-4 w-4" />
                         评测结论
                       </div>
-                      <p className="mt-2 text-base leading-8 text-white">{conclusion}</p>
+                      <p className="mt-2 text-base leading-8 text-[var(--text-primary)]">{conclusion}</p>
                     </div>
                     <div className="mt-5 flex flex-wrap gap-2">
                       {accessBadges.map((badge) => (
@@ -251,7 +253,7 @@ export default function ToolDetailPage({ tool, relatedTools, reviews }: ToolDeta
                         tags: tool.tags,
                         platforms: tool.platforms,
                       }).map((badge) => (
-                        <span key={badge} className="rounded border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-200">
+                        <span key={badge} className="rounded border border-[var(--border-default)] bg-[var(--bg-surface-strong)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
                           {badge}
                         </span>
                       ))}
@@ -262,47 +264,73 @@ export default function ToolDetailPage({ tool, relatedTools, reviews }: ToolDeta
 
               <aside className="space-y-3">
                 {(tool.reviewCount ?? 0) >= 1 ? (
-                  <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                  <div className="panel-base rounded-lg p-4">
                     <ScoreBar score={tool.score} reviewCount={tool.reviewCount ?? 0} />
                   </div>
                 ) : null}
-                <div className="rounded-lg border border-lime-300/25 bg-lime-300/10 p-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-lime-100">
+                <div className="rounded-lg border border-[var(--color-accent-border)] bg-[var(--color-accent-soft)] p-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-[var(--color-accent)]">
                     <BadgePercent className="h-4 w-4" />
                     优惠 / 免费额度
                   </div>
-                  <p className="mt-2 text-sm leading-7 text-slate-100">{fallbackText(dealSummary, "暂无明确优惠信息，建议先查看官网免费额度。")}</p>
+                  <p className="mt-2 text-sm leading-7 text-[var(--text-primary)]">{fallbackText(dealSummary, "暂无明确优惠信息，建议先查看官网免费额度。")}</p>
                 </div>
                 {officialUrlAvailable ? (
                   <a
                     href={tool.officialUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded bg-lime-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-lime-200"
+                    className="btn-primary inline-flex w-full items-center justify-center gap-2 rounded px-5 py-3 text-sm font-semibold"
                   >
                     访问官网
                     <ExternalLink className="h-4 w-4" />
                   </a>
                 ) : (
-                  <span className="inline-flex w-full items-center justify-center rounded border border-white/10 bg-white/5 px-5 py-3 text-sm font-medium text-slate-300">
+                  <span className="inline-flex w-full items-center justify-center rounded border border-[var(--border-default)] bg-[var(--bg-surface-strong)] px-5 py-3 text-sm font-medium text-[var(--text-secondary)]">
                     官网待补充
                   </span>
                 )}
-                <BackToResultsLink className="inline-flex w-full items-center justify-center gap-2 rounded border border-white/10 bg-white/5 px-5 py-3 text-sm font-medium text-white" />
+                <BackToResultsLink className="btn-secondary inline-flex w-full items-center justify-center gap-2 rounded px-5 py-3 text-sm font-medium" />
               </aside>
             </div>
           </div>
         </section>
 
-        <section className="bg-[#f7f8fb] py-8">
+        <section className="py-8">
           <div className="mx-auto grid w-full max-w-[1440px] gap-6 px-4 sm:px-6 xl:grid-cols-[minmax(0,1fr)_360px] lg:px-8">
             <div className="space-y-6">
-              <section className="rounded-lg border border-slate-200 bg-white p-5 md:p-6">
-                <h2 className="text-xl font-semibold text-slate-950">先看缺陷 / 限制</h2>
+              <section className="grid gap-6 lg:grid-cols-2">
+                <div className="panel-base rounded-lg p-5 md:p-6">
+                  <h2 className="text-xl font-semibold text-[var(--text-primary)]">核心特点</h2>
+                  <ul className="mt-4 space-y-3 text-sm leading-7 text-[var(--text-secondary)]">
+                    {fallbackList(features, "核心特点待补充。").map((item) => (
+                      <li key={item} className="flex gap-3 rounded-lg border border-[var(--color-primary-border)] bg-[var(--color-primary-soft)] px-4 py-3">
+                        <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-[var(--color-primary)]" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="panel-base rounded-lg p-5 md:p-6">
+                  <h2 className="text-xl font-semibold text-[var(--text-primary)]">适合人群</h2>
+                  <ul className="mt-4 space-y-3 text-sm leading-7 text-[var(--text-secondary)]">
+                    {fallbackList(bestFor, "适合人群待补充。").map((item) => (
+                      <li key={item} className="flex gap-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface-strong)] px-4 py-3">
+                        <UsersRound className="mt-1 h-4 w-4 shrink-0 text-[var(--text-tertiary)]" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </section>
+
+              <section className="panel-base rounded-lg p-5 md:p-6">
+                <h2 className="text-xl font-semibold text-[var(--text-primary)]">缺陷 / 限制</h2>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   {fallbackList(limitations, "暂未收录明确缺陷，建议先用免费额度或测试账号小范围试用。").map((item) => (
-                    <div key={item} className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm leading-7 text-slate-800">
-                      <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-rose-700">
+                    <div key={item} className="rounded-lg border border-[var(--border-default)] bg-[var(--danger-soft)] p-4 text-sm leading-7 text-[var(--text-primary)]">
+                      <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--danger)]">
                         <TriangleAlert className="h-4 w-4" />
                         需要注意
                       </div>
@@ -312,42 +340,16 @@ export default function ToolDetailPage({ tool, relatedTools, reviews }: ToolDeta
                 </div>
               </section>
 
-              <section className="grid gap-6 lg:grid-cols-2">
-                <div className="rounded-lg border border-slate-200 bg-white p-5 md:p-6">
-                  <h2 className="text-xl font-semibold text-slate-950">核心特点</h2>
-                  <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-700">
-                    {fallbackList(features, "核心特点待补充。").map((item) => (
-                      <li key={item} className="flex gap-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
-                        <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-blue-700" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="rounded-lg border border-slate-200 bg-white p-5 md:p-6">
-                  <h2 className="text-xl font-semibold text-slate-950">适合人群</h2>
-                  <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-700">
-                    {fallbackList(bestFor, "适合人群待补充。").map((item) => (
-                      <li key={item} className="flex gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                        <UsersRound className="mt-1 h-4 w-4 shrink-0 text-slate-500" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-slate-200 bg-white p-5 md:p-6">
-                <h2 className="text-xl font-semibold text-slate-950">工具简介</h2>
-                <p className="mt-4 text-sm leading-8 text-slate-700">{fallbackText(tool.description, fallbackText(tool.summary, "详细介绍待补充。"))}</p>
+              <section className="panel-base rounded-lg p-5 md:p-6">
+                <h2 className="text-xl font-semibold text-[var(--text-primary)]">工具简介</h2>
+                <p className="mt-4 text-sm leading-8 text-[var(--text-secondary)]">{fallbackText(tool.description, fallbackText(tool.summary, "详细介绍待补充。"))}</p>
               </section>
 
               {mediaItems.length > 0 ? (
-                <section className="rounded-lg border border-slate-200 bg-white p-5 md:p-6">
+                <section className="panel-base rounded-lg p-5 md:p-6">
                   <div className="flex items-center gap-2">
-                    <ImageIcon className="h-5 w-5 text-slate-500" />
-                    <h2 className="text-xl font-semibold text-slate-950">媒体演示</h2>
+                    <ImageIcon className="h-5 w-5 text-[var(--text-tertiary)]" />
+                    <h2 className="text-xl font-semibold text-[var(--text-primary)]">媒体演示</h2>
                   </div>
                   <div className="mt-4 grid gap-4 md:grid-cols-2">
                     {mediaItems.map((item) => (
@@ -358,20 +360,20 @@ export default function ToolDetailPage({ tool, relatedTools, reviews }: ToolDeta
               ) : null}
 
               {(pros.length > 0 || cons.length > 0) ? (
-                <section className="rounded-lg border border-slate-200 bg-white p-5 md:p-6">
-                  <h2 className="text-xl font-semibold text-slate-950">优势与旧版点评回退</h2>
+                <section className="panel-base rounded-lg p-5 md:p-6">
+                  <h2 className="text-xl font-semibold text-[var(--text-primary)]">优势与不足</h2>
                   <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                      <p className="text-sm font-semibold text-emerald-700">优势</p>
-                      <ul className="mt-3 space-y-2 text-sm leading-7 text-slate-700">
+                    <div className="rounded-lg border border-[var(--border-default)] bg-[var(--success-soft)] p-4">
+                      <p className="text-sm font-semibold text-[var(--success)]">优势</p>
+                      <ul className="mt-3 space-y-2 text-sm leading-7 text-[var(--text-secondary)]">
                         {fallbackList(pros, "优势待补充。").map((item) => (
                           <li key={item}>{item}</li>
                         ))}
                       </ul>
                     </div>
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                      <p className="text-sm font-semibold text-amber-700">限制</p>
-                      <ul className="mt-3 space-y-2 text-sm leading-7 text-slate-700">
+                    <div className="rounded-lg border border-[var(--border-default)] bg-[var(--warning-soft)] p-4">
+                      <p className="text-sm font-semibold text-[var(--warning)]">限制</p>
+                      <ul className="mt-3 space-y-2 text-sm leading-7 text-[var(--text-secondary)]">
                         {fallbackList(cons, "限制待补充。").map((item) => (
                           <li key={item}>{item}</li>
                         ))}
@@ -382,32 +384,32 @@ export default function ToolDetailPage({ tool, relatedTools, reviews }: ToolDeta
               ) : null}
 
               <section className="grid gap-6 lg:grid-cols-2">
-                <div className="rounded-lg border border-slate-200 bg-white p-5 md:p-6">
-                  <h2 className="text-xl font-semibold text-slate-950">适用场景</h2>
+                <div className="panel-base rounded-lg p-5 md:p-6">
+                  <h2 className="text-xl font-semibold text-[var(--text-primary)]">适用场景</h2>
                   {scenarioRecommendations.length > 0 ? (
                     <div className="mt-4 grid gap-4">
                       {scenarioRecommendations.map((item) => (
-                        <div key={`${item.audience}-${item.task}`} className="rounded-lg border border-slate-200 bg-white p-4">
-                          <p className="text-xs font-semibold text-slate-400">{item.audience}</p>
-                          <h3 className="mt-2 text-base font-semibold text-slate-950">{item.task}</h3>
-                          <p className="mt-3 text-sm leading-7 text-slate-700">{item.summary}</p>
+                        <div key={`${item.audience}-${item.task}`} className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] p-4">
+                          <p className="text-xs font-semibold text-[var(--text-tertiary)]">{item.audience}</p>
+                          <h3 className="mt-2 text-base font-semibold text-[var(--text-primary)]">{item.task}</h3>
+                          <p className="mt-3 text-sm leading-7 text-[var(--text-secondary)]">{item.summary}</p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                    <div className="mt-4 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface-strong)] px-4 py-5 text-sm text-[var(--text-secondary)]">
                       适用场景正在补充中，可先参考特点和适合人群判断是否匹配。
                     </div>
                   )}
                 </div>
 
-                <div className="rounded-lg border border-slate-200 bg-white p-5 md:p-6">
-                  <h2 className="text-xl font-semibold text-slate-950">基础信息</h2>
+                <div className="panel-base rounded-lg p-5 md:p-6">
+                  <h2 className="text-xl font-semibold text-[var(--text-primary)]">基础信息</h2>
                   <div className="mt-4 grid gap-3">
                     {decisionFields.concat(infoFields).map((field) => (
-                      <div key={`${field.label}-${field.value}`} className="flex items-start justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                        <p className="text-xs font-semibold text-slate-500">{field.label}</p>
-                        <p className="text-right text-sm font-medium leading-6 text-slate-800">{field.value}</p>
+                      <div key={`${field.label}-${field.value}`} className="flex items-start justify-between gap-4 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface-strong)] px-4 py-3">
+                        <p className="text-xs font-semibold text-[var(--text-tertiary)]">{field.label}</p>
+                        <p className="text-right text-sm font-medium leading-6 text-[var(--text-primary)]">{field.value}</p>
                       </div>
                     ))}
                   </div>
@@ -415,22 +417,22 @@ export default function ToolDetailPage({ tool, relatedTools, reviews }: ToolDeta
               </section>
 
               {reviewPreview.length > 0 ? (
-                <section className="rounded-lg border border-slate-200 bg-white p-5 md:p-6">
+                <section className="panel-base rounded-lg p-5 md:p-6">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-blue-600" />
-                    <h2 className="text-xl font-semibold text-slate-950">用户/编辑反馈</h2>
+                    <Sparkles className="h-5 w-5 text-[var(--color-primary)]" />
+                    <h2 className="text-xl font-semibold text-[var(--text-primary)]">用户/编辑反馈</h2>
                   </div>
                   <div className="mt-4 space-y-4">
                     {reviewPreview.map((item, index) => (
-                      <article key={`${item.sourceType}-${item.title}-${index}`} className="rounded-lg border border-slate-200 bg-white p-4">
+                      <article key={`${item.sourceType}-${item.title}-${index}`} className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] p-4">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded bg-slate-950 px-3 py-1 text-xs font-semibold text-white">
+                          <span className="rounded bg-[var(--text-primary)] px-3 py-1 text-xs font-semibold text-[var(--bg-page)]">
                             {item.sourceType === "editor" ? "编辑点评" : "用户反馈"}
                           </span>
-                          {typeof item.rating === "number" ? <span className="text-sm font-semibold text-amber-600">{item.rating.toFixed(1)} 分</span> : null}
+                          {typeof item.rating === "number" ? <span className="text-sm font-semibold text-[var(--color-accent)]">{item.rating.toFixed(1)} 分</span> : null}
                         </div>
-                        {item.title ? <h3 className="mt-3 text-base font-semibold text-slate-950">{item.title}</h3> : null}
-                        <p className="mt-2 text-sm leading-7 text-slate-700">{fallbackText(item.body, "点评内容待补充。")}</p>
+                        {item.title ? <h3 className="mt-3 text-base font-semibold text-[var(--text-primary)]">{item.title}</h3> : null}
+                        <p className="mt-2 text-sm leading-7 text-[var(--text-secondary)]">{fallbackText(item.body, "点评内容待补充。")}</p>
                       </article>
                     ))}
                   </div>
@@ -442,8 +444,8 @@ export default function ToolDetailPage({ tool, relatedTools, reviews }: ToolDeta
 
             <aside className="space-y-6">
               {relatedTools.length > 0 ? (
-                <section className="rounded-lg border border-slate-200 bg-white p-5">
-                  <h2 className="text-lg font-semibold text-slate-950">相似工具</h2>
+                <section className="panel-base rounded-lg p-5">
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">相似工具</h2>
                   <div className="mt-4 space-y-4">
                     {relatedTools.map((item) => (
                       <ToolCard
@@ -474,7 +476,7 @@ export default function ToolDetailPage({ tool, relatedTools, reviews }: ToolDeta
                   </div>
                 </section>
               ) : (
-                <section className="rounded-lg border border-dashed border-slate-200 bg-white p-5 text-sm text-slate-500">
+                <section className="rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] p-5 text-sm text-[var(--text-secondary)]">
                   暂时没有可展示的相似工具。
                 </section>
               )}

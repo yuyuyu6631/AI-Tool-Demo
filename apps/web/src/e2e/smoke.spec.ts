@@ -3,8 +3,8 @@ import { expect, test } from "@playwright/test";
 test("demo smoke: search from home and open a tool detail", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByPlaceholder("比如：帮我润色论文 / 做一份销售周报 / 看懂这张表格").fill("做答辩 PPT");
-  await page.getByRole("button", { name: "聚焦任务输入" }).click();
+  await page.getByPlaceholder("比如：做销售周报 PPT / 分析投放数据 / 修复前端报错").fill("做答辩 PPT");
+  await page.getByRole("button", { name: "找工具" }).click();
 
   await expect(page).toHaveURL(/\/tools\?/);
   await expect(page).toHaveURL(/mode=ai/);

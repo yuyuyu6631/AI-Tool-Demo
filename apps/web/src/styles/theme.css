@@ -899,6 +899,28 @@
     background: var(--home-gold);
   }
 
+  .home-recent-tools {
+    border-color: var(--home-border);
+    background: color-mix(in srgb, var(--home-card-soft) 92%, transparent);
+    color: var(--home-copy);
+    box-shadow: var(--home-card-shadow);
+  }
+
+  .home-recent-tools svg,
+  .home-recent-tool div:first-child {
+    color: var(--home-text);
+  }
+
+  .home-recent-tool {
+    border: 1px solid var(--home-border);
+    background: color-mix(in srgb, var(--home-card) 78%, transparent);
+  }
+
+  .home-recent-tool:hover {
+    border-color: var(--home-border-strong);
+    background: var(--home-card);
+  }
+
   @keyframes homeOrbDrift {
     from {
       transform: translate3d(0, 0, 0) scale(1);

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const HOME_SEARCH_PLACEHOLDER = "比如：帮我润色论文 / 做一份销售周报 / 看懂这张表格";
+const HOME_SEARCH_PLACEHOLDER = "比如：做销售周报 PPT / 分析投放数据 / 修复前端报错";
 
 test.describe("Homepage-first navigation", () => {
   test.use({ viewport: { width: 1280, height: 720 } });
@@ -10,9 +10,9 @@ test.describe("Homepage-first navigation", () => {
     await page.waitForLoadState("networkidle");
 
     await expect(page).toHaveTitle(/星点评/);
-    await expect(page.getByRole("heading", { name: "同一个任务，看看哪个 AI 真能做好" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "聚焦任务输入" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "PPT 出框架" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "按任务找到合适的 AI 工具" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "找工具" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "PPT 初稿" })).toBeVisible();
     await expect(page.locator("header.site-header nav")).toBeVisible();
     await expect(page.locator("header.site-header nav").getByRole("link", { name: "按任务找" })).toBeVisible();
   });
@@ -22,7 +22,7 @@ test.describe("Homepage-first navigation", () => {
     await page.waitForLoadState("networkidle");
 
     await page.getByPlaceholder(HOME_SEARCH_PLACEHOLDER).fill("写论文");
-    await page.getByRole("button", { name: "聚焦任务输入" }).click();
+    await page.getByRole("button", { name: "找工具" }).click();
 
     await expect(page).toHaveURL(/\/tools\?/);
     await expect(page).toHaveURL(/mode=ai/);

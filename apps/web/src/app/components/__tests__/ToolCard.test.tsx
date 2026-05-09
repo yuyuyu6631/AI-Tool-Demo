@@ -23,7 +23,7 @@ describe("ToolCard", () => {
 
     expect(screen.getByText("ChatGPT")).toBeInTheDocument();
     expect(screen.getByText("9.5")).toBeInTheDocument();
-    expect(screen.getByText("综合能力稳定，适合写作、分析和代码协作。")).toBeInTheDocument();
+    expect(screen.getByText("适合内容团队，用于长文本理解稳定")).toBeInTheDocument();
     expect(screen.getByTestId("price-tag")).toHaveTextContent("有免费额度");
     expect(screen.getByText("对话")).toBeInTheDocument();
     expect(screen.getByText("写作")).toBeInTheDocument();
@@ -46,6 +46,7 @@ describe("ToolCard", () => {
     render(<ToolCard slug="chatgpt" name="ChatGPT" summary="稳定的通用助手。" tags={["对话"]} url="https://chat.openai.com" score={9.5} />);
 
     expect(screen.getByRole("link", { name: "官网" })).toHaveAttribute("href", "https://chat.openai.com");
+    expect(screen.getByText("官网")).toBeInTheDocument();
   });
 
   it("does not crash when logo and score are missing", () => {

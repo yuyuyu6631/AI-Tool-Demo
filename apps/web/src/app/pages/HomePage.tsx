@@ -88,8 +88,19 @@ export default function HomePage({ state }: HomePageProps) {
   };
 
   const trackQuickTaskClick = (taskId: QuickTask["id"]) => {
-    if (!QUICK_TASKS.some((task) => task.id === taskId)) return;
-    window.setTimeout(() => trackEvent("home_quick_task_click", { task: taskId }), 0);
+    const task = QUICK_TASKS.find((item) => item.id === taskId);
+    if (!task) return;
+    window.setTimeout(
+      () =>
+        trackEvent("home_quick_task_click", {
+          task: task.id,
+          label: task.label,
+          query: task.query,
+          destination: task.href,
+          source: "home_hero",
+        }),
+      0,
+    );
   };
 
   return (

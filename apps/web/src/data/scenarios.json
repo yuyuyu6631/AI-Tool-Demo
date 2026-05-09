@@ -1,7 +1,7 @@
 [
   {
     "slug": "ppt",
-    "title": "做 PPT 用什么 AI",
+    "title": "PPT 制作榜 TOP5",
     "description": "快速生成精美演示文稿，提升工作效率，支持多种模板和风格",
     "toolCount": 3,
     "problem": "传统 PPT 制作耗时耗力，需要花费大量时间在排版和设计上。AI 工具可以根据内容自动生成精美的演示文稿，大幅提升效率。",
@@ -11,7 +11,7 @@
   },
   {
     "slug": "writing",
-    "title": "写公众号文章用什么 AI",
+    "title": "AI 写作工具榜 TOP5",
     "description": "AI 辅助内容创作，生成高质量文章，提升创作效率",
     "toolCount": 4,
     "problem": "内容创作需要灵感和时间。AI 工具可以帮助你快速生成文章大纲、扩写内容、优化文案，让创作更高效。",
@@ -21,7 +21,7 @@
   },
   {
     "slug": "data-analysis",
-    "title": "做数据分析用什么 AI",
+    "title": "数据分析工具榜 TOP5",
     "description": "智能数据分析和可视化工具推荐，快速洞察数据价值",
     "toolCount": 3,
     "problem": "数据分析需要专业技能和工具。AI 工具可以通过自然语言查询数据、自动生成可视化图表，让数据分析更简单。",
@@ -71,7 +71,7 @@
   },
   {
     "slug": "coding-assistant",
-    "title": "编程辅助用什么 AI",
+    "title": "开发工具榜 TOP5",
     "description": "AI 代码补全、生成和优化，大幅提升开发效率",
     "toolCount": 4,
     "problem": "编程工作需要大量的代码编写和调试。AI 编程助手可以智能补全代码、生成函数、修复 bug，大幅提升开发效率。",

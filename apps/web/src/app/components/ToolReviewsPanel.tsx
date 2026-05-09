@@ -21,9 +21,9 @@ function StarIcon({ className }: { className?: string }) {
   );
 }
 
-function StarRating({ rating, className = "" }: { rating: number, className?: string }) {
+function StarRating({ rating, className = "" }: { rating: number; className?: string }) {
   return (
-    <div className={`flex items-center gap-0.5 ${className}`}>
+    <div className={`flex items-center gap-0.5 ${className}`} aria-label={`${rating} 星评分`}>
       {[1, 2, 3, 4, 5].map((star) => (
         <StarIcon
           key={star}
@@ -115,6 +115,13 @@ export default function ToolReviewsPanel({ toolSlug, reviews, summary }: ToolRev
   const displaySummary = currentReviews?.summary ?? summary ?? reviews?.summary;
   const reviewCount = displaySummary?.reviewCount ?? 0;
   const averageRating = displaySummary?.average ?? 0;
+  const ratingLabels: Record<string, string> = {
+    "5": "极力推荐",
+    "4": "值得一试",
+    "3": "一般般",
+    "2": "不太推荐",
+    "1": "不推荐",
+  };
 
   return (
     <div className="panel-base relative overflow-hidden rounded-[24px] border border-slate-200/60 bg-white p-6 shadow-sm sm:p-8">
@@ -240,22 +247,37 @@ export default function ToolReviewsPanel({ toolSlug, reviews, summary }: ToolRev
             <form onSubmit={(event) => void handleSubmit(event)}>
               <div className="mb-6 space-y-5">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">推荐指数</label>
-                  <div className="flex items-center gap-2">
+                  <fieldset>
+                    <legend className="mb-2 block text-sm font-medium text-slate-700">推荐指数</legend>
+                  <div className="flex items-center gap-2" role="radiogroup" aria-label="推荐指数">
                     {[1, 2, 3, 4, 5].map((value) => (
                       <button
                         key={value}
                         type="button"
+                        role="radio"
+                        aria-checked={rating === String(value)}
+                        aria-label={`${value} 星，${ratingLabels[String(value)]}`}
                         onClick={() => setRating(String(value))}
-                        className={`group p-1 transition-transform hover:scale-110 focus:outline-none`}
+                        onKeyDown={(event) => {
+                          if (event.key === "ArrowRight" || event.key === "ArrowUp") {
+                            event.preventDefault();
+                            setRating(String(Math.min(5, Number(rating) + 1)));
+                          }
+                          if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+                            event.preventDefault();
+                            setRating(String(Math.max(1, Number(rating) - 1)));
+                          }
+                        }}
+                        className="group rounded-md p-1 transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2"
                       >
                         <StarIcon className={`h-8 w-8 ${value <= Number(rating) ? 'text-amber-400' : 'text-slate-200 group-hover:text-amber-200'} transition-colors`} />
                       </button>
                     ))}
                     <span className="ml-3 text-sm font-medium text-amber-500">
-                      {rating === "5" ? "极力推荐" : rating === "4" ? "值得一试" : rating === "3" ? "一般般" : rating === "2" ? "不太推荐" : rating === "1" ? "不推荐" : ""}
+                      {ratingLabels[rating] ?? ""}
                     </span>
                   </div>
+                  </fieldset>
                 </div>
 
                 <div>

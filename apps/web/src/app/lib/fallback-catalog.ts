@@ -287,7 +287,7 @@ const FALLBACK_SCENARIOS: ScenarioSummary[] = [
   {
     id: 1,
     slug: "make-ppt",
-    title: "做 PPT 用什么 AI",
+    title: "PPT 制作榜 TOP5",
     description: "优先看能快速产出演示结构和页面雏形的工具，避免从空白页开始。",
     problem: "汇报和提案常常时间很紧，需要快速生成结构完整、可继续编辑的演示稿。",
     toolCount: 3,
@@ -298,7 +298,7 @@ const FALLBACK_SCENARIOS: ScenarioSummary[] = [
   {
     id: 2,
     slug: "write-copy",
-    title: "写文案用什么 AI",
+    title: "AI 写作工具榜 TOP5",
     description: "适合先出框架和文风方向，再进入人工润色的内容工作流。",
     problem: "内容岗位需要持续稳定地产出邮件、文章和活动文案，难点在于效率和一致性。",
     toolCount: 3,

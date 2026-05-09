@@ -1,28 +1,28 @@
 import { expect, test } from "@playwright/test";
 
-const HOME_SEARCH_PLACEHOLDER = "比如：帮我润色论文 / 做一份销售周报 / 看懂这张表格";
+const HOME_SEARCH_PLACEHOLDER = "比如：做销售周报 PPT / 分析投放数据 / 修复前端报错";
 
 test("home hero renders semantic search without exposing workflow internals", async ({ page }) => {
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  await expect(page.getByRole("heading", { name: "同一个任务，看看哪个 AI 真能做好" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "按任务找到合适的 AI 工具" })).toBeVisible();
   await expect(page.getByPlaceholder(HOME_SEARCH_PLACEHOLDER)).toBeVisible();
-  await expect(page.getByRole("button", { name: "聚焦任务输入" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "找工具" })).toBeVisible();
   await expect(page.getByText("任务路线预览")).toHaveCount(0);
   await expect(page.getByText("LIVE")).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /看本周实测/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /看场景榜单/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /逛工具库/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: "论文润色" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "写作润色" })).toBeVisible();
 });
 
 test("home first viewport keeps search and quick tasks visible on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
 
-  const heading = page.getByRole("heading", { name: "同一个任务，看看哪个 AI 真能做好" });
+  const heading = page.getByRole("heading", { name: "按任务找到合适的 AI 工具" });
   const search = page.getByPlaceholder(HOME_SEARCH_PLACEHOLDER);
-  const quickTask = page.getByRole("link", { name: "论文润色" });
+  const quickTask = page.getByRole("link", { name: "写作润色" });
   await expect(heading).toBeVisible();
   await expect(search).toBeVisible();
   await expect(quickTask).toBeVisible();
@@ -38,7 +38,7 @@ test("semantic search returns results without showing reasoning panels", async (
   await page.goto("/");
 
   await page.getByPlaceholder(HOME_SEARCH_PLACEHOLDER).fill("做答辩 PPT 用什么 AI");
-  await page.getByRole("button", { name: "聚焦任务输入" }).click();
+  await page.getByRole("button", { name: "找工具" }).click();
 
   await expect(page).toHaveURL(/\/tools\?/);
   await expect(page).toHaveURL(/mode=ai/);
@@ -58,7 +58,7 @@ test("tool detail opened from the homepage tools entry leads with third-party re
   await page.getByRole("link", { name: /^详情$/ }).first().click();
   await expect(page).toHaveURL(/\/tools\/.+/);
   await expect(page.getByText("评测结论", { exact: true })).toBeVisible();
-  await expect(page.getByText("先看缺陷 / 限制")).toBeVisible();
+  await expect(page.getByText("缺陷 / 限制")).toBeVisible();
   await expect(page.getByText("核心特点")).toBeVisible();
   await expect(page.getByRole("heading", { name: "适合人群" })).toBeVisible();
   await expect(page.getByText("优惠 / 免费额度")).toBeVisible();

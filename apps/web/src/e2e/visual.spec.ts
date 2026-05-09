@@ -13,9 +13,9 @@ for (const item of cases) {
     await page.goto(item.path, { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle");
 
-    const heading = page.getByRole("heading", { name: "同一个任务，看看哪个 AI 真能做好" });
-    const search = page.getByPlaceholder("比如：帮我润色论文 / 做一份销售周报 / 看懂这张表格");
-    const quickTask = page.getByRole("link", { name: "论文润色" });
+    const heading = page.getByRole("heading", { name: "按任务找到合适的 AI 工具" });
+    const search = page.getByPlaceholder("比如：做销售周报 PPT / 分析投放数据 / 修复前端报错");
+    const quickTask = page.getByRole("link", { name: "写作润色" });
     const toolsEntry = page.getByRole("link", { name: /逛工具库/ });
 
     await expect(heading).toBeVisible();

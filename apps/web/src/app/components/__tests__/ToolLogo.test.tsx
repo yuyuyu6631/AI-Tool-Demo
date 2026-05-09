@@ -7,7 +7,7 @@ describe("ToolLogo", () => {
     render(<ToolLogo slug="tenweb" name="10Web" logoPath="aitool/source/logos/10Web.png" />);
 
     const image = screen.getByRole("img", { name: "10Web logo" }) as HTMLImageElement;
-    expect(image.getAttribute("src")).toContain("/logos/10Web.png");
+    expect(decodeURIComponent(image.getAttribute("src") || "")).toContain("/logos/10Web.png");
   });
 
   it("falls back to brand mark when logoPath is missing", () => {

@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     meilisearch_api_key: str = ""
     meilisearch_index: str = "tools"
     recommendation_ttl_seconds: int = 1800
+    recommendation_result_limit: int = 3
+    ai_search_candidate_limit: int = 240
+    ai_search_intent_timeout_seconds: float = 0.45
+    ai_search_intent_failure_cooldown_seconds: float = 30.0
 
     model_config = SettingsConfigDict(env_file=ROOT_DIR / ".env", extra="ignore")
 

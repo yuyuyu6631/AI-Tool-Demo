@@ -47,10 +47,10 @@ def _get_backend() -> tuple[str, str, str, str]:
     if os.environ.get("CODEX_TESTING") == "1":
         return STUB_PROVIDER, "", STUB_MODEL, ""
 
-    provider = (settings.embedding_provider or settings.ai_provider or STUB_PROVIDER).strip().lower()
-    api_key = (settings.embedding_api_key or settings.ai_api_key).strip()
+    provider = (settings.embedding_provider or STUB_PROVIDER).strip().lower()
+    api_key = settings.embedding_api_key.strip()
     model = (settings.embedding_model or "").strip()
-    base_url = (settings.embedding_openai_base_url or settings.ai_openai_base_url).strip()
+    base_url = settings.embedding_openai_base_url.strip()
 
     if provider in ("", STUB_PROVIDER) or provider not in REMOTE_PROVIDERS or not api_key or not model or not base_url:
         return STUB_PROVIDER, "", STUB_MODEL, ""

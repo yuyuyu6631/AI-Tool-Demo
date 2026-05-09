@@ -83,6 +83,26 @@ function resolveLoadState(error: unknown): "error" | "timeout" {
   return "error";
 }
 
+async function loadToolsDirectory(
+  queryString: string,
+  shouldUseAiSearch: boolean,
+): Promise<{ directory: ToolsDirectoryResponse; aiSearch: AiSearchResponse | null; loadState: "idle" | "error" | "timeout" }> {
+  if (shouldUseAiSearch) {
+    try {
+      const aiSearch = await fetchAiSearch(queryString);
+      return { directory: aiSearch.directory, aiSearch, loadState: "idle" };
+    } catch {
+      // Fall back to the regular catalog only when the AI aggregation path fails.
+    }
+  }
+
+  try {
+    return { directory: await fetchDirectory(queryString), aiSearch: null, loadState: "idle" };
+  } catch (error) {
+    return { directory: EMPTY_DIRECTORY, aiSearch: null, loadState: resolveLoadState(error) };
+  }
+}
+
 export default async function Page({ searchParams }: ToolsRouteProps) {
   const params = await searchParams;
   const state: ToolsPageState = {
@@ -103,18 +123,7 @@ export default async function Page({ searchParams }: ToolsRouteProps) {
 
   const queryString = buildDirectoryQuery(state);
   const shouldUseAiSearch = state.mode === "ai" && Boolean(state.q?.trim());
-  const aiSearchPromise: Promise<AiSearchResponse | null> = shouldUseAiSearch
-    ? fetchAiSearch(queryString)
-    : Promise.resolve(null);
-
-  const [directoryResult, aiSearchResult] = await Promise.allSettled([
-    fetchDirectory(queryString),
-    aiSearchPromise,
-  ]);
-
-  const aiSearch = aiSearchResult.status === "fulfilled" ? aiSearchResult.value : null;
-  const directory = aiSearch?.directory ?? (directoryResult.status === "fulfilled" ? directoryResult.value : EMPTY_DIRECTORY);
-  const loadState = directoryResult.status === "fulfilled" || aiSearch?.directory ? "idle" : resolveLoadState(directoryResult.reason);
+  const { directory, aiSearch, loadState } = await loadToolsDirectory(queryString, shouldUseAiSearch);
 
   return <ToolsPage directory={directory} aiSearch={aiSearch} state={state} loadState={loadState} />;
 }

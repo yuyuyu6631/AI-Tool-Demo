@@ -1,5 +1,9 @@
+import time
+
 from app.schemas.ai_search import AiSearchResult
+from app.schemas.catalog import ToolsDirectoryResponse
 from app.schemas.tool import AccessFlags
+from app.services import ai_search_service
 from app.services.ai_search_service import _build_agent_recommendation
 
 
@@ -64,3 +68,127 @@ def test_agent_recommendation_has_decision_complete_pipeline():
     assert agent.toolPlan[0].free_signal
     assert agent.toolPlan[0].limitation_risk
     assert agent.toolPlan[0].next_step
+
+
+def test_ai_search_uses_configured_candidate_limit(monkeypatch):
+    calls: list[dict] = []
+    tool = _result("gamma", "Gamma", reason="适合快速生成演示初稿")
+    directory = ToolsDirectoryResponse(
+        items=[tool],
+        total=1,
+        page=1,
+        pageSize=72,
+        hasMore=False,
+        categories=[],
+        tags=[],
+        statuses=[],
+        priceFacets=[],
+        accessFacets=[],
+        priceRangeFacets=[],
+        presets=[],
+        meta=None,
+    )
+
+    def fake_directory(**kwargs):
+        calls.append(kwargs)
+        return directory
+
+    monkeypatch.setattr(ai_search_service.settings, "ai_search_candidate_limit", 72)
+    monkeypatch.setattr(ai_search_service.catalog_service, "get_tools_directory", fake_directory)
+    monkeypatch.setattr(
+        ai_search_service,
+        "parse_ai_search_intent",
+        lambda query, normalized_query: (
+            {"intent_summary": "PPT 搜索", "task": "presentation", "constraints": {}, "quick_actions": []},
+            "fallback",
+            False,
+        ),
+    )
+    monkeypatch.setattr(ai_search_service, "apply_match_plan_boost", lambda db, query, scenario, tags, items: (items, {}))
+
+    response = ai_search_service.search_with_ai(
+        db=object(),
+        query="做PPT",
+        category=None,
+        tag=None,
+        price=None,
+        access=None,
+        price_range=None,
+        sort="featured",
+        view="hot",
+        page=1,
+        page_size=24,
+    )
+
+    assert response.directory.items[0].slug == "gamma"
+    assert calls[0]["page"] == 1
+    assert calls[0]["page_size"] == 72
+
+
+def test_stub_provider_skips_llm_intent_parser(monkeypatch):
+    monkeypatch.setattr(ai_search_service, "get_redis_client", lambda: None)
+    monkeypatch.setattr(ai_search_service, "_intent_llm_retry_after", 0.0)
+    monkeypatch.setattr(ai_search_service.settings, "ai_provider", "stub")
+    monkeypatch.setattr(ai_search_service.settings, "ai_api_key", "test-key")
+    monkeypatch.setattr(ai_search_service.settings, "ai_model", "test-model")
+    monkeypatch.setattr(ai_search_service.settings, "ai_openai_base_url", "https://example.invalid/v1")
+    monkeypatch.setattr(
+        ai_search_service,
+        "_call_intent_llm",
+        lambda query, normalized_query: (_ for _ in ()).throw(AssertionError("LLM should not be called")),
+    )
+
+    payload, source, cache_hit = ai_search_service.parse_ai_search_intent("做PPT", "presentation ppt")
+
+    assert payload["task"] == "presentation"
+    assert source == "fallback"
+    assert cache_hit is False
+
+
+def test_ai_search_timeout_does_not_wait_for_slow_intent_thread(monkeypatch):
+    tool = _result("gamma", "Gamma", reason="适合快速生成演示初稿")
+    directory = ToolsDirectoryResponse(
+        items=[tool],
+        total=1,
+        page=1,
+        pageSize=24,
+        hasMore=False,
+        categories=[],
+        tags=[],
+        statuses=[],
+        priceFacets=[],
+        accessFacets=[],
+        priceRangeFacets=[],
+        presets=[],
+        meta=None,
+    )
+
+    def slow_intent(query: str, normalized_query: str):
+        time.sleep(0.4)
+        return {"intent_summary": "慢解析", "task": "presentation", "constraints": {}, "quick_actions": []}, "llm", False
+
+    monkeypatch.setattr(ai_search_service.settings, "ai_search_intent_timeout_seconds", 0.05)
+    monkeypatch.setattr(ai_search_service.settings, "ai_search_intent_failure_cooldown_seconds", 1.0)
+    monkeypatch.setattr(ai_search_service.catalog_service, "get_tools_directory", lambda **kwargs: directory)
+    monkeypatch.setattr(ai_search_service, "parse_ai_search_intent", slow_intent)
+    monkeypatch.setattr(ai_search_service, "apply_match_plan_boost", lambda db, query, scenario, tags, items: (items, {}))
+
+    started_at = time.perf_counter()
+    response = ai_search_service.search_with_ai(
+        db=object(),
+        query="做PPT",
+        category=None,
+        tag=None,
+        price=None,
+        access=None,
+        price_range=None,
+        sort="featured",
+        view="hot",
+        page=1,
+        page_size=24,
+    )
+    elapsed = time.perf_counter() - started_at
+
+    assert response.meta.intent_source == "fallback"
+    assert response.directory.items[0].slug == "gamma"
+    assert elapsed < 0.3

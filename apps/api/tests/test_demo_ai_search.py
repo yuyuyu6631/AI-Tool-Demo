@@ -156,6 +156,32 @@ def setup_module():
             deal_summary="企业版需联系销售",
             pricing_type="contact",
         )
+        _add_tool(
+            db,
+            slug="fireflies",
+            name="Fireflies",
+            category_name="办公演示",
+            summary="AI 会议助手，适合会议录音、转写和纪要总结",
+            description="自动整理会议记录、行动项和访谈摘要。",
+            tags=["会议", "纪要", "转写", "总结"],
+            features_json=["自动生成会议纪要", "提取行动项和重点"],
+            limitations_json=["嘈杂录音需要人工复核"],
+            best_for_json=["销售团队", "项目经理", "远程团队"],
+            deal_summary="免费版可试用基础会议记录",
+        )
+        _add_tool(
+            db,
+            slug="mail-writer",
+            name="Mail Writer",
+            category_name="办公演示",
+            summary="客户开发邮件和销售外联文案助手",
+            description="适合生成客户开发邮件、跟进话术和销售外联内容。",
+            tags=["邮件", "客户", "销售", "外联"],
+            features_json=["生成客户开发邮件", "优化跟进话术"],
+            limitations_json=["行业细节需要人工补充"],
+            best_for_json=["销售人员", "客户经理"],
+            deal_summary="免费版可生成基础邮件草稿",
+        )
         db.commit()
     finally:
         db.close()
@@ -213,3 +239,26 @@ def test_demo_search_can_prioritize_free_and_domestic_access():
     assert domestic_items
     assert domestic_items[0]["accessFlags"]["needsVpn"] is False
     assert "国内" in domestic_items[0]["reason"]
+
+
+def test_demo_search_splits_compact_task_queries_to_find_specific_tools():
+    meeting_response = client.get("/api/ai-search", params={"q": "会议纪要", "page_size": 5})
+    assert meeting_response.status_code == 200
+    meeting_items = meeting_response.json()["directory"]["items"]
+    assert meeting_items
+    assert meeting_items[0]["slug"] == "fireflies"
+
+    mail_response = client.get("/api/ai-search", params={"q": "生成客户开发邮件", "page_size": 5})
+    assert mail_response.status_code == 200
+    mail_items = mail_response.json()["directory"]["items"]
+    assert mail_items
+    assert mail_items[0]["slug"] == "mail-writer"
+
+    directory_response = client.get("/api/tools", params={"q": "会议纪要", "page_size": 5})
+    assert directory_response.status_code == 200
+    assert directory_response.json()["items"][0]["slug"] == "fireflies"
+
+    mixed_response = client.get("/api/tools", params={"q": "销售汇报PPT", "page_size": 5})
+    assert mixed_response.status_code == 200
+    assert mixed_response.json()["items"]
+    assert mixed_response.json()["items"][0]["slug"] == "gamma"

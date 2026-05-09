@@ -31,12 +31,14 @@ from app.services.match_plan_service import apply_match_plan_boost
 INTENT_CACHE_PREFIX = "ai-search:intent"
 HOT_QUERY_TTL_SECONDS = 24 * 60 * 60
 DEFAULT_QUERY_TTL_SECONDS = 60 * 60
-INTENT_TIMEOUT_SECONDS = 1.8
-AI_SEARCH_CANDIDATE_LIMIT = 5000
+MIN_AI_SEARCH_CANDIDATE_LIMIT = 48
+_intent_llm_retry_after = 0.0
 
 BUSINESS_MAPPINGS = {
     "写论文": "academic-writing 论文 学术 写作 文档 润色 查重 总结",
     "论文": "academic-writing 论文 学术 写作 文档 润色 查重 总结",
+    "论文排版": "academic-writing 论文 排版 格式 文档 写作",
+    "排版": "academic-writing 排版 格式 文档 写作",
     "做 ppt": "presentation ppt 演示 答辩 汇报 幻灯片 设计",
     "做ppt": "presentation ppt 演示 答辩 汇报 幻灯片 设计",
     "ppt": "presentation ppt 演示 答辩 汇报 幻灯片 设计",
@@ -49,6 +51,17 @@ BUSINESS_MAPPINGS = {
     "图片视频": "image-video 图片 绘图 海报 修图 视频 生成图",
     "图片": "image-video 图片 绘图 海报 修图 视频 生成图",
     "办公提效": "office-productivity 表格 会议 纪要 文档 自动化",
+    "会议纪要": "office-productivity 会议 纪要 转写 总结 meeting notes transcript",
+    "会议": "office-productivity 会议 纪要 转写 总结 meeting notes",
+    "纪要": "office-productivity 会议 纪要 转写 总结 notes transcript",
+    "邮件": "office-productivity 邮件 email 销售 客户 外联 文案",
+    "客户开发": "office-productivity 客户 销售 外联 邮件 crm sales outreach",
+    "销售": "office-productivity 销售 客户 crm sales outreach 邮件",
+    "公众号": "office-productivity 公众号 文章 写作 文案 内容",
+    "思维导图": "office-productivity 思维导图 脑图 mindmap diagram",
+    "excel": "data-analysis excel 表格 数据 分析 spreadsheet",
+    "Excel": "data-analysis excel 表格 数据 分析 spreadsheet",
+    "表格": "data-analysis excel 表格 数据 分析 spreadsheet",
     "数据分析": "data-analysis 数据 bi sql 报表 可视化 分析",
     "agent": "agent Agent 自动化 工作流 智能体 插件 任务执行",
     "智能体": "agent Agent 自动化 工作流 智能体 插件 任务执行",
@@ -64,9 +77,11 @@ TASK_KEYWORDS = {
     "presentation": {"ppt", "演示", "答辩", "汇报", "幻灯片", "设计", "presentation", "slides"},
     "coding": {"代码", "编程", "开发", "debug", "测试", "接口", "前端", "后端"},
     "image-video": {"图片", "绘图", "海报", "修图", "视频", "生成图"},
-    "office-productivity": {"表格", "会议", "纪要", "文档", "自动化"},
+    "office-productivity": {"表格", "会议", "纪要", "文档", "自动化", "邮件", "客户", "销售", "公众号", "思维导图"},
     "data-analysis": {"数据", "bi", "sql", "报表", "可视化", "分析"},
     "agent": {"agent", "自动化", "工作流", "智能体", "插件", "任务执行"},
+    "report-writing": {"周报", "报告", "总结", "写作", "文档"},
+    "video-editing": {"视频", "剪辑", "字幕", "配音", "高光"},
 }
 
 TOOL_ALIASES = {
@@ -204,7 +219,17 @@ def _cache_ttl_for_query(normalized_query: str) -> int:
 
 
 def _has_llm_config() -> bool:
+    if settings.ai_provider.strip().lower() == "stub":
+        return False
+    if time.monotonic() < _intent_llm_retry_after:
+        return False
     return bool(settings.ai_api_key and settings.ai_model and settings.ai_openai_base_url)
+
+
+def _mark_intent_llm_unavailable() -> None:
+    global _intent_llm_retry_after
+    cooldown_seconds = max(float(settings.ai_search_intent_failure_cooldown_seconds or 0), 0.0)
+    _intent_llm_retry_after = time.monotonic() + cooldown_seconds
 
 
 def _build_default_intent(user_query: str, normalized_query: str) -> tuple[dict, str]:
@@ -292,7 +317,8 @@ def _call_intent_llm(query: str, normalized_query: str) -> dict | None:
         method="POST",
     )
 
-    with request.urlopen(api_request, timeout=INTENT_TIMEOUT_SECONDS) as response:
+    timeout_seconds = max(float(settings.ai_search_intent_timeout_seconds or 0), 0.05)
+    with request.urlopen(api_request, timeout=timeout_seconds) as response:
         payload = json.loads(response.read().decode("utf-8"))
 
     choices = payload.get("choices", [])
@@ -381,6 +407,7 @@ def parse_ai_search_intent(query: str, normalized_query: str) -> tuple[dict, str
                 intent_payload = _normalize_intent_payload(llm_payload, query, normalized_query)
                 source = "llm"
         except (url_error.URLError, TimeoutError, ValueError, json.JSONDecodeError, OSError):
+            _mark_intent_llm_unavailable()
             source = "fallback"
 
     if redis_client:
@@ -703,6 +730,11 @@ def _build_agent_recommendation(
     )
 
 
+def _candidate_page_size(page: int, page_size: int) -> int:
+    configured_limit = max(int(settings.ai_search_candidate_limit or 0), MIN_AI_SEARCH_CANDIDATE_LIMIT)
+    return max(configured_limit, page * page_size)
+
+
 def search_with_ai(
     *,
     db,
@@ -720,8 +752,9 @@ def search_with_ai(
     started_at = time.perf_counter()
     normalized_query = normalize_query(query)
 
-    with ThreadPoolExecutor(max_workers=1) as executor:
-        intent_future = executor.submit(parse_ai_search_intent, query, normalized_query)
+    executor = ThreadPoolExecutor(max_workers=1)
+    intent_future = executor.submit(parse_ai_search_intent, query, normalized_query)
+    try:
         directory = catalog_service.get_tools_directory(
             db=db,
             q=query,
@@ -734,7 +767,7 @@ def search_with_ai(
             sort=sort,
             view=view,
             page=1,
-            page_size=max(AI_SEARCH_CANDIDATE_LIMIT, page * page_size),
+            page_size=_candidate_page_size(page, page_size),
         )
         if not directory.items:
             directory = catalog_service.get_tools_directory(
@@ -749,17 +782,22 @@ def search_with_ai(
                 sort=sort,
                 view=view,
                 page=1,
-                page_size=max(AI_SEARCH_CANDIDATE_LIMIT, page * page_size),
+                page_size=_candidate_page_size(page, page_size),
             )
 
         intent_payload: dict
         intent_source: str
         cache_hit: bool
         try:
-            intent_payload, intent_source, cache_hit = intent_future.result(timeout=INTENT_TIMEOUT_SECONDS + 0.2)
+            intent_timeout = max(float(settings.ai_search_intent_timeout_seconds or 0), 0.05)
+            intent_payload, intent_source, cache_hit = intent_future.result(timeout=intent_timeout + 0.05)
         except TimeoutError:
             intent_payload, intent_source = _build_default_intent(query, normalized_query)
             cache_hit = False
+            _mark_intent_llm_unavailable()
+            intent_future.cancel()
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
 
     constraints = intent_payload.get("constraints") if isinstance(intent_payload.get("constraints"), dict) else {}
 

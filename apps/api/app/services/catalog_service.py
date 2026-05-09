@@ -8,10 +8,12 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import time
 import unicodedata
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
+from threading import Lock
 from urllib.parse import urlparse
 
 from sqlalchemy import select
@@ -131,7 +133,23 @@ TASK_PREFIXES = (
 )
 
 TASK_TERM_EXPANSIONS = {
+    "ppt": ("ppt", "PPT", "幻灯片", "presentation", "slides", "deck"),
+    "汇报": ("汇报", "演示", "presentation", "slides", "ppt", "PPT"),
+    "演示": ("演示", "presentation", "slides", "ppt", "PPT"),
+    "论文": ("论文", "学术", "写作", "文档", "润色", "paper", "academic", "research"),
+    "排版": ("排版", "格式", "文档", "论文", "写作", "format", "layout", "typeset"),
     "文案": ("文案", "写作", "copywriting", "content", "marketing", "blog", "邮件", "workspace"),
+    "文章": ("文章", "写作", "文案", "content", "blog", "公众号"),
+    "公众号": ("公众号", "文章", "写作", "文案", "内容", "content", "copywriting"),
+    "邮件": ("邮件", "email", "mail", "销售", "客户", "外联", "营销", "文案", "writing"),
+    "客户": ("客户", "销售", "crm", "sales", "customer", "outreach", "邮件"),
+    "销售": ("销售", "客户", "sales", "crm", "outreach", "邮件", "营销"),
+    "会议": ("会议", "纪要", "转写", "录音", "meeting", "transcript", "notes", "summary"),
+    "纪要": ("纪要", "会议", "总结", "转写", "meeting", "notes", "transcript", "summary"),
+    "思维导图": ("思维导图", "脑图", "mindmap", "mind map", "map", "diagram"),
+    "导图": ("导图", "思维导图", "脑图", "mindmap", "mind map"),
+    "excel": ("excel", "表格", "数据", "分析", "spreadsheet", "sheet"),
+    "表格": ("表格", "excel", "数据", "分析", "spreadsheet", "sheet"),
     "海报": (
         "海报",
         "设计",
@@ -143,7 +161,13 @@ TASK_TERM_EXPANSIONS = {
         "presentation",
         "slides",
     ),
+    "图片": ("图片", "图像", "绘图", "海报", "生成图", "image", "visual", "design"),
+    "视频": ("视频", "剪辑", "字幕", "配音", "video", "editing", "clip", "caption"),
+    "剪辑": ("剪辑", "视频", "字幕", "配音", "video", "editing", "clip"),
     "代码": ("代码", "编程", "开发", "coding", "developer", "engineering", "automation"),
+    "前端": ("前端", "代码", "开发", "frontend", "react", "web"),
+    "报错": ("报错", "debug", "bug", "修复", "代码", "测试"),
+    "免费": ("免费", "free", "freemium", "免费增值", "试用"),
     "数据": ("数据", "数据分析", "分析", "商业智能", "bi", "analytics", "dashboard", "报表"),
     "分析": ("分析", "数据分析", "analytics", "insight", "report"),
     "报表": ("报表", "dashboard", "report", "数据分析"),
@@ -154,6 +178,16 @@ TASK_TERM_EXPANSIONS = {
 class SearchableTool:
     summary: ToolSummary
     search_text: str
+
+
+_SEARCHABLE_TOOLS_CACHE_TTL_SECONDS = 300
+_searchable_tools_cache: dict[str, tuple[float, list[SearchableTool]]] = {}
+_searchable_tools_cache_lock = Lock()
+
+
+def clear_catalog_runtime_cache() -> None:
+    with _searchable_tools_cache_lock:
+        _searchable_tools_cache.clear()
 
 
 def _repair_text(value: str | None) -> str:
@@ -510,6 +544,15 @@ def _query_token_groups(query: str) -> list[tuple[str, ...]]:
     chunks = [chunk for chunk in re.split(r"[\s/_-]+", normalized) if chunk]
     groups: list[tuple[str, ...]] = []
     for chunk in chunks:
+        matched_terms = [term for term in TASK_TERM_EXPANSIONS if term in chunk]
+        if matched_terms and chunk not in TASK_TERM_EXPANSIONS:
+            matched_terms.sort(key=lambda term: (chunk.index(term), -len(term)))
+            for term in matched_terms:
+                expansions = set(TASK_TERM_EXPANSIONS.get(term, ()))
+                expansions.add(term)
+                groups.append(tuple(sorted(expansions, key=len, reverse=True)))
+            continue
+
         expansions = set(TASK_TERM_EXPANSIONS.get(chunk, ()))
         expansions.add(chunk)
         groups.append(tuple(sorted(expansions, key=len, reverse=True)))
@@ -535,49 +578,38 @@ def _matches_query(search_text: str, token_groups: list[tuple[str, ...]]) -> boo
     return all(any(token in search_text for token in group) for group in token_groups)
 
 
-def _can_use_ai_task_search() -> bool:
-    return bool(
-        settings.ai_provider != "stub"
-        and settings.ai_api_key
-        and settings.ai_model
-        and settings.ai_openai_base_url
-    )
-
-
-def _expand_with_ai_recommendations(
+def _expand_with_relaxed_query_recall(
     *,
-    db,
     q: str | None,
     filtered: list[SearchableTool],
     searchable_tools: list[SearchableTool],
 ) -> list[SearchableTool]:
-    if (
-        filtered
-        or not q
-        or not searchable_tools
-        or not _is_task_style_query(q)
-        or not _can_use_ai_task_search()
-    ):
+    if filtered or not q or not searchable_tools or not _is_task_style_query(q):
         return filtered
 
-    from app.schemas.recommend import RecommendRequest
-    from app.services.recommendation_service import recommend
-
-    searchable_by_slug = {item.summary.slug: item for item in searchable_tools}
-    payload = RecommendRequest(query=q, candidateSlugs=list(searchable_by_slug))
-
-    try:
-        recommendations = recommend(db=db, payload=payload)
-    except Exception:
+    token_groups = _query_token_groups(q)
+    if not token_groups:
         return filtered
 
-    expanded: list[SearchableTool] = []
-    for item in recommendations:
-        matched = searchable_by_slug.get(item.slug)
-        if matched is not None:
-            expanded.append(matched)
+    scored: list[tuple[int, ToolSummary, SearchableTool]] = []
+    for item in searchable_tools:
+        matched_group_count = sum(
+            1 for group in token_groups if any(token in item.search_text for token in group)
+        )
+        if matched_group_count:
+            scored.append((matched_group_count, item.summary, item))
 
-    return expanded or filtered
+    scored.sort(
+        key=lambda row: (
+            row[0],
+            row[1].featured,
+            float(row[1].score),
+            row[1].createdAt,
+            row[1].id,
+        ),
+        reverse=True,
+    )
+    return [item for _, _, item in scored]
 
 
 def _matches_category(tool: ToolSummary, category_slug: str) -> bool:
@@ -804,6 +836,14 @@ def _build_presets(items: list[ToolSummary]) -> list[PresetView]:
 def _load_searchable_tools(
     db, *, status_filter: str | None = PUBLIC_TOOL_STATUS
 ) -> list[SearchableTool]:
+    bind = db.get_bind()
+    cache_key = f"{id(bind)}:{status_filter or '__all__'}"
+    now = time.monotonic()
+    with _searchable_tools_cache_lock:
+        cached = _searchable_tools_cache.get(cache_key)
+        if cached and cached[0] > now:
+            return list(cached[1])
+
     stmt = select(Tool).options(
         selectinload(Tool.tags).selectinload(ToolTag.tag),
         selectinload(Tool.categories).selectinload(ToolCategory.category),
@@ -817,7 +857,13 @@ def _load_searchable_tools(
         for row in rows
     ]
     if status_filter == PUBLIC_TOOL_STATUS:
-        return [item for item in items if not _is_public_catalog_garbage(item.summary)]
+        items = [item for item in items if not _is_public_catalog_garbage(item.summary)]
+
+    with _searchable_tools_cache_lock:
+        _searchable_tools_cache[cache_key] = (
+            time.monotonic() + _SEARCHABLE_TOOLS_CACHE_TTL_SECONDS,
+            list(items),
+        )
     return items
 
 
@@ -1018,8 +1064,7 @@ def _get_tools_directory_legacy(
         price_range_slug=price_range_slug,
     )
     filtered_searchable = _apply_query_recall(db=db, items=base_filtered_searchable, q=q)
-    filtered_searchable = _expand_with_ai_recommendations(
-        db=db,
+    filtered_searchable = _expand_with_relaxed_query_recall(
         q=q,
         filtered=filtered_searchable,
         searchable_tools=searchable_tools,

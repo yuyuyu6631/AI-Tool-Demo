@@ -85,6 +85,28 @@ function buildDirectoryFromTools(items: ToolsDirectoryResponse["items"]): ToolsD
   };
 }
 
+async function loadPrimaryDirectory(
+  state: HomePageState,
+): Promise<{ directory: ToolsDirectoryResponse; aiSearch: AiSearchResponse | null }> {
+  const queryString = buildDirectoryQuery(state, DEFAULT_PAGE_SIZE);
+  const shouldUseAiSearch = state.mode === "ai" && Boolean(state.q?.trim());
+
+  if (shouldUseAiSearch) {
+    try {
+      const aiSearch = await fetchAiSearch(queryString);
+      return { directory: aiSearch.directory, aiSearch };
+    } catch {
+      // Fall back to the regular catalog only when the AI aggregation path fails.
+    }
+  }
+
+  try {
+    return { directory: await fetchDirectory(queryString), aiSearch: null };
+  } catch {
+    return { directory: EMPTY_DIRECTORY, aiSearch: null };
+  }
+}
+
 export default async function Page({ searchParams }: HomeRouteProps) {
   const params = await searchParams;
   const state: HomePageState = {
@@ -102,25 +124,20 @@ export default async function Page({ searchParams }: HomeRouteProps) {
     source: readValue(params.source),
   };
 
-  const shouldUseAiSearch = state.mode === "ai" && Boolean(state.q?.trim());
-  const aiSearchPromise: Promise<AiSearchResponse | null> = shouldUseAiSearch
-    ? fetchAiSearch(buildDirectoryQuery(state, DEFAULT_PAGE_SIZE))
-    : Promise.resolve(null);
-
-  const [directoryResult, aiSearchResult, hotDirectoryResult, latestDirectoryResult, scenariosResult] = await Promise.allSettled([
-    fetchDirectory(buildDirectoryQuery(state, DEFAULT_PAGE_SIZE)),
-    aiSearchPromise,
+  const [primaryResult, hotDirectoryResult, latestDirectoryResult, scenariosResult] = await Promise.allSettled([
+    loadPrimaryDirectory(state),
     fetchDirectory(`view=hot&page=1&page_size=${SECTION_PAGE_SIZE}`),
     fetchDirectory(`view=latest&page=1&page_size=${SECTION_PAGE_SIZE}`),
     fetchScenarios(),
   ]);
 
-  const aiSearch = aiSearchResult.status === "fulfilled" ? aiSearchResult.value : null;
+  const primary = primaryResult.status === "fulfilled" ? primaryResult.value : { directory: EMPTY_DIRECTORY, aiSearch: null };
+  const aiSearch = primary.aiSearch;
   const hotTools = hotDirectoryResult.status === "fulfilled" ? hotDirectoryResult.value.items : [];
   const latestTools = latestDirectoryResult.status === "fulfilled" ? latestDirectoryResult.value.items : [];
   const scenarios = scenariosResult.status === "fulfilled" ? scenariosResult.value : EMPTY_SCENARIOS;
 
-  let directory = aiSearch?.directory ?? (directoryResult.status === "fulfilled" ? directoryResult.value : EMPTY_DIRECTORY);
+  let directory = primary.directory;
   if (directory.items.length === 0 && !hasHomepageFilters(state)) {
     const defaultTools = hotTools.length > 0 ? hotTools : latestTools;
     if (defaultTools.length > 0) {

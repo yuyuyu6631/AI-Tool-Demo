@@ -17,7 +17,7 @@ export default function Header({ currentPath, currentRoute = currentPath }: Head
   const isHome = currentPath === "/";
 
   return (
-    <header className={`site-header sticky top-0 z-50 ${isHome ? "site-header--home-light" : ""}`}>
+    <header className={`site-header sticky top-0 z-50 ${isHome ? "site-header--home-light" : "site-header--dark"}`}>
       <div className="mx-auto flex h-[68px] w-full max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <a
           href={withPublicPath("/")}

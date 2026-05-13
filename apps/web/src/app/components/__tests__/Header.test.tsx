@@ -27,4 +27,10 @@ describe("Header", () => {
     expect(screen.queryByText("搜索工具")).not.toBeInTheDocument();
     expect(screen.queryByText("Ctrl+G")).not.toBeInTheDocument();
   });
+
+  it("uses the dark header treatment away from the homepage", () => {
+    const { container } = render(<Header currentPath="/tools" currentRoute="/tools" />);
+
+    expect(container.querySelector("header")).toHaveClass("site-header--dark");
+  });
 });

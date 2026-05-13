@@ -38,7 +38,7 @@ export default function AdminAccessGate({
     );
   }
 
-  if (currentUser.role !== "admin") {
+  if (!["admin", "operator", "administrator"].includes(currentUser.role ?? "")) {
     return <div className="rounded-[28px] border border-slate-200 bg-white p-8 text-sm text-slate-600">当前账号没有后台权限，请使用管理员账号登录。</div>;
   }
 
